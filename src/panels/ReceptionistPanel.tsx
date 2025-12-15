@@ -393,7 +393,16 @@ export function ProfessionalsSidebar({ professionals }: { professionals: Profess
   )
 }
 
-export function AgendaView({ professionals, events }: { professionals: Professional[]; events: Event[] }) {
+interface AgendaEvent {
+  id: string
+  title: string
+  time: string
+  duration: string
+  professionalId: string
+  status?: 'confirmado' | 'pendente' | 'cancelado'
+}
+
+export function AgendaView({ professionals, events }: { professionals: Professional[]; events: AgendaEvent[] }) {
   const { selectedFilter: selectedProfessional } = usePanelContext()
   const isAll = selectedProfessional === 'all'
 

@@ -4,7 +4,7 @@ const paymentMethodEnum = z.enum(['pix', 'credit', 'cash', 'proprietary_machine'
 
 const moneyInt = z
   .number({
-    invalid_type_error: 'Valor inválido',
+    message: 'Valor inválido',
   })
   .int('Valor deve estar em centavos (inteiro)')
   .nonnegative('Valor não pode ser negativo')
