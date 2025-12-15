@@ -68,7 +68,6 @@ export function Register({ onSwitchToLogin }: RegisterProps) {
               alt="ClinicFlow" 
               className="h-12 w-12 object-contain"
             />
-            </div>
             <div>
               <p className="text-xs uppercase tracking-wide" style={{ color: '#88B0BF' }}>
                 Cadastro
