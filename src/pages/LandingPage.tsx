@@ -10,11 +10,8 @@ import {
   CheckCircle2,
   ArrowRight,
   Star,
-  Phone,
   Mail,
-  Building2,
   Clock,
-  TrendingUp,
 } from 'lucide-react'
 
 export function LandingPage() {

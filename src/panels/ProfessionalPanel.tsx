@@ -161,7 +161,7 @@ function TopMenu({ onTabChange }: { onTabChange?: (tab: string) => void }) {
 }
 
 function DashboardBody({
-  activeTabSnapshot,
+  activeTabSnapshot: _activeTabSnapshot,
 }: {
   activeTabSnapshot: string | null
 }) {

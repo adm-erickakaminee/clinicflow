@@ -9,7 +9,7 @@ interface QuickClientFormProps {
   onSuccess?: () => void
 }
 
-export function QuickClientForm({ clinicId, professionalId, onSuccess }: QuickClientFormProps) {
+export function QuickClientForm({ clinicId, onSuccess }: QuickClientFormProps) {
   const toast = useToast()
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -32,7 +32,7 @@ export function QuickClientForm({ clinicId, professionalId, onSuccess }: QuickCl
       // Para cadastro rápido pelo profissional, vamos criar diretamente em clients
       // O sistema pode criar o auth.user depois quando o cliente fizer login pela primeira vez
       // Por enquanto, gerar um UUID temporário para o cliente
-      const { data: clientData, error: clientError } = await supabase
+      const { error: clientError } = await supabase
         .from('clients')
         .insert({
           clinic_id: clinicId,

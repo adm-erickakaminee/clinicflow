@@ -6,7 +6,6 @@ import {
   Save,
   Target,
   DollarSign,
-  Settings,
   Shield,
   Key,
   Users,

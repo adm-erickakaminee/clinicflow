@@ -12,8 +12,6 @@ export function ClientsView() {
     clients = [],
     appointments = [],
     professionals = [],
-    addCashback,
-    useCashback,
     saveAnamnesis,
     addEvolution,
     addDocument,
@@ -353,14 +351,6 @@ function Card({ title, children, action }: { title: string; children: React.Reac
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1">
-      <p className="text-xs font-semibold text-gray-700">{title}</p>
-      {children}
-    </div>
-  )
-}
 
 function TagList({ items, empty, color = 'amber' }: { items: string[]; empty: string; color?: 'amber' | 'blue' }) {
   if (!items.length) return <p className="text-sm text-gray-600">{empty}</p>

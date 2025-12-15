@@ -1,5 +1,10 @@
 import { differenceInCalendarDays } from 'date-fns'
-import type { ToastContext } from '../components/ui/Toast'
+
+type ToastContext = {
+  success: (msg: string) => void
+  error: (msg: string) => void
+  info: (msg: string) => void
+}
 
 export interface GabyConfig {
   cashback_multiplier?: number

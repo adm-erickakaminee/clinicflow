@@ -11,12 +11,8 @@ import {
   startOfYear,
   endOfYear,
   subDays,
-  subWeeks,
-  subMonths,
-  subQuarters,
-  subYears,
-  format,
   differenceInDays,
+  format,
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { supabase } from '../lib/supabase'
@@ -34,7 +30,7 @@ import {
   BarChart3,
   TrendingDown,
 } from 'lucide-react'
-import { eachDayOfInterval, getDay, isToday, isSameDay } from 'date-fns'
+import { eachDayOfInterval, getDay, isToday } from 'date-fns'
 
 type PeriodType = 'day' | 'week' | 'month' | 'quarter' | 'semester' | 'year'
 
@@ -418,7 +414,7 @@ export function AdminAnalyticsView() {
       .select('id', { count: 'exact', head: true })
       .eq('clinic_id', clinicId)
 
-    const totalClients = totalClientsData || 0
+    const totalClients = (totalClientsData as { count: number } | null)?.count || 0
     const retentionRate = totalClients > 0 ? (uniqueClientsInPeriod / totalClients) * 100 : 0
 
     setClientMetrics({
@@ -954,7 +950,6 @@ export function AdminAnalyticsView() {
             <PeriodAppointmentsChart
               appointments={periodAppointments}
               dateRange={dateRange}
-              period={period}
             />
           ) : (
             /* Lista de agendamentos do dia */
@@ -1249,12 +1244,10 @@ function MetricCard({ icon: Icon, title, value, subtitle, variant = 'primary' }:
 interface PeriodAppointmentsChartProps {
   appointments: any[]
   dateRange: DateRange
-  period: PeriodType
 }
 
-function PeriodAppointmentsChart({ appointments, dateRange, period }: PeriodAppointmentsChartProps) {
+function PeriodAppointmentsChart({ appointments, dateRange }: PeriodAppointmentsChartProps) {
   const dayInitials = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
-  const now = new Date()
 
   // Calcular dados por dia
   const dailyData = useMemo(() => {

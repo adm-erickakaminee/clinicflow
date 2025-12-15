@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/ui/Toast'
 import {
-  Building2,
   CheckCircle,
   XCircle,
   AlertCircle,
@@ -208,7 +207,7 @@ export function TenantManagementView() {
     }
   }
 
-  const handleImpersonate = async (clinicId: string) => {
+  const handleImpersonate = async (_clinicId: string) => {
     // TODO: Implementar impersonate via Edge Function
     toast.info('Funcionalidade de impersonate em desenvolvimento')
   }

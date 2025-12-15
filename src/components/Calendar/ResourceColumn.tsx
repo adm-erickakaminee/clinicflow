@@ -63,7 +63,6 @@ export function ResourceColumn({
     return map
   }, [events, resource.id, intervalMinutes])
 
-  const bgClass = theme === 'light' ? 'bg-white' : 'bg-slate-900'
   const borderClass = theme === 'light' ? 'border-gray-200' : 'border-slate-700'
   const headerBgClass = theme === 'light' ? 'bg-white' : 'bg-slate-800/50'
   const titleClass = theme === 'light' ? 'text-gray-900' : 'text-slate-200'

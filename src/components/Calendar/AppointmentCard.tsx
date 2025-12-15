@@ -1,7 +1,6 @@
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import clsx from 'clsx'
-import { Clock, User, Stethoscope } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { CalendarEvent } from '../../lib/types'
@@ -37,13 +36,12 @@ export function AppointmentCard({ event, isDragging, theme = 'dark' }: Appointme
     : clsx('border-l-4', {
         'border-l-amber-500 bg-amber-500/10': event.status === 'pending',
         'border-l-emerald-500 bg-emerald-500/10': event.status === 'confirmed',
-        'border-l-slate-500 bg-slate-500/10': event.status === 'completed' || event.status === 'finalized',
+        'border-l-slate-500 bg-slate-500/10': event.status === 'completed',
         'border-l-red-500 bg-red-500/10 opacity-50': event.status === 'cancelled',
       })
 
   const textColor = theme === 'light' ? 'text-gray-900' : 'text-slate-200'
   const secondaryTextColor = theme === 'light' ? 'text-gray-700' : 'text-slate-400'
-  const iconColor = theme === 'light' ? 'text-gray-600' : 'text-slate-500'
 
   return (
     <div

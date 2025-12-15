@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PhoneCall, Clock, MessageSquare, CreditCard, CheckCircle2 } from 'lucide-react'
+import { Clock, MessageSquare, CreditCard, CheckCircle2 } from 'lucide-react'
 
 type Slot = { time: string; professional: string }
 type Pending = { name: string; contact: string; notes?: string }
@@ -10,7 +10,6 @@ export function ReceptionistAnalytics() {
   const total = agendaStatus.confirmados + agendaStatus.pendentes + agendaStatus.cancelados
   const confirmPct = Math.round((agendaStatus.confirmados / total) * 100)
   const pendingPct = Math.round((agendaStatus.pendentes / total) * 100)
-  const cancelPct = 100 - confirmPct - pendingPct
 
   const slotsLivres: Slot[] = [
     { time: '14:10', professional: 'Dra. Ana' },

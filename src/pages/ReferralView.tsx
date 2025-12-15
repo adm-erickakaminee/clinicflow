@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useScheduler } from '../context/SchedulerContext'
 import { useToast } from '../components/ui/Toast'
@@ -11,8 +11,6 @@ import {
   Copy,
   CheckCircle2,
   Building2,
-  Calendar,
-  Award,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -140,7 +138,7 @@ export function ReferralView() {
         return
       }
 
-      setReferrals((data || []) as Referral[])
+      setReferrals((data || []) as unknown as Referral[])
     } catch (err) {
       console.warn('Aviso ao carregar indicações:', err)
     }

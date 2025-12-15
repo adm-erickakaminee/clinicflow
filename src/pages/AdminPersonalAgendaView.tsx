@@ -17,7 +17,6 @@ export function AdminPersonalAgendaView() {
   const [gabyConfig, setGabyConfig] = useState<any>(null)
 
   const userId = currentUser?.id
-  const professionalId = currentUser?.professionalId
   const clinicId = currentUser?.clinicId
 
   useEffect(() => {

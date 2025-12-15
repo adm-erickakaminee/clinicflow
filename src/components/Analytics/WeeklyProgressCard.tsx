@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday, getDay } from 'date-fns'
+import { startOfWeek, endOfWeek, eachDayOfInterval, isToday, getDay } from 'date-fns'
 import { useScheduler } from '../../context/SchedulerContext'
 import { useDashboardContext } from '../../panels/ReceptionistPanel'
 
@@ -63,10 +63,6 @@ export function WeeklyProgressCard() {
     }
   }, [filteredAppointments])
 
-  // Encontrar índice do dia atual
-  const todayIndex = useMemo(() => {
-    return weekData.dailyCounts.findIndex((day) => day.isToday)
-  }, [weekData.dailyCounts])
 
   return (
     <div className="rounded-3xl bg-white/40 backdrop-blur-xl border border-white/40 shadow-sm p-6 space-y-5 min-h-[420px]">

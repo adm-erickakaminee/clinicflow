@@ -93,7 +93,7 @@ export function PatientFlowWidget() {
         return {
           ...apt,
           clientName: client?.name || apt.patient || 'Paciente',
-          clientAvatar: client?.avatar || '',
+          clientAvatar: '',
         }
       })
   }, [appointments, clients, todayStart, todayEnd])
@@ -367,7 +367,7 @@ export function PatientFlowWidget() {
             : isHistory
             ? 'bg-white/40 border-white/40 opacity-60'
             : 'bg-white/70 border-white/60 hover:shadow-md'
-        } ${statusInfo.animate || ''}`}
+        }`}
       >
         {/* Avatar */}
         <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">

@@ -100,7 +100,7 @@ export function ServiceFlow({ appointment, organizationId, soloMode = false, gab
     try {
       evolutionSchema.parse({ evolution: evolutionText })
     } catch (err) {
-      const msg = err instanceof z.ZodError ? err.errors[0]?.message : 'Evolução obrigatória'
+      const msg = err instanceof z.ZodError ? err.issues[0]?.message : 'Evolução obrigatória'
       toast.error(msg)
       return
     }
@@ -178,7 +178,7 @@ export function ServiceFlow({ appointment, organizationId, soloMode = false, gab
 
         <div className="space-y-3">
           <div className="flex gap-2">
-            <Button variant="primary" className="flex-1" onClick={() => setStep('services')}>
+            <Button variant="default" className="flex-1" onClick={() => setStep('services')}>
               Add Serviço na Sala
             </Button>
             <Button variant="ghost" className="flex-1" onClick={() => setStep('notes')}>
@@ -207,7 +207,7 @@ export function ServiceFlow({ appointment, organizationId, soloMode = false, gab
             Voltar
           </Button>
           <Button
-            variant="primary"
+            variant="default"
             className="w-full sm:w-auto justify-center"
             onClick={handleFinalize}
             disabled={!canFinalize}

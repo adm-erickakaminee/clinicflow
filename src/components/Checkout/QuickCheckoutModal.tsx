@@ -133,6 +133,15 @@ export function QuickCheckoutModal({
     }
   }, [open, appointmentId])
 
+  const discountCents = useMemo(() => centsFromInput(discountInput), [discountInput])
+  const cashbackCents = useMemo(() => centsFromInput(cashbackInput), [cashbackInput])
+
+  const calculation = useCheckoutCalculator({
+    items: localItems,
+    discount_amount_cents: discountCents,
+    cashback_to_redeem_cents: cashbackCents,
+  })
+
   // Calcular máximo de cashback utilizável (33% do valor do serviço)
   const maxCashbackUsable = useMemo(() => {
     const serviceSubtotal = calculation.service_subtotal
@@ -149,15 +158,6 @@ export function QuickCheckoutModal({
       setCashbackInput('0')
     }
   }, [useCashback, maxCashbackUsable])
-
-  const discountCents = useMemo(() => centsFromInput(discountInput), [discountInput])
-  const cashbackCents = useMemo(() => centsFromInput(cashbackInput), [cashbackInput])
-
-  const calculation = useCheckoutCalculator({
-    items: localItems,
-    discount_amount_cents: discountCents,
-    cashback_to_redeem_cents: cashbackCents,
-  })
 
   // Ajustar valor pago default para o total calculado
   useEffect(() => {

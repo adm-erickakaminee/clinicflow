@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { z } from 'zod'
 import { Mail, Lock, Phone, Eye, EyeOff } from 'lucide-react'
@@ -7,7 +7,7 @@ import { ToastContainer, useToast } from '../components/ui/Toast'
 import { Card, CardContent } from '../components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Input } from '../components/ui/input'
-import { Button } from '../components/ui/button'
+import { Button } from '../components/ui/Button'
 import { cn } from '../lib/utils'
 
 type TabKey = 'pro' | 'client'
@@ -43,14 +43,14 @@ export function Login() {
   const validatePro = () => {
     const e = emailSchema.safeParse(email)
     const p = passwordSchema.safeParse(password)
-    if (!e.success) return toast.error(e.error.errors[0].message), false
-    if (!p.success) return toast.error(p.error.errors[0].message), false
+    if (!e.success) return toast.error(e.error.issues[0].message), false
+    if (!p.success) return toast.error(p.error.issues[0].message), false
     return true
   }
 
   const validateClient = () => {
     const ph = phoneSchema.safeParse(phone)
-    if (!ph.success) return toast.error(ph.error.errors[0].message), false
+    if (!ph.success) return toast.error(ph.error.issues[0].message), false
     return true
   }
 

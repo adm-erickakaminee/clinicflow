@@ -9,6 +9,8 @@ type Props = {
     name: string
     anamnesis?: Anamnesis
     documents?: MedicalDocument[]
+    healthTags?: string[]
+    forms?: MedicalForm[]
   }
   canEdit: boolean
   onSave: (data: Anamnesis) => void

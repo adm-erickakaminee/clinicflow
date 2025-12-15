@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Plus, Edit2, Trash2, User } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../../lib/supabase'

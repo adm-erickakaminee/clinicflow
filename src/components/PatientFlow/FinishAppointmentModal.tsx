@@ -11,7 +11,7 @@ type Props = {
   onSave: (medicalNotes: string) => Promise<void>
 }
 
-export function FinishAppointmentModal({ isOpen, onClose, appointmentId, patientName, onSave }: Props) {
+export function FinishAppointmentModal({ isOpen, onClose, patientName, onSave }: Props) {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const toast = useToast()

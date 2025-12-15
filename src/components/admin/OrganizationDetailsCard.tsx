@@ -39,6 +39,7 @@ export function OrganizationDetailsCard() {
     address: '',
     cnpj: '',
   })
+  const [showKYC, setShowKYC] = useState(false)
 
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'clinic_owner'
   const isReceptionist = currentUser?.role === 'receptionist'

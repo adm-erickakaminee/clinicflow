@@ -91,7 +91,7 @@ export function FinancialView() {
       const { data, error } = await query
 
       if (error) throw error
-      setTransactions((data as Transaction[]) || [])
+      setTransactions((data as unknown as Transaction[]) || [])
     } catch (err) {
       console.error('Erro ao carregar transações:', err)
       toast.error('Falha ao carregar transações financeiras')

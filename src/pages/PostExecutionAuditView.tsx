@@ -76,7 +76,7 @@ export function PostExecutionAuditView() {
         .limit(50)
 
       if (error) throw error
-      setTransactions((data as Transaction[]) || [])
+      setTransactions((data as unknown as Transaction[]) || [])
     } catch (err) {
       console.error('Erro ao carregar transações pendentes:', err)
       toast.error('Falha ao carregar transações para auditoria')

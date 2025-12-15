@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
-import { Calendar, TrendingUp, Clock, User } from 'lucide-react'
+import { TrendingUp, User } from 'lucide-react'
 import { format, isToday, addMinutes } from 'date-fns'
 import { AppointmentModal } from './SchedulerView'
 import { useScheduler } from '../context/SchedulerContext'

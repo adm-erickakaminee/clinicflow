@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useScheduler } from '../context/SchedulerContext'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../components/ui/Toast'
-import { CreditCard, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { CreditCard, AlertCircle, Loader2 } from 'lucide-react'
 
 interface SubscriptionPlan {
   id: string
@@ -149,6 +149,7 @@ export function SubscriptionCheckout() {
     )
   }
 
+  const isPending = organization.status === 'pending_setup'
   const isSuspended = organization.status === 'suspended'
 
   return (
@@ -156,10 +157,12 @@ export function SubscriptionCheckout() {
       <div className="bg-white/60 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl p-8 lg:p-10 max-w-2xl w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {isSuspended ? 'Assinatura Suspensa' : 'Ative sua Assinatura'}
+            {isPending ? 'Configuração Pendente' : isSuspended ? 'Assinatura Suspensa' : 'Ative sua Assinatura'}
           </h1>
           <p className="text-gray-600">
-            {isSuspended
+            {isPending
+              ? 'A organização ainda está em processo de configuração. Aguarde a finalização ou entre em contato com o suporte.'
+              : isSuspended
               ? 'Sua assinatura foi suspensa devido a problemas no pagamento. Renove para continuar usando o sistema.'
               : 'Complete o pagamento para liberar o acesso completo ao sistema.'}
           </p>
@@ -210,7 +213,7 @@ export function SubscriptionCheckout() {
         {/* Botão de Pagamento */}
         <button
           onClick={handleCreateSubscription}
-          disabled={processing}
+          disabled={processing || isPending}
           className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {processing ? (
@@ -221,7 +224,7 @@ export function SubscriptionCheckout() {
           ) : (
             <>
               <CreditCard className="h-5 w-5" />
-              {isSuspended ? 'Renovar Assinatura' : 'Pagar e Ativar'}
+              {isPending ? 'Aguardando configuração' : isSuspended ? 'Renovar Assinatura' : 'Pagar e Ativar'}
             </>
           )}
         </button>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/ui/Toast'
 import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Users, Building2, Loader2 } from 'lucide-react'

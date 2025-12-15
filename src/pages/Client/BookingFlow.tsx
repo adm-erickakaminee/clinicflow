@@ -213,7 +213,7 @@ export function BookingFlow() {
             <p className="text-sm text-slate-400">Sinal (booking fee): R$ {(bookingFeeCents / 100).toFixed(2)}</p>
           </div>
           <div className="flex flex-col gap-2">
-            <Button variant="primary" onClick={handlePayAndConfirm} disabled={loading}>
+            <Button variant="default" onClick={handlePayAndConfirm} disabled={loading}>
               {loading ? 'Processando...' : 'Pagar sinal e confirmar'}
             </Button>
             <Button variant="ghost" onClick={() => setStep('slot')}>

@@ -64,7 +64,7 @@ export function LoginOtp() {
           </div>
         )}
         <div className="flex gap-2">
-          <Button variant="primary" className="flex-1" onClick={sendOtp} disabled={loading}>
+          <Button variant="default" className="flex-1" onClick={sendOtp} disabled={loading}>
             Enviar código
           </Button>
           <Button
