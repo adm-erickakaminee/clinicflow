@@ -165,14 +165,45 @@ export function SignUpView() {
 
       // 3. Criar perfil do usuário
       // Nota: O email está em auth.users, não em profiles
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: authData.user.id,
-        full_name: formData.fullName,
-        clinic_id: orgData.id,
-        role: 'admin', // Admin é o role padrão para o dono da clínica
-      })
+      // IMPORTANTE: Não incluir email no insert, pois essa coluna não existe em profiles
+      const { data: profileResult, error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          full_name: formData.fullName,
+          clinic_id: orgData.id,
+          role: 'admin', // Admin é o role padrão para o dono da clínica
+        })
+        .select('id, full_name, role, clinic_id')
+        .single()
 
-      if (profileError) throw profileError
+      if (profileError) {
+        console.error('Erro ao criar perfil:', {
+          error: profileError,
+          message: profileError.message,
+          code: profileError.code,
+          details: profileError.details,
+          hint: profileError.hint,
+        })
+        
+        // Se o erro for relacionado a email ou schema cache, informar claramente
+        if (
+          profileError.message?.includes('email') || 
+          profileError.message?.includes('schema cache') ||
+          profileError.code === '42703' ||
+          profileError.code === 'PGRST116'
+        ) {
+          throw new Error(
+            'Erro de configuração do banco de dados: a tabela profiles não possui coluna email. ' +
+            'O email está armazenado em auth.users. Entre em contato com o suporte se o problema persistir.'
+          )
+        }
+        throw profileError
+      }
+      
+      if (!profileResult) {
+        throw new Error('Perfil criado mas não foi retornado pelo banco de dados')
+      }
 
       // 4. Tokenizar cartão de crédito (SEGURANÇA)
       let creditCardToken: string | null = null
@@ -251,7 +282,27 @@ export function SignUpView() {
       }, 2000)
     } catch (err: any) {
       console.error('Erro no cadastro:', err)
-      toast.error(err.message || 'Erro ao realizar cadastro. Tente novamente.')
+      
+      // Mensagem de erro mais detalhada para ajudar no debug
+      let errorMessage = err.message || 'Erro ao realizar cadastro. Tente novamente.'
+      
+      // Se o erro for relacionado a email no profile, dar mensagem específica
+      if (err.message?.includes('email') || err.code === '42703') {
+        errorMessage = 'Erro de configuração do banco de dados. Entre em contato com o suporte.'
+        console.error('Erro relacionado a email no profile:', {
+          message: err.message,
+          code: err.code,
+          details: err.details,
+          hint: err.hint,
+        })
+      }
+      
+      // Se o erro for de rate limiting, informar ao usuário
+      if (err.message?.includes('segundos') || err.message?.includes('segurança')) {
+        errorMessage = 'Aguarde alguns segundos antes de tentar novamente. Isso é uma medida de segurança.'
+      }
+      
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }

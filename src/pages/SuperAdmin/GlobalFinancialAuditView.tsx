@@ -164,9 +164,10 @@ export function GlobalFinancialAuditView() {
 
   const loadSuperAdmins = async () => {
     try {
+      // Buscar profiles sem email (email está em auth.users)
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, created_at')
+        .select('id, full_name, created_at')
         .eq('role', 'super_admin')
         .order('created_at', { ascending: false })
 

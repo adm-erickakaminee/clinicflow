@@ -39,10 +39,19 @@ export function useAppointments({ startDate, endDate }: UseAppointmentsOptions):
   const fetchProfessionals = useCallback(async () => {
     try {
       // Primeiro tenta buscar com relacionamentos
+      // Nota: Não buscar email (está em auth.users, não em profiles)
       const { data, error } = await supabase
         .from('profiles')
         .select(`
-          *,
+          id,
+          full_name,
+          role,
+          clinic_id,
+          professional_id,
+          phone,
+          avatar_url,
+          created_at,
+          updated_at,
           professional_services (
             service:services (*)
           )
@@ -54,13 +63,13 @@ export function useAppointments({ startDate, endDate }: UseAppointmentsOptions):
         console.warn('Buscando profissionais sem serviços:', error.message)
         const { data: profilesOnly } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, full_name, role, clinic_id, professional_id, phone, avatar_url, created_at, updated_at')
           .eq('role', 'professional')
         
-        return (profilesOnly || []) as ProfessionalWithServices[]
+        return (profilesOnly || []) as unknown as ProfessionalWithServices[]
       }
 
-      return (data || []) as ProfessionalWithServices[]
+      return (data || []) as unknown as ProfessionalWithServices[]
     } catch (err) {
       console.error('Erro ao buscar profissionais:', err)
       return []

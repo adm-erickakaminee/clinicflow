@@ -36,9 +36,10 @@ export function ProfessionalDashboard() {
     const loadProfile = async () => {
       if (!userId) return
       try {
+        // Não buscar email (está em auth.users, não em profiles)
         const { data: prof, error: profError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, full_name, role, clinic_id, professional_id, phone, avatar_url, created_at, updated_at')
           .eq('id', userId)
           .maybeSingle()
 
