@@ -3092,7 +3092,7 @@ para permitir que super_admin atualize profiles de outros usuários.`
           const queryWithTimeout = Promise.race([
             supabase
               .from('profiles')
-              .select('role, clinic_id, professional_id, full_name, avatar_url, is_super_admin')
+              .select('role, clinic_id, professional_id, full_name, avatar_url')
               .eq('id', authUser.id)
               .maybeSingle(),
             new Promise<{ data: null; error: { message: string; code: string } }>((resolve) => 

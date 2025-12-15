@@ -19,8 +19,39 @@ const payloadSchema = z.object({
 
 type Payload = z.infer<typeof payloadSchema>
 
+// Headers CORS para permitir requisições do frontend
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 async function handler(req: Request): Promise<Response> {
+  // Tratar preflight request (OPTIONS)
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   try {
+    // Verificar se as variáveis de ambiente estão configuradas
+    if (!supabaseUrl || !supabaseKey || !asaasApiKey) {
+      console.error('Variáveis de ambiente não configuradas:', {
+        hasSupabaseUrl: !!supabaseUrl,
+        hasSupabaseKey: !!supabaseKey,
+        hasAsaasApiKey: !!asaasApiKey,
+      })
+      return new Response(
+        JSON.stringify({ error: 'Configuração do servidor incompleta' }),
+        {
+          status: 500,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+    }
+
     const payload: Payload = await req.json()
     const validated = payloadSchema.parse(payload)
 
@@ -115,7 +146,10 @@ async function handler(req: Request): Promise<Response> {
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json' 
+        },
       }
     )
   } catch (error: any) {
@@ -126,7 +160,10 @@ async function handler(req: Request): Promise<Response> {
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json' 
+        },
       }
     )
   }
