@@ -8,13 +8,6 @@ import { TenantManagementView } from '../pages/SuperAdmin/TenantManagementView'
 import { PlanManagementView } from '../pages/SuperAdmin/PlanManagementView'
 import { GlobalFinancialAuditView } from '../pages/SuperAdmin/GlobalFinancialAuditView'
 
-type Professional = {
-  id: string
-  name: string
-  specialty: string
-  avatar: string
-}
-
 // Manter compatibilidade - usar PanelContext internamente
 export function useDashboardContext() {
   const ctx = usePanelContext()
@@ -28,7 +21,6 @@ export function useDashboardContext() {
 
 export function SuperAdminPanel() {
   const [activeTabSnapshot, setActiveTabSnapshot] = useState<string | null>(null)
-  const { professionals } = useScheduler()
 
   return (
     <PanelProvider filterType="clinic" defaultTab="Dashboard Global" defaultFilter="all">
@@ -45,10 +37,7 @@ export function SuperAdminPanel() {
           <Header />
           <TopMenu onTabChange={(tab) => setActiveTabSnapshot(tab)} />
 
-          <DashboardBody
-            activeTabSnapshot={activeTabSnapshot}
-            professionals={professionals}
-          />
+          <DashboardBody activeTabSnapshot={activeTabSnapshot} />
         </div>
       </div>
     </PanelProvider>
@@ -164,7 +153,6 @@ function DashboardBody({
   activeTabSnapshot,
 }: {
   activeTabSnapshot: string | null
-  professionals?: Professional[]
 }) {
   const { activeTab } = usePanelContext()
   const tab = activeTabSnapshot ?? activeTab

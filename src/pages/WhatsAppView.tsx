@@ -240,8 +240,8 @@ export function WhatsAppView() {
                   <p className="text-sm font-semibold text-gray-900">{client?.name ?? apt.patient ?? 'Paciente'}</p>
                   <p className="text-xs text-gray-500">{hour}</p>
                 </div>
-                {!hasPhone && <AlertTriangle className="h-4 w-4 text-amber-500" title="Sem telefone" />}
-                {hasPhone && <CheckCircle2 className="h-4 w-4 text-emerald-600" title="Telefone cadastrado" />}
+                {!hasPhone && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                {hasPhone && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
               </button>
             )
           })}

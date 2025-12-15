@@ -20,15 +20,6 @@ type Professional = {
   avatar: string
 }
 
-type Event = {
-  id: string
-  title: string
-  time: string
-  duration: string
-  professionalId: string
-  status?: 'confirmado' | 'pendente' | 'cancelado'
-}
-
 // Manter compatibilidade com código antigo - usar PanelContext internamente
 export function useDashboardContext() {
   const ctx = usePanelContext()

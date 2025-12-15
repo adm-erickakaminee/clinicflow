@@ -23,11 +23,9 @@ export const updateAppointmentSchema = z.object({
   appointmentId: z.string().uuid('ID do agendamento inválido'),
   newProfessionalId: z.string().uuid('ID do profissional inválido'),
   newStartTime: z.date({
-    required_error: 'Horário de início é obrigatório',
     invalid_type_error: 'Horário de início inválido',
   }),
   newEndTime: z.date({
-    required_error: 'Horário de término é obrigatório',
     invalid_type_error: 'Horário de término inválido',
   }),
   serviceId: z.string().uuid().nullable(),

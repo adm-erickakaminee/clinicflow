@@ -11,7 +11,6 @@ import {
   Users,
   Settings,
   Loader2,
-  RefreshCw,
   UserCheck,
 } from 'lucide-react'
 
