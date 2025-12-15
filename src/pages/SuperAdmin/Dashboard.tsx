@@ -178,7 +178,7 @@ export function SuperAdminDashboard() {
               </div>
               <div className="flex gap-2">
                 <Button
-                  variant="primary"
+                  variant="default"
                   size="sm"
                   onClick={() => impersonateUser(org.id, org.id)}
                   disabled={!twoFaCode}

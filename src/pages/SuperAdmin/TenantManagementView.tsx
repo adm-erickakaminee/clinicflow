@@ -31,11 +31,6 @@ interface SubscriptionPlan {
   base_price_cents: number
 }
 
-interface UserCount {
-  clinic_id: string
-  user_count: number
-}
-
 export function TenantManagementView() {
   const toast = useToast()
   const [loading, setLoading] = useState(true)
@@ -216,13 +211,6 @@ export function TenantManagementView() {
   const handleImpersonate = async (clinicId: string) => {
     // TODO: Implementar impersonate via Edge Function
     toast.info('Funcionalidade de impersonate em desenvolvimento')
-  }
-
-  const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(cents / 100)
   }
 
   const formatDate = (dateString: string | null) => {

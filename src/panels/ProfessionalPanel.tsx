@@ -165,8 +165,6 @@ function DashboardBody({
 }: {
   activeTabSnapshot: string | null
 }) {
-  const tab = activeTabSnapshot ?? usePanelContext().activeTab
-
   return (
     <div className="grid grid-cols-1">
       <MainContent />

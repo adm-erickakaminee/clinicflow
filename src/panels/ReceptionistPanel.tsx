@@ -11,7 +11,6 @@ import UserProfileModal from '../components/UserProfileModal'
 import { ProfessionalHeroCard } from '../components/Analytics/ProfessionalHeroCard'
 import { startOfDay, endOfDay } from 'date-fns'
 import { PanelProvider, usePanelContext } from '../context/PanelContext'
-import { RequestQueueCard } from '../components/Reception/RequestQueueCard'
 
 type Professional = {
   id: string

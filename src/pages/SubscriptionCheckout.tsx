@@ -149,7 +149,6 @@ export function SubscriptionCheckout() {
     )
   }
 
-  const isPending = organization.status === 'pending_setup'
   const isSuspended = organization.status === 'suspended'
 
   return (

@@ -52,7 +52,6 @@ export function GlobalFinancialAuditView() {
   const [superAdmins, setSuperAdmins] = useState<SuperAdmin[]>([])
   const [dateFilter, setDateFilter] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
   const [searchQuery, setSearchQuery] = useState('')
-  const [showB2BOnly, setShowB2BOnly] = useState(false)
 
   useEffect(() => {
     loadAllData()
