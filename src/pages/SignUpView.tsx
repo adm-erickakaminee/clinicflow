@@ -163,22 +163,24 @@ export function SignUpView() {
       if (orgError) throw orgError
       if (!orgData) throw new Error('Erro ao criar organização')
 
-      // 3. Criar perfil do usuário
+      // 3. Criar perfil do usuário usando função segura que bypassa RLS
       // Nota: O email está em auth.users, não em profiles
-      // IMPORTANTE: Não incluir email no insert, pois essa coluna não existe em profiles
-      const { data: profileResult, error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          full_name: formData.fullName,
-          clinic_id: orgData.id,
-          role: 'admin', // Admin é o role padrão para o dono da clínica
-        })
-        .select('id, full_name, role, clinic_id')
-        .single()
+      // Usamos a função insert_profile_safe() para evitar recursão infinita nas políticas RLS
+      const { data: profileResult, error: profileError } = await supabase.rpc(
+        'insert_profile_safe',
+        {
+          p_id: authData.user.id,
+          p_full_name: formData.fullName,
+          p_clinic_id: orgData.id,
+          p_role: 'admin', // Admin é o role padrão para o dono da clínica
+          p_phone: formData.phone || null,
+          p_avatar_url: null,
+          p_professional_id: null,
+        }
+      )
 
       if (profileError) {
-        console.error('Erro ao criar perfil:', {
+        console.error('Erro ao criar perfil via função RPC:', {
           error: profileError,
           message: profileError.message,
           code: profileError.code,
@@ -186,23 +188,46 @@ export function SignUpView() {
           hint: profileError.hint,
         })
         
-        // Se o erro for relacionado a email ou schema cache, informar claramente
+        // Se a função não existir, informar que precisa executar o script SQL
         if (
-          profileError.message?.includes('email') || 
-          profileError.message?.includes('schema cache') ||
-          profileError.code === '42703' ||
-          profileError.code === 'PGRST116'
+          profileError.message?.includes('function') || 
+          profileError.message?.includes('does not exist') ||
+          profileError.code === '42883'
         ) {
           throw new Error(
-            'Erro de configuração do banco de dados: a tabela profiles não possui coluna email. ' +
-            'O email está armazenado em auth.users. Entre em contato com o suporte se o problema persistir.'
+            'Função insert_profile_safe() não encontrada. ' +
+            'Execute o script SQL FIX_PROFILES_RLS_ULTIMA_TENTATIVA.sql no Supabase para criar a função.'
           )
         }
-        throw profileError
+        
+        // Se o erro for relacionado a recursão, a função deveria ter evitado isso
+        if (profileError.message?.includes('recursion') || profileError.code === '42P17') {
+          throw new Error(
+            'Erro de recursão detectado mesmo usando função segura. ' +
+            'Verifique se a função insert_profile_safe() foi criada corretamente no banco de dados. ' +
+            'Erro: ' + profileError.message
+          )
+        }
+        
+        // Outros erros
+        throw new Error(
+          'Erro ao criar perfil: ' + (profileError.message || 'Erro desconhecido') +
+          '. Verifique se a função insert_profile_safe() existe no banco de dados.'
+        )
       }
       
+      // Verificar se o profile foi criado (a função retorna o ID)
       if (!profileResult) {
-        throw new Error('Perfil criado mas não foi retornado pelo banco de dados')
+        // Se a função não retornou nada, verificar se o profile existe
+        const { data: checkProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', authData.user.id)
+          .maybeSingle()
+        
+        if (!checkProfile) {
+          throw new Error('Perfil não foi criado. Tente novamente.')
+        }
       }
 
       // 4. Tokenizar cartão de crédito (SEGURANÇA)

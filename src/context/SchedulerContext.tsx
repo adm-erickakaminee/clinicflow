@@ -2056,7 +2056,21 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
           profilePayload.bank_account_data = (p as any).bank_account_data
         }
         
-        const { error: profileError } = await supabase.from('profiles').insert([profilePayload])
+        // Usar função RPC segura para evitar recursão infinita nas políticas RLS
+        const { error: profileError } = await supabase.rpc('insert_profile_safe', {
+          p_id: profileUserId,
+          p_full_name: profilePayload.full_name || '',
+          p_clinic_id: profilePayload.clinic_id,
+          p_role: profilePayload.role || 'professional',
+          p_phone: profilePayload.phone || null,
+          p_avatar_url: profilePayload.avatar_url || null,
+          p_professional_id: null, // Será atualizado depois quando criar o registro em professionals
+          p_payout_model: (p as any).payout_model || null,
+          p_payout_percentage: (p as any).payout_percentage ?? null,
+          p_fixed_monthly_payout_cents: (p as any).fixed_monthly_payout_cents ?? null,
+          p_cpf: (p as any).cpf || null,
+          p_bank_account_data: (p as any).bank_account_data || null,
+        })
 
         if (profileError) {
           console.error('❌ addProfessional - Erro ao criar profile:', profileError)
