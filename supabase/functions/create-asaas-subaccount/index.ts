@@ -64,17 +64,26 @@ async function createAsaasSubaccount(payload: Payload): Promise<AsaasSubaccountR
 
   // Buscar dados completos do banco
   if (isProfessional && payload.professional_id) {
-    const { data: profile, error } = await supabase
+    // Buscar profile
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('full_name, phone, email')
+      .select('full_name, phone')
       .eq('id', payload.professional_id)
       .maybeSingle()
 
-    if (error) throw error
+    if (profileError) throw profileError
+    
+    // Buscar email do auth.users (não está em profiles)
+    let userEmail = ''
     if (profile) {
+      const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(payload.professional_id)
+      if (!authError && authUser?.user?.email) {
+        userEmail = authUser.user.email
+      }
+      
       asaasPayload.name = profile.full_name || 'Profissional'
       asaasPayload.phone = profile.phone || ''
-      asaasPayload.email = profile.email || ''
+      asaasPayload.email = userEmail
     }
   } else {
     const { data: org, error } = await supabase

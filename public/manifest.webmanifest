@@ -1,5 +1,5 @@
 {
-  "name": "Clinic Flow PWA",
+  "name": "ClinicFlow",
   "short_name": "ClinicFlow",
   "start_url": "/",
   "display": "standalone",
@@ -7,14 +7,16 @@
   "theme_color": "#0ea5e9",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/FAVCON.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/FAVCON.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

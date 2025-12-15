@@ -32,89 +32,90 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ffb3a7] via-[#ffc78f] to-[#ffe7a3]">
       {/* Header */}
-      <header className="relative z-10 px-6 py-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header className="relative z-10 px-4 sm:px-6 py-4 sm:py-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <img 
               src="/FAVCON.png" 
               alt="ClinicFlow" 
-              className="h-12 w-12 object-contain"
+              className="h-8 w-8 sm:h-12 sm:w-12 object-contain"
             />
-            <span className="text-2xl font-bold text-gray-900">ClinicFlow</span>
+            <span className="text-lg sm:text-2xl font-bold text-gray-900 whitespace-nowrap">ClinicFlow</span>
           </div>
-          <div className="flex items-center gap-4">
-            <a href="#features" className="text-gray-700 hover:text-gray-900 font-medium text-sm">
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+            <a href="#features" className="hidden sm:inline-block text-gray-700 hover:text-gray-900 font-medium text-sm">
               Recursos
             </a>
-            <a href="#pricing" className="text-gray-700 hover:text-gray-900 font-medium text-sm">
+            <a href="#pricing" className="hidden sm:inline-block text-gray-700 hover:text-gray-900 font-medium text-sm">
               Preços
             </a>
             <button
               onClick={() => navigate('/login')}
-              className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 hover:text-gray-900 transition"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-700 hover:text-gray-900 transition whitespace-nowrap"
             >
               Entrar
             </button>
             <button
               onClick={handleGetStarted}
-              className="px-6 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition shadow-lg"
+              className="px-3 sm:px-6 py-1.5 sm:py-2.5 rounded-xl bg-gray-900 text-white text-xs sm:text-sm font-semibold hover:bg-gray-800 transition shadow-lg whitespace-nowrap"
             >
-              Começar Agora
+              <span className="hidden sm:inline">Começar Agora</span>
+              <span className="sm:hidden">Começar</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative px-6 py-20">
+      <section className="relative px-4 sm:px-6 py-12 sm:py-20">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-4xl mx-auto space-y-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-white/60 shadow-lg">
-              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-              <span className="text-sm font-semibold text-gray-900">7 dias grátis • Cancele quando quiser</span>
+          <div className="text-center max-w-4xl mx-auto space-y-6 sm:space-y-8">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/80 backdrop-blur-sm border border-white/60 shadow-lg">
+              <Star className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 fill-yellow-500" />
+              <span className="text-xs sm:text-sm font-semibold text-gray-900">7 dias grátis • Cancele quando quiser</span>
             </div>
 
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 leading-tight">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 leading-tight px-2">
               Gerencie sua clínica com
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
                 inteligência e simplicidade
               </span>
             </h1>
 
-            <p className="text-xl md:text-2xl text-gray-700 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-xl md:text-2xl text-gray-700 max-w-2xl mx-auto leading-relaxed px-2">
               Sistema completo de gestão para clínicas e consultórios. Agendamentos, financeiro, pacientes e muito mais
               em uma única plataforma.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-4 px-4">
               <button
                 onClick={handleGetStarted}
-                className="px-8 py-4 rounded-2xl bg-gray-900 text-white text-lg font-semibold hover:bg-gray-800 transition shadow-xl flex items-center gap-2 group"
+                className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-2xl bg-gray-900 text-white text-base sm:text-lg font-semibold hover:bg-gray-800 transition shadow-xl flex items-center justify-center gap-2 group"
               >
                 Começar Teste Grátis
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
               </button>
               <button
                 onClick={() => {
                   document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
                 }}
-                className="px-8 py-4 rounded-2xl bg-white/80 backdrop-blur-sm border border-white/60 text-gray-900 text-lg font-semibold hover:bg-white transition shadow-lg"
+                className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-2xl bg-white/80 backdrop-blur-sm border border-white/60 text-gray-900 text-base sm:text-lg font-semibold hover:bg-white transition shadow-lg"
               >
                 Ver Recursos
               </button>
             </div>
 
-            <div className="flex items-center justify-center gap-8 pt-8 text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 pt-6 sm:pt-8 text-xs sm:text-sm text-gray-600 px-4">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
                 <span>Sem cartão de crédito</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
                 <span>Setup em 5 minutos</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
                 <span>Suporte 24/7</span>
               </div>
             </div>
@@ -123,13 +124,13 @@ export function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="relative px-6 py-20 bg-white/40 backdrop-blur-sm">
+      <section id="features" className="relative px-4 sm:px-6 py-12 sm:py-20 bg-white/40 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               Tudo que sua clínica precisa
             </h2>
-            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
+            <p className="text-base sm:text-xl text-gray-700 max-w-2xl mx-auto px-2">
               Recursos poderosos para transformar a gestão da sua clínica
             </p>
           </div>
@@ -152,11 +153,11 @@ export function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="relative px-6 py-20">
+      <section id="pricing" className="relative px-4 sm:px-6 py-12 sm:py-20">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Preços Simples e Transparentes</h2>
-            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">Preços Simples e Transparentes</h2>
+            <p className="text-base sm:text-xl text-gray-700 max-w-2xl mx-auto px-2">
               Um plano único, sem pegadinhas. Comece grátis e pague apenas quando estiver satisfeito.
             </p>
           </div>
@@ -211,12 +212,12 @@ export function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative px-6 py-20 bg-white/40 backdrop-blur-sm">
+      <section className="relative px-4 sm:px-6 py-12 sm:py-20 bg-white/40 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 px-2">
             Pronto para transformar sua clínica?
           </h2>
-          <p className="text-xl text-gray-700 mb-8">
+          <p className="text-base sm:text-xl text-gray-700 mb-6 sm:mb-8 px-2">
             Junte-se a centenas de clínicas que já confiam no ClinicFlow
           </p>
 
@@ -240,7 +241,7 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative px-6 py-12 bg-gray-900 text-white">
+      <footer className="relative px-4 sm:px-6 py-8 sm:py-12 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>

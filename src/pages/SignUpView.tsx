@@ -164,12 +164,12 @@ export function SignUpView() {
       if (!orgData) throw new Error('Erro ao criar organização')
 
       // 3. Criar perfil do usuário
+      // Nota: O email está em auth.users, não em profiles
       const { error: profileError } = await supabase.from('profiles').insert({
         id: authData.user.id,
-        email: formData.email,
         full_name: formData.fullName,
         clinic_id: orgData.id,
-        role: 'clinic_owner',
+        role: 'admin', // Admin é o role padrão para o dono da clínica
       })
 
       if (profileError) throw profileError
