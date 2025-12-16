@@ -11,7 +11,7 @@ import { PaymentConfirmationModal } from './PaymentConfirmationModal'
 interface QuickCheckoutModalProps {
   open: boolean
   onClose: () => void
-  organizationId: string
+  clinicId: string // ✅ Padronizado: organizationId → clinicId
   appointmentId?: string
   clientId?: string
   items: CheckoutItem[]
@@ -38,7 +38,7 @@ function formatCents(value: number): string {
 export function QuickCheckoutModal({
   open,
   onClose,
-  organizationId,
+  clinicId, // ✅ Padronizado: organizationId → clinicId
   appointmentId,
   clientId,
   items,
@@ -177,7 +177,7 @@ export function QuickCheckoutModal({
       setSubmitting(true)
       const amountPaid = centsFromInput(amountPaidInput)
       const payload = {
-        clinic_id: organizationId, // ✅ Mudado de organization_id para clinic_id
+        clinic_id: clinicId, // ✅ Padronizado: clinicId
         appointment_id: appointmentId,
         client_id: clientId,
         items: localItems,
@@ -218,7 +218,7 @@ export function QuickCheckoutModal({
       } else {
         // Dinheiro ou Maquininha própria: registrar transação com fee pendente
         const { error } = await supabase.from('financial_transactions').insert({
-          clinic_id: organizationId, // organizationId é o clinic_id (prop mantida para compatibilidade)
+          clinic_id: clinicId, // ✅ Padronizado: clinicId
           appointment_id: appointmentId,
           amount_cents: payload.total_to_pay_clinic,
           platform_fee_cents: calculation.platform_fee,

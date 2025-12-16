@@ -147,14 +147,34 @@ CREATE POLICY "Super admin can view all profiles"
   );
 
 -- ============================================================================
--- PASSO 4: Criar função para INSERT (bypassa RLS completamente)
+-- PASSO 4: Remover TODAS as versões antigas e criar função para INSERT
 -- ============================================================================
+-- Remove todas as versões possíveis da função para evitar erro PGRST203
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN 
+    SELECT 
+      p.proname as function_name,
+      pg_get_function_identity_arguments(p.oid) as function_args
+    FROM pg_proc p
+    JOIN pg_namespace n ON p.pronamespace = n.oid
+    WHERE n.nspname = 'public'
+      AND p.proname = 'insert_profile_safe'
+  LOOP
+    EXECUTE format('DROP FUNCTION IF EXISTS public.%I(%s) CASCADE', r.function_name, r.function_args);
+  END LOOP;
+END $$;
+
+-- Criar UMA única versão definitiva da função
+-- CORREÇÃO CRÍTICA: p_phone deve ser TEXT, não UUID!
 CREATE OR REPLACE FUNCTION public.insert_profile_safe(
   p_id uuid,
   p_full_name text,
   p_clinic_id uuid,
   p_role text,
-  p_phone text DEFAULT NULL,
+  p_phone text DEFAULT NULL,  -- ✅ CORRIGIDO: text, não uuid
   p_avatar_url text DEFAULT NULL,
   p_professional_id uuid DEFAULT NULL,
   p_payout_model text DEFAULT NULL,

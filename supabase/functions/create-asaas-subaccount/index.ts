@@ -97,20 +97,22 @@ async function createAsaasSubaccount(payload: Payload): Promise<AsaasSubaccountR
       asaasPayload.name = org.name || 'Clínica'
       asaasPayload.phone = org.phone || ''
       asaasPayload.email = org.email || ''
-      // Parse address se estiver em formato JSON ou string
+      // ✅ Parse address (agora sempre em formato JSON com campos separados)
       if (org.address) {
         try {
           const addr = typeof org.address === 'string' ? JSON.parse(org.address) : org.address
+          // ✅ Campos separados garantem que todos os dados necessários estão disponíveis
           asaasPayload.postalCode = addr.postalCode || addr.cep || ''
-          asaasPayload.address = addr.street || addr.address || ''
-          asaasPayload.addressNumber = addr.number || ''
+          asaasPayload.address = addr.address || addr.street || ''
+          asaasPayload.addressNumber = addr.addressNumber || addr.number || ''
           asaasPayload.complement = addr.complement || ''
-          asaasPayload.province = addr.neighborhood || addr.district || ''
+          asaasPayload.province = addr.province || addr.neighborhood || addr.district || ''
           asaasPayload.city = addr.city || ''
           asaasPayload.state = addr.state || ''
         } catch {
-          // Se não for JSON, usar como string simples
-          asaasPayload.address = org.address
+          // Se não for JSON válido, tentar usar como string simples (fallback)
+          console.warn('Endereço não está em formato JSON, usando como string simples')
+          asaasPayload.address = typeof org.address === 'string' ? org.address : ''
         }
       }
     }

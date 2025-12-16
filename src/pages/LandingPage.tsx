@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { TermsOfService } from '../components/TermsOfService'
 import {
   Calendar,
   Users,
@@ -17,6 +18,7 @@ import {
 export function LandingPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
+  const [termsOpen, setTermsOpen] = useState(false)
 
   const handleGetStarted = () => {
     navigate('/signup')
@@ -321,11 +323,20 @@ export function LandingPage() {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-gray-800 text-center text-sm text-gray-400">
-            <p>&copy; 2025 ClinicFlow. Todos os direitos reservados.</p>
+          <div className="pt-8 border-t border-gray-800 text-center text-sm text-gray-400 space-y-2">
+            <p>&copy; 2025 CLINIC FLOW - Erick Henrique Akamine Leite (CNPJ: 32.937.677/0001-47). Todos os direitos reservados.</p>
+            <p>
+              <button
+                onClick={() => setTermsOpen(true)}
+                className="text-indigo-400 hover:text-indigo-300 underline"
+              >
+                Termo de Adesão e Condições de Uso
+              </button>
+            </p>
           </div>
         </div>
       </footer>
+      <TermsOfService open={termsOpen} onOpenChange={setTermsOpen} />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../components/ui/Toast'
+import { TermsOfService } from '../components/TermsOfService'
 import {
   Building2,
   Mail,
@@ -23,7 +24,14 @@ interface SignUpData {
   fullName: string
   clinicName: string
   phone: string
-  address: string
+  // ✅ Campos de endereço separados (obrigatórios para Asaas)
+  postalCode: string // CEP
+  address: string // Rua/Logradouro
+  addressNumber: string // Número
+  complement: string // Complemento (opcional)
+  province: string // Bairro
+  city: string // Cidade
+  state: string // Estado (UF)
   cnpj: string
 }
 
@@ -34,6 +42,8 @@ export function SignUpView() {
 
   const [step, setStep] = useState<1 | 2>(1)
   const [loading, setLoading] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [termsOpen, setTermsOpen] = useState(false)
   const [formData, setFormData] = useState<SignUpData>({
     email: location.state?.email || '',
     password: '',
@@ -41,7 +51,14 @@ export function SignUpView() {
     fullName: '',
     clinicName: '',
     phone: '',
+    // ✅ Campos de endereço separados
+    postalCode: '',
     address: '',
+    addressNumber: '',
+    complement: '',
+    province: '',
+    city: '',
+    state: '',
     cnpj: '',
   })
 
@@ -58,6 +75,13 @@ export function SignUpView() {
       setFormData((prev) => ({ ...prev, email: location.state.email }))
     }
   }, [location.state])
+
+  // Função para validar CPF/CNPJ
+  const validateCpfCnpj = (value: string): boolean => {
+    const cleaned = value.replace(/\D/g, '')
+    // CPF tem 11 dígitos, CNPJ tem 14
+    return cleaned.length === 11 || cleaned.length === 14
+  }
 
   const validateStep1 = (): boolean => {
     if (!formData.email || !formData.email.includes('@')) {
@@ -82,6 +106,36 @@ export function SignUpView() {
     }
     if (!formData.phone || formData.phone.length < 10) {
       toast.error('Telefone inválido')
+      return false
+    }
+    // CPF/CNPJ agora é OBRIGATÓRIO para tokenização no Asaas
+    if (!formData.cnpj || !validateCpfCnpj(formData.cnpj)) {
+      toast.error('CPF ou CNPJ é obrigatório e deve ser válido (11 ou 14 dígitos)')
+      return false
+    }
+    // ✅ Validar campos de endereço obrigatórios para Asaas
+    if (!formData.postalCode || formData.postalCode.replace(/\D/g, '').length !== 8) {
+      toast.error('CEP é obrigatório e deve ter 8 dígitos')
+      return false
+    }
+    if (!formData.address || formData.address.length < 3) {
+      toast.error('Endereço (rua/logradouro) é obrigatório')
+      return false
+    }
+    if (!formData.addressNumber || formData.addressNumber.length < 1) {
+      toast.error('Número do endereço é obrigatório')
+      return false
+    }
+    if (!formData.province || formData.province.length < 2) {
+      toast.error('Bairro é obrigatório')
+      return false
+    }
+    if (!formData.city || formData.city.length < 2) {
+      toast.error('Cidade é obrigatória')
+      return false
+    }
+    if (!formData.state || formData.state.length !== 2) {
+      toast.error('Estado (UF) é obrigatório e deve ter 2 caracteres')
       return false
     }
     return true
@@ -129,6 +183,11 @@ export function SignUpView() {
 
   const handleSignUp = async () => {
     if (!validateStep2()) return
+    
+    if (!termsAccepted) {
+      toast.error('Você precisa aceitar o Termo de Adesão para continuar')
+      return
+    }
 
     setLoading(true)
     try {
@@ -146,14 +205,24 @@ export function SignUpView() {
       if (authError) throw authError
       if (!authData.user) throw new Error('Erro ao criar usuário')
 
-      // 2. Criar organização
+      // 2. Criar organização com endereço completo (formato JSON para compatibilidade)
+      const addressData = {
+        postalCode: formData.postalCode.replace(/\D/g, ''),
+        address: formData.address,
+        addressNumber: formData.addressNumber,
+        complement: formData.complement || '',
+        province: formData.province,
+        city: formData.city,
+        state: formData.state.toUpperCase(),
+      }
+      
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
         .insert({
           name: formData.clinicName,
           email: formData.email,
           phone: formData.phone,
-          address: formData.address,
+          address: JSON.stringify(addressData), // ✅ Endereço completo em JSON
           cnpj: formData.cnpj || null,
           status: 'pending_setup',
         })
@@ -236,36 +305,77 @@ export function SignUpView() {
       try {
         // Preparar dados do cartão para tokenização
         const expiryParts = cardData.expiry.split('/')
-        const expiryMonth = expiryParts[0]
-        const expiryYear = expiryParts[1]
+        const expiryMonth = expiryParts[0]?.trim() || ''
+        let expiryYear = expiryParts[1]?.trim() || ''
+        
+        // Converter ano de 2 dígitos para 4 dígitos (ex: "28" -> "2028")
+        if (expiryYear.length === 2) {
+          const currentYear = new Date().getFullYear()
+          const currentCentury = Math.floor(currentYear / 100) * 100
+          const yearValue = parseInt(expiryYear, 10)
+          expiryYear = String(currentCentury + yearValue)
+        }
 
-        // Extrair CEP do endereço (se disponível) - formato: "Rua, 123 - CEP 12345-678"
-        const cepMatch = formData.address.match(/\d{5}-?\d{3}/)
-        const postalCode = cepMatch ? cepMatch[0].replace(/-/g, '') : undefined
+        // ✅ Usar campos de endereço separados (já coletados no formulário)
+        const postalCode = formData.postalCode.replace(/\D/g, '')
+        const addressNumber = formData.addressNumber
 
-        // Extrair número do endereço
-        const addressNumberMatch = formData.address.match(/\d+/)
-        const addressNumber = addressNumberMatch ? addressNumberMatch[0] : undefined
+        // Validar que todos os campos obrigatórios estão presentes antes de enviar
+        if (!orgData?.id) {
+          throw new Error('ID da organização não encontrado')
+        }
+        if (!cardData.holderName || !cardData.number || !cardData.expiry || !cardData.cvv) {
+          throw new Error('Dados do cartão incompletos')
+        }
+        if (!formData.fullName || !formData.email || !formData.phone) {
+          throw new Error('Dados pessoais incompletos')
+        }
+
+        // ✅ Preparar body com todos os campos obrigatórios do Asaas
+        const cpfCnpjCleaned = String(formData.cnpj).replace(/\D/g, '')
+        
+        const tokenizeBody: any = {
+          customer: String(orgData.id), // Garantir que é string
+          creditCard: {
+            holderName: String(cardData.holderName).trim(),
+            number: String(cardData.number).replace(/\s/g, ''),
+            expiryMonth: String(expiryMonth).trim(),
+            expiryYear: String(expiryYear).trim(),
+            ccv: String(cardData.cvv).trim(),
+          },
+          creditCardHolderInfo: {
+            name: String(formData.fullName).trim(),
+            email: String(formData.email).trim(),
+            phone: String(formData.phone).replace(/\D/g, '').trim(),
+            cpfCnpj: cpfCnpjCleaned, // ✅ OBRIGATÓRIO - sempre presente após validação
+            postalCode: String(postalCode), // ✅ OBRIGATÓRIO
+            address: String(formData.address).trim(), // ✅ Rua/Logradouro
+            addressNumber: String(addressNumber), // ✅ OBRIGATÓRIO
+            complement: String(formData.complement || '').trim(), // Opcional
+            province: String(formData.province).trim(), // ✅ Bairro
+            city: String(formData.city).trim(), // ✅ Cidade
+            state: String(formData.state).trim(), // ✅ Estado/UF
+          },
+        }
+        
+        console.log('📋 Dados completos preparados para tokenização:', {
+          cpfCnpj: cpfCnpjCleaned,
+          postalCode,
+          addressNumber,
+          hasAllRequiredFields: !!(tokenizeBody.creditCardHolderInfo.cpfCnpj && 
+                                   tokenizeBody.creditCardHolderInfo.postalCode && 
+                                   tokenizeBody.creditCardHolderInfo.addressNumber),
+        })
+
+        console.log('📤 Enviando dados para tokenize-card:', JSON.stringify(tokenizeBody, null, 2))
+        console.log('🔍 Verificação CPF/CNPJ no payload:', {
+          hasCpfCnpj: !!tokenizeBody.creditCardHolderInfo.cpfCnpj,
+          cpfCnpj: tokenizeBody.creditCardHolderInfo.cpfCnpj,
+          cpfCnpjLength: tokenizeBody.creditCardHolderInfo.cpfCnpj?.length,
+        })
 
         const { data: tokenizeData, error: tokenizeError } = await supabase.functions.invoke('tokenize-card', {
-          body: {
-            customer: orgData.id, // Usar clinic_id temporariamente (será atualizado quando criar customer no Asaas)
-            creditCard: {
-              holderName: cardData.holderName,
-              number: cardData.number.replace(/\s/g, ''),
-              expiryMonth: expiryMonth,
-              expiryYear: expiryYear,
-              ccv: cardData.cvv,
-            },
-            creditCardHolderInfo: {
-              name: formData.fullName,
-              email: formData.email,
-              cpfCnpj: formData.cnpj ? formData.cnpj.replace(/\D/g, '') : undefined,
-              postalCode: postalCode,
-              addressNumber: addressNumber,
-              phone: formData.phone.replace(/\D/g, ''),
-            },
-          },
+          body: tokenizeBody,
         })
 
         if (tokenizeError) {
@@ -487,29 +597,141 @@ export function SignUpView() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">CNPJ (Opcional)</label>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    CPF ou CNPJ <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={formData.cnpj}
-                    onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                    onChange={(e) => {
+                      // Formatar CPF/CNPJ automaticamente
+                      const cleaned = e.target.value.replace(/\D/g, '')
+                      let formatted = cleaned
+                      
+                      if (cleaned.length <= 11) {
+                        // Formatar como CPF: 000.000.000-00
+                        formatted = cleaned.replace(/(\d{3})(\d)/, '$1.$2')
+                        formatted = formatted.replace(/(\d{3})(\d)/, '$1.$2')
+                        formatted = formatted.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+                      } else {
+                        // Formatar como CNPJ: 00.000.000/0000-00
+                        formatted = cleaned.replace(/^(\d{2})(\d)/, '$1.$2')
+                        formatted = formatted.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+                        formatted = formatted.replace(/\.(\d{3})(\d)/, '.$1/$2')
+                        formatted = formatted.replace(/(\d{4})(\d)/, '$1-$2')
+                      }
+                      
+                      setFormData({ ...formData, cnpj: formatted })
+                    }}
+                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                    maxLength={18}
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="00.000.000/0000-00"
                   />
                 </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Endereço</label>
+                {/* ✅ Campos de endereço separados (obrigatórios para Asaas) */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    CEP <span className="text-red-500">*</span>
+                  </label>
                   <div className="relative">
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
                       type="text"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      value={formData.postalCode}
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/\D/g, '').slice(0, 8)
+                        const formatted = cleaned.replace(/^(\d{5})(\d)/, '$1-$2')
+                        setFormData({ ...formData, postalCode: formatted })
+                      }}
                       className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="Endereço completo"
+                      placeholder="00000-000"
+                      maxLength={9}
                       required
                     />
                   </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Rua/Logradouro <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Nome da rua, avenida, etc."
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Número <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.addressNumber}
+                    onChange={(e) => setFormData({ ...formData, addressNumber: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="123"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">Complemento</label>
+                  <input
+                    type="text"
+                    value={formData.complement}
+                    onChange={(e) => setFormData({ ...formData, complement: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Apto, Bloco, etc. (opcional)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Bairro <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.province}
+                    onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Nome do bairro"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Cidade <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Nome da cidade"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Estado (UF) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.state}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase().slice(0, 2) })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="SP"
+                    maxLength={2}
+                    required
+                  />
                 </div>
               </div>
 
@@ -626,42 +848,68 @@ export function SignUpView() {
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setStep(1)}
-                  className="flex-1 px-6 py-4 rounded-xl border border-gray-300 bg-white text-gray-900 font-semibold hover:bg-gray-50 transition"
-                >
-                  Voltar
-                </button>
-                <button
-                  onClick={handleSignUp}
-                  disabled={loading}
-                  className="flex-1 px-6 py-4 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Criando conta...
-                    </>
-                  ) : (
-                    'Finalizar Cadastro'
-                  )}
-                </button>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="mt-1 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    required
+                  />
+                  <label htmlFor="terms" className="text-sm text-gray-700 flex-1 cursor-pointer">
+                    Li e aceito o{' '}
+                    <button
+                      type="button"
+                      onClick={() => setTermsOpen(true)}
+                      className="text-indigo-600 hover:text-indigo-700 font-medium underline"
+                    >
+                      Termo de Adesão e Condições de Uso
+                    </button>
+                    {' '}do CLINIC FLOW
+                  </label>
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setStep(1)}
+                    className="flex-1 px-6 py-4 rounded-xl border border-gray-300 bg-white text-gray-900 font-semibold hover:bg-gray-50 transition"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    onClick={handleSignUp}
+                    disabled={loading || !termsAccepted}
+                    className="flex-1 px-6 py-4 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Criando conta...
+                      </>
+                    ) : (
+                      'Finalizar Cadastro'
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
 
         <p className="text-center text-sm text-gray-600 mt-6">
-          Ao criar sua conta, você concorda com nossos{' '}
-          <a href="#" className="text-indigo-600 hover:text-indigo-700 font-medium">
-            Termos de Uso
-          </a>{' '}
-          e{' '}
-          <a href="#" className="text-indigo-600 hover:text-indigo-700 font-medium">
-            Política de Privacidade
-          </a>
+          Ao criar sua conta, você concorda com nosso{' '}
+          <button
+            type="button"
+            onClick={() => setTermsOpen(true)}
+            className="text-indigo-600 hover:text-indigo-700 font-medium underline"
+          >
+            Termo de Adesão e Condições de Uso
+          </button>
         </p>
+
+        <TermsOfService open={termsOpen} onOpenChange={setTermsOpen} />
       </div>
     </div>
   )

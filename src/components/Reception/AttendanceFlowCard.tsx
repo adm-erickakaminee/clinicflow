@@ -556,7 +556,7 @@ export function AttendanceFlowCard() {
             setCheckoutOpen(false)
             setSelectedAppointment(null)
           }}
-          organizationId={clinicId}
+          clinicId={clinicId} // ✅ Padronizado: clinicId
           appointmentId={selectedAppointment.id}
           clientId={selectedAppointment.client_id}
           items={checkoutItems}

@@ -153,10 +153,20 @@ async function handler(req: Request): Promise<Response> {
       }
     )
   } catch (error: any) {
-    console.error('Erro ao criar assinatura:', error)
+    console.error('❌ Erro ao criar assinatura:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      cause: error.cause,
+    })
+    
     return new Response(
       JSON.stringify({
         error: error.message || 'Erro ao criar assinatura',
+        details: process.env.DENO_ENV === 'development' ? {
+          stack: error.stack,
+          name: error.name,
+        } : undefined,
       }),
       {
         status: 500,

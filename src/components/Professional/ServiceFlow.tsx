@@ -221,7 +221,7 @@ export function ServiceFlow({ appointment, organizationId, soloMode = false, gab
         <QuickCheckoutModal
           open={quickCheckoutOpen}
           onClose={() => setQuickCheckoutOpen(false)}
-          organizationId={organizationId}
+          clinicId={organizationId} // ✅ organizationId é o clinic_id neste contexto
           appointmentId={appointment.id}
           clientId={appointment.client_id || undefined}
           items={checkoutItems}
