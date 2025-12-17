@@ -14,6 +14,8 @@ import { FinancialView } from '../pages/FinancialView'
 import { AdminSettingsView } from '../pages/AdminSettingsView'
 import { AdminPersonalAgendaView } from '../pages/AdminPersonalAgendaView'
 import { ReferralView } from '../pages/ReferralView'
+import { OnboardingAdminFlow } from '../components/Onboarding/OnboardingAdminFlow'
+import { useOnboarding } from '../hooks/useOnboarding'
 
 type Professional = {
   id: string
@@ -36,6 +38,23 @@ export function useDashboardContext() {
 export function AdminPanel() {
   const [activeTabSnapshot, setActiveTabSnapshot] = useState<string | null>(null)
   const { professionals } = useScheduler()
+  const { shouldShowOnboarding, loading: onboardingLoading } = useOnboarding()
+
+  // Mostrar onboarding se necessário
+  if (onboardingLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (shouldShowOnboarding) {
+    return <OnboardingAdminFlow />
+  }
 
   return (
     <PanelProvider filterType="professional" defaultTab="Dashboard" defaultFilter="all">
