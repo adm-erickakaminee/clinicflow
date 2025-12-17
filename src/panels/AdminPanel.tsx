@@ -57,10 +57,14 @@ export function AdminPanel() {
   }
 
   if (shouldShowOnboarding && !onboardingPaused) {
-    return <OnboardingAdminFlow onPause={() => {
-      setOnboardingPaused(true)
-      sessionStorage.setItem('onboarding_paused', 'true')
-    }} />
+    return (
+      <PanelProvider filterType="professional" defaultTab="Dashboard" defaultFilter="all">
+        <OnboardingAdminFlow onPause={() => {
+          setOnboardingPaused(true)
+          sessionStorage.setItem('onboarding_paused', 'true')
+        }} />
+      </PanelProvider>
+    )
   }
 
   return (

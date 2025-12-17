@@ -689,8 +689,10 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
   const navigate = useNavigate()
   const toast = useToast()
   const { markOnboardingAsSeen } = useOnboarding()
-  const { setActiveTab } = usePanelContext()
   const { currentUser } = useScheduler()
+  
+  // Usar PanelContext (agora sempre disponível pois está dentro do PanelProvider)
+  const { setActiveTab } = usePanelContext()
   // Recuperar passo salvo do sessionStorage se existir
   const savedStep = sessionStorage.getItem('onboarding_step')
   const [currentStep, setCurrentStep] = useState(savedStep ? parseInt(savedStep, 10) : 1)
@@ -749,9 +751,13 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
   // Função para pausar onboarding e navegar
   const handlePauseAndNavigate = (tab: string) => {
     if (onPause) onPause()
-    setActiveTab(tab)
+    // Tentar usar setActiveTab se disponível, senão apenas navegar
+    if (setActiveTab) {
+      setActiveTab(tab)
+    }
     sessionStorage.setItem('onboarding_paused', 'true')
     sessionStorage.setItem('onboarding_step', currentStep.toString())
+    sessionStorage.setItem('onboarding_target_tab', tab) // Salvar a aba desejada
     setTimeout(() => {
       navigate('/admin/dashboard', { replace: false })
     }, 100)
