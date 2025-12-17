@@ -39,8 +39,12 @@ export function AdminPanel() {
   const [activeTabSnapshot, setActiveTabSnapshot] = useState<string | null>(null)
   const { professionals } = useScheduler()
   const { shouldShowOnboarding, loading: onboardingLoading } = useOnboarding()
+  const [onboardingPaused, setOnboardingPaused] = useState(() => {
+    // Verificar se o onboarding foi pausado (salvo no sessionStorage)
+    return sessionStorage.getItem('onboarding_paused') === 'true'
+  })
 
-  // Mostrar onboarding se necessário
+  // Mostrar onboarding se necessário e não estiver pausado
   if (onboardingLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center">
@@ -52,8 +56,11 @@ export function AdminPanel() {
     )
   }
 
-  if (shouldShowOnboarding) {
-    return <OnboardingAdminFlow />
+  if (shouldShowOnboarding && !onboardingPaused) {
+    return <OnboardingAdminFlow onPause={() => {
+      setOnboardingPaused(true)
+      sessionStorage.setItem('onboarding_paused', 'true')
+    }} />
   }
 
   return (

@@ -1,7 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOnboarding } from '../../hooks/useOnboarding'
 import { useToast } from '../ui/Toast'
+import { usePanelContext } from '../../context/PanelContext'
+import { useScheduler } from '../../context/SchedulerContext'
+import { supabase } from '../../lib/supabase'
+import { GabyTooltip } from './GabyTooltip'
 import {
   CheckCircle2,
   ArrowRight,
@@ -17,6 +21,7 @@ import {
   MessageSquare,
   Loader2,
   HelpCircle,
+  Hand,
 } from 'lucide-react'
 
 // Imagens da Gaby para cada passo
@@ -30,75 +35,73 @@ const gabyImages = {
   default: '/gaby-default.png',
 }
 
-const steps = [
+interface OnboardingAdminFlowProps {
+  onPause?: () => void
+}
+
+function ArrowDown({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  )
+}
+
+// Função para criar os steps com acesso aos handlers
+const createSteps = (
+  handlePauseAndNavigate: (tab: string) => void,
+  monthlyGoal: string,
+  setMonthlyGoal: (value: string) => void,
+  handleSaveGoal: () => void,
+  hasCostsConfigured: boolean,
+  hasServices: boolean,
+  hasTeam: boolean,
+  emailChecked: boolean,
+  setEmailChecked: (checked: boolean) => void
+) => [
   {
     id: 1,
-    title: 'Boas-Vindas Pessoal e Valor da Gaby',
+    title: 'Seja bem vindo(a)',
     icon: Sparkles,
     gabyImage: gabyImages.welcome,
     content: (
       <div className="space-y-6">
-        <div className="flex items-start gap-6">
-          <div className="flex-shrink-0">
+        <div className="flex items-center justify-center mb-6">
+          <div className="relative">
             <img 
               src={gabyImages.welcome} 
-              alt="Gaby - Boas-vindas" 
-              className="w-32 h-32 object-contain"
+              alt="Gaby acenando" 
+              className="w-40 h-40 object-contain animate-bounce"
+              style={{
+                animation: 'wave 2s ease-in-out infinite',
+              }}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = gabyImages.default
               }}
             />
+            <style>{`
+              @keyframes wave {
+                0%, 100% { transform: rotate(0deg) translateY(0px); }
+                25% { transform: rotate(-10deg) translateY(-5px); }
+                75% { transform: rotate(10deg) translateY(-5px); }
+              }
+            `}</style>
           </div>
-          <div className="flex-1 space-y-4">
-            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 border-2 border-purple-200">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="bg-purple-100 p-2 rounded-lg">
-                  <Sparkles className="h-5 w-5 text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Oiee! Eu sou a Gaby, sua assistente pessoal! 👋
-                  </h3>
-                  <p className="text-gray-700 leading-relaxed">
-                    Vou te ajudar a transformar sua clínica em um negócio ainda mais rentável e eficiente! 
-                    Estou aqui para te guiar em cada passo e garantir que você aproveite ao máximo todas as funcionalidades do CLINIC FLOW.
-                  </p>
-                </div>
-              </div>
+        </div>
+        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 border-2 border-purple-200 text-center">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="bg-purple-100 p-2 rounded-lg mx-auto">
+              <Hand className="h-5 w-5 text-purple-600" />
             </div>
-
-            <div className="space-y-3">
-              <h4 className="font-semibold text-gray-900 text-lg">O que eu posso fazer por você:</h4>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <p className="font-semibold text-gray-900">Rentabilidade</p>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Vou te mostrar relatórios de desempenho em tempo real e ajudar você a maximizar seus lucros
-                  </p>
-                </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <p className="font-semibold text-gray-900">Otimização</p>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Sugiro melhorias na sua agenda para reduzir gaps e aumentar a ocupação
-                  </p>
-                </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <p className="font-semibold text-gray-900">Gestão Inteligente</p>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Alertas automáticos de estoque, precificação e retenção de clientes
-                  </p>
-                </div>
-              </div>
-            </div>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+              Oiee! Eu sou a Gaby, sua nova assistente pessoal. 💁‍♀️
+            </h3>
+            <p className="text-gray-700 leading-relaxed text-lg mb-6">
+              Estou aqui para tirar o peso da gestão das suas costas e te ajudar a focar no que importa: 
+              sua <strong>rentabilidade e eficiência</strong>. Vamos configurar tudo juntinhos?
+            </p>
           </div>
         </div>
       </div>
@@ -106,7 +109,7 @@ const steps = [
   },
   {
     id: 2,
-    title: 'Configuração Financeira Base',
+    title: 'O Coração da Clínica (Custo/Hora e Turnos)',
     icon: Calculator,
     gabyImage: gabyImages.config,
     content: (
@@ -130,28 +133,39 @@ const steps = [
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Vamos calcular o custo real da sua hora de trabalho! 💰
+                    Antes de qualquer coisa, preciso entender como sua clínica funciona! ⏱️
                   </h3>
                   <p className="text-gray-700 leading-relaxed mb-4">
-                    Para definirmos metas e preços justos, preciso que você me informe:
+                    Vamos cadastrar seus turnos de atendimento e seus custos fixos e variáveis? 
+                    Com isso, eu vou te contar exatamente quanto vale a sua hora de trabalho! 
+                    Isso é essencial para não termos prejuízo.
                   </p>
-                  <ul className="space-y-2 text-gray-700 ml-4">
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 mt-1">•</span>
-                      <span><strong>Turno da Clínica:</strong> Horários de funcionamento</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 mt-1">•</span>
-                      <span><strong>Custos Fixos:</strong> Aluguel, energia, água, internet, etc.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 mt-1">•</span>
-                      <span><strong>Custos Variáveis:</strong> Materiais, produtos, comissões, etc.</span>
-                    </li>
-                  </ul>
                 </div>
               </div>
             </div>
+
+            {/* Card de resumo dos dados atuais */}
+            {hasCostsConfigured ? (
+              <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                  <h4 className="font-semibold text-gray-900">Custos e Turnos Configurados!</h4>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Seus dados foram salvos. Você pode editar nas configurações a qualquer momento.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <HelpCircle className="h-6 w-6 text-yellow-600" />
+                  <h4 className="font-semibold text-gray-900">Aguardando Configuração</h4>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Configure seus custos e turnos para eu calcular o valor da sua hora de trabalho.
+                </p>
+              </div>
+            )}
 
             <div className="bg-white border-2 border-blue-200 rounded-xl p-6 hover:border-blue-400 transition">
               <div className="flex items-start gap-4">
@@ -159,34 +173,20 @@ const steps = [
                   <Calculator className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 mb-2">Calcular Meu Custo/Hora</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">Cadastrar Meus Custos e Turnos</h4>
                   <p className="text-sm text-gray-600 mb-4">
                     Configure os custos da sua clínica para eu calcular o custo real por hora de trabalho
                   </p>
-                  <button
-                    onClick={() => {
-                      // Redirecionar para configurações financeiras
-                      window.location.href = '/admin/dashboard?tab=Configurações&section=financial'
-                    }}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition shadow-lg"
-                  >
-                    <Calculator className="h-4 w-4" />
-                    Calcular Meu Custo/Hora
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <HelpCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-yellow-900 mb-1">💡 Dica da Gaby:</p>
-                  <p className="text-sm text-yellow-800">
-                    Com essas informações, vou calcular automaticamente o custo real da sua hora de trabalho. 
-                    Isso é fundamental para definirmos preços justos e metas realistas!
-                  </p>
+                  <GabyTooltip message="Aqui você vai cadastrar os horários de funcionamento da clínica e todos os custos (fixos e variáveis). Com essas informações, eu calculo automaticamente quanto vale cada hora de trabalho da sua clínica!">
+                    <button
+                      onClick={() => handlePauseAndNavigate('Configurações')}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition shadow-lg"
+                    >
+                      <Calculator className="h-4 w-4" />
+                      Cadastrar Meus Custos e Turnos
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </GabyTooltip>
                 </div>
               </div>
             </div>
@@ -197,7 +197,7 @@ const steps = [
   },
   {
     id: 3,
-    title: 'Definição de Metas Estratégicas',
+    title: 'Onde queremos chegar? (Metas)',
     icon: Target,
     gabyImage: gabyImages.finances,
     content: (
@@ -221,65 +221,45 @@ const steps = [
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Onde queremos chegar este mês? 🎯
+                    Agora que sei seus custos, me diga: qual sua meta de faturamento para este mês? 🚀
                   </h3>
                   <p className="text-gray-700 leading-relaxed mb-4">
-                    Minhas análises e sugestões serão embasadas nas metas que você definir. 
-                    Vamos traçar objetivos claros para sua clínica:
+                    Vou usar esse número para monitorar sua ocupação e te avisar se estivermos saindo do trilho!
                   </p>
-                  <ul className="space-y-2 text-gray-700 ml-4">
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-600 mt-1">•</span>
-                      <span><strong>Meta de Faturamento:</strong> Quanto você quer faturar este mês?</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-600 mt-1">•</span>
-                      <span><strong>Meta de Ocupação:</strong> Qual percentual de ocupação da agenda você deseja?</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-emerald-600 mt-1">•</span>
-                      <span><strong>Meta por Profissional:</strong> Metas individuais para cada membro da equipe</span>
-                    </li>
-                  </ul>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white border-2 border-emerald-200 rounded-xl p-6 hover:border-emerald-400 transition">
-              <div className="flex items-start gap-4">
-                <div className="bg-emerald-100 p-3 rounded-lg">
-                  <Target className="h-6 w-6 text-emerald-600" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 mb-2">Definir Metas</h4>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Configure suas metas financeiras e de ocupação para eu te ajudar a alcançá-las
-                  </p>
-                  <button
-                    onClick={() => {
-                      // Redirecionar para configurações de metas
-                      window.location.href = '/admin/dashboard?tab=Configurações&section=goals'
-                    }}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition shadow-lg"
-                  >
-                    <Target className="h-4 w-4" />
-                    Definir Metas
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <HelpCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-blue-900 mb-1">💡 Dica da Gaby:</p>
-                  <p className="text-sm text-blue-800">
-                    Com metas definidas, vou te alertar quando você estiver perto de alcançá-las ou quando precisar 
-                    de ajustes na estratégia. Vamos juntos transformar sua clínica!
-                  </p>
-                </div>
+            <div className="bg-white border-2 border-emerald-200 rounded-xl p-6">
+              <h4 className="font-semibold text-gray-900 mb-4">Meta de Faturamento Mensal</h4>
+              <div className="space-y-4">
+                <GabyTooltip message="Digite quanto você quer faturar este mês. Eu vou monitorar seu progresso e te avisar se estivermos abaixo ou acima da meta!">
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Valor da Meta (R$)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 font-medium">R$</span>
+                      <input
+                        type="number"
+                        value={monthlyGoal}
+                        onChange={(e) => setMonthlyGoal(e.target.value)}
+                        placeholder="0,00"
+                        className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none text-lg"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                </GabyTooltip>
+                <button
+                  onClick={handleSaveGoal}
+                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition shadow-lg"
+                >
+                  <Target className="h-4 w-4" />
+                  Definir Metas Estratégicas
+                  <ArrowRight className="h-4 w-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -289,7 +269,7 @@ const steps = [
   },
   {
     id: 4,
-    title: 'Cadastros Essenciais',
+    title: 'Mãos à obra! (Serviços e Equipe)',
     icon: Settings,
     gabyImage: gabyImages.config,
     content: (
@@ -313,76 +293,92 @@ const steps = [
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Vamos configurar os elementos essenciais! ⚙️
+                    Hora de dar vida ao sistema! 👩‍⚕️
                   </h3>
                   <p className="text-gray-700 leading-relaxed mb-4">
-                    Para começar a usar o sistema, você precisa cadastrar:
+                    Cadastre os serviços que você oferece e convide sua recepcionista ou outros profissionais. 
+                    No cadastro da recepcionista, eu te explico tudinho sobre as permissões dela.
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="bg-white border-2 border-indigo-200 rounded-xl p-6 hover:border-indigo-400 transition">
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Card de Serviços */}
+              <div className={`bg-white border-2 rounded-xl p-6 transition ${
+                hasServices 
+                  ? 'border-emerald-200 bg-emerald-50' 
+                  : 'border-indigo-200 hover:border-indigo-400'
+              }`}>
                 <div className="flex items-start gap-4">
-                  <div className="bg-indigo-100 p-3 rounded-lg">
-                    <Settings className="h-6 w-6 text-indigo-600" />
+                  <div className={`p-3 rounded-lg ${
+                    hasServices ? 'bg-emerald-100' : 'bg-indigo-100'
+                  }`}>
+                    <Settings className={`h-6 w-6 ${
+                      hasServices ? 'text-emerald-600' : 'text-indigo-600'
+                    }`} />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-2">Cadastrar Primeiro Serviço</h4>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-semibold text-gray-900">Cadastrar Primeiro Serviço</h4>
+                      {hasServices && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+                    </div>
                     <p className="text-sm text-gray-600 mb-4">
-                      Defina os serviços oferecidos pela sua clínica (ex: Consulta, Procedimento, Tratamento)
+                      {hasServices 
+                        ? 'Serviço cadastrado! Você pode adicionar mais nas configurações.'
+                        : 'Defina os serviços oferecidos pela sua clínica. Eu vou sugerir preços baseados no seu custo/hora!'
+                      }
                     </p>
-                    <button
-                      onClick={() => {
-                        // Redirecionar para cadastros - aba serviços
-                        window.location.href = '/admin/dashboard?tab=Cadastros&section=services'
-                      }}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg"
-                    >
-                      <Settings className="h-4 w-4" />
-                      Cadastrar Serviço
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
+                    <GabyTooltip message="Ao cadastrar um serviço, eu já vou preencher o custo por hora que você configurou. Você pode adicionar impostos, despesas específicas do serviço, e eu vou sugerir um preço ideal para você!">
+                      <button
+                        onClick={() => handlePauseAndNavigate('Cadastros')}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg"
+                      >
+                        <Settings className="h-4 w-4" />
+                        {hasServices ? 'Gerenciar Serviços' : 'Cadastrar Primeiro Serviço'}
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </GabyTooltip>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white border-2 border-indigo-200 rounded-xl p-6 hover:border-indigo-400 transition">
+              {/* Card de Equipe */}
+              <div className={`bg-white border-2 rounded-xl p-6 transition ${
+                hasTeam 
+                  ? 'border-emerald-200 bg-emerald-50' 
+                  : 'border-indigo-200 hover:border-indigo-400'
+              }`}>
                 <div className="flex items-start gap-4">
-                  <div className="bg-indigo-100 p-3 rounded-lg">
-                    <Users className="h-6 w-6 text-indigo-600" />
+                  <div className={`p-3 rounded-lg ${
+                    hasTeam ? 'bg-emerald-100' : 'bg-indigo-100'
+                  }`}>
+                    <Users className={`h-6 w-6 ${
+                      hasTeam ? 'text-emerald-600' : 'text-indigo-600'
+                    }`} />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-2">Convidar Membros da Equipe</h4>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-semibold text-gray-900">Convidar Minha Equipe</h4>
+                      {hasTeam && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+                    </div>
                     <p className="text-sm text-gray-600 mb-4">
-                      Convide recepcionistas e profissionais para começar a trabalhar na sua clínica
+                      {hasTeam
+                        ? 'Equipe cadastrada! Você pode adicionar mais membros nas configurações.'
+                        : 'Convide recepcionistas e profissionais. Eu explico as permissões de cada função!'
+                      }
                     </p>
-                    <button
-                      onClick={() => {
-                        // Redirecionar para cadastros - aba profissionais
-                        window.location.href = '/admin/dashboard?tab=Cadastros&section=professionals'
-                      }}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg"
-                    >
-                      <Users className="h-4 w-4" />
-                      Convidar Membro
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
+                    <GabyTooltip message="A recepcionista pode fazer check-in, check-out e gerenciar a agenda. Os profissionais podem acessar seus agendamentos e prontuários. Vou te explicar tudo durante o cadastro!">
+                      <button
+                        onClick={() => handlePauseAndNavigate('Cadastros')}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg"
+                      >
+                        <Users className="h-4 w-4" />
+                        {hasTeam ? 'Gerenciar Equipe' : 'Convidar Minha Equipe'}
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </GabyTooltip>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <HelpCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-blue-900 mb-1">💡 Dica da Gaby:</p>
-                  <p className="text-sm text-blue-800">
-                    Não se preocupe! Você pode voltar aqui depois e continuar o onboarding. 
-                    Por enquanto, explore essas configurações e quando terminar, volte para continuar!
-                  </p>
                 </div>
               </div>
             </div>
@@ -393,7 +389,7 @@ const steps = [
   },
   {
     id: 5,
-    title: 'Regras de Pagamento e Split',
+    title: 'Transparência Total (Como você recebe)',
     icon: DollarSign,
     gabyImage: gabyImages.finances,
     content: (
@@ -417,104 +413,83 @@ const steps = [
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Vamos configurar as regras de pagamento! 💳
+                    Aqui a mágica acontece! 💸
                   </h3>
                   <p className="text-gray-700 leading-relaxed mb-4">
-                    Configure a <strong>taxa de comissão</strong> que os profissionais pagarão à clínica. 
-                    Eu vou calcular e distribuir automaticamente todos os pagamentos!
+                    Configure a comissão dos profissionais. Funciona assim: o paciente paga, eu desconto as taxas do cartão, 
+                    separo a parte do profissional (que já vai direto para a conta dele!), tiro a taxa da plataforma e o restante 
+                    cai limpinho na conta da clínica. Transparente e automático!
                   </p>
                 </div>
               </div>
             </div>
 
+            {/* Infográfico Visual do Fluxo */}
             <div className="bg-white rounded-xl p-6 border-2 border-emerald-200">
-              <h4 className="font-semibold text-gray-900 mb-4 text-lg">Como funciona o Split de Pagamento:</h4>
+              <h4 className="font-semibold text-gray-900 mb-6 text-lg text-center">
+                Fluxo do Dinheiro
+              </h4>
               <div className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-red-100 p-2 rounded-lg">
-                      <span className="text-red-600 font-bold text-sm">1</span>
-                    </div>
-                    <p className="font-semibold text-gray-900">Desconto de Taxas de Gateway</p>
+                {/* Cliente */}
+                <div className="flex items-center justify-center">
+                  <div className="bg-blue-100 rounded-xl p-4 border-2 border-blue-300 text-center min-w-[200px]">
+                    <p className="font-bold text-blue-900 text-lg">Cliente</p>
+                    <p className="text-sm text-blue-700">Paga R$ 100,00</p>
                   </div>
-                  <p className="text-sm text-gray-600 ml-11">
-                    Primeiro, desconto as taxas da operadora de cartão (ex: 2.99% para crédito, 1.99% para débito)
-                  </p>
+                  <ArrowRight className="h-8 w-8 text-emerald-400 mx-4" />
                 </div>
 
-                <div className="flex justify-center">
+                {/* Taxa Cartão */}
+                <div className="flex items-center justify-center">
                   <ArrowDown className="h-6 w-6 text-emerald-400" />
                 </div>
-
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-blue-100 p-2 rounded-lg">
-                      <span className="text-blue-600 font-bold text-sm">2</span>
-                    </div>
-                    <p className="font-semibold text-gray-900">Split do Profissional</p>
+                <div className="flex items-center justify-center">
+                  <div className="bg-red-100 rounded-xl p-4 border-2 border-red-300 text-center min-w-[200px]">
+                    <p className="font-bold text-red-900">Taxa Cartão</p>
+                    <p className="text-sm text-red-700">-R$ 2,99 (2.99%)</p>
+                    <p className="text-xs text-red-600 mt-1">Líquido: R$ 97,01</p>
                   </div>
-                  <p className="text-sm text-gray-600 ml-11">
-                    Retiro a porcentagem configurada do Profissional (do valor líquido após gateway) 
-                    e envio <strong>diretamente para a conta Asaas/bancária do Profissional</strong>
-                  </p>
+                  <ArrowRight className="h-8 w-8 text-emerald-400 mx-4" />
                 </div>
 
-                <div className="flex justify-center">
+                {/* Split: Profissional e Plataforma */}
+                <div className="flex items-center justify-center gap-4">
+                  <div className="bg-purple-100 rounded-xl p-4 border-2 border-purple-300 text-center flex-1">
+                    <p className="font-bold text-purple-900">Profissional</p>
+                    <p className="text-sm text-purple-700">-R$ 29,10 (30%)</p>
+                    <p className="text-xs text-purple-600 mt-1">Vai direto para conta dele</p>
+                  </div>
+                  <div className="bg-orange-100 rounded-xl p-4 border-2 border-orange-300 text-center flex-1">
+                    <p className="font-bold text-orange-900">Plataforma</p>
+                    <p className="text-sm text-orange-700">-R$ 5,99 (5.99%)</p>
+                  </div>
+                </div>
+
+                {/* Clínica */}
+                <div className="flex items-center justify-center">
                   <ArrowDown className="h-6 w-6 text-emerald-400" />
                 </div>
-
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-purple-100 p-2 rounded-lg">
-                      <span className="text-purple-600 font-bold text-sm">3</span>
-                    </div>
-                    <p className="font-semibold text-gray-900">Taxa da Plataforma</p>
+                <div className="flex items-center justify-center">
+                  <div className="bg-emerald-100 rounded-xl p-4 border-2 border-emerald-300 text-center min-w-[200px]">
+                    <p className="font-bold text-emerald-900 text-lg">Sua Clínica</p>
+                    <p className="text-sm text-emerald-700">Recebe R$ 61,92</p>
+                    <p className="text-xs text-emerald-600 mt-1">Cai limpinho na conta</p>
                   </div>
-                  <p className="text-sm text-gray-600 ml-11">
-                    Retiro a taxa de serviço da plataforma (5.99% do valor original)
-                  </p>
-                </div>
-
-                <div className="flex justify-center">
-                  <ArrowDown className="h-6 w-6 text-emerald-400" />
-                </div>
-
-                <div className="bg-emerald-50 rounded-lg p-4 border-2 border-emerald-200">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-emerald-100 p-2 rounded-lg">
-                      <span className="text-emerald-600 font-bold text-sm">4</span>
-                    </div>
-                    <p className="font-semibold text-gray-900">Repasse para a Clínica</p>
-                  </div>
-                  <p className="text-sm text-gray-600 ml-11">
-                    O valor restante é depositado <strong>diretamente na conta da Clínica</strong>
-                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 border-2 border-emerald-200">
-              <h4 className="font-semibold text-gray-900 mb-3">Exemplo Prático:</h4>
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
-                <p className="text-gray-700"><strong>Pagamento recebido:</strong> R$ 100,00</p>
-                <p className="text-gray-600">1. Taxa Gateway (2.99%): -R$ 2,99 → <strong>Líquido: R$ 97,01</strong></p>
-                <p className="text-gray-600">2. Comissão Profissional (30%): -R$ 29,10 → <strong>Vai para conta do Profissional</strong></p>
-                <p className="text-gray-600">3. Taxa Plataforma (5.99%): -R$ 5,99</p>
-                <p className="text-gray-700 font-semibold">4. Clínica recebe: <strong>R$ 61,92</strong></p>
-              </div>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <HelpCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-blue-900 mb-1">💡 Dica da Gaby:</p>
-                  <p className="text-sm text-blue-800">
-                    Você pode configurar diferentes modelos de comissão por profissional (porcentagem, aluguel fixo ou híbrido) 
-                    nas configurações. Tudo é calculado e transferido automaticamente!
-                  </p>
-                </div>
-              </div>
+            <div className="bg-white border-2 border-emerald-200 rounded-xl p-6">
+              <GabyTooltip message="Configure a porcentagem de comissão que cada profissional paga à clínica. Você pode ter diferentes modelos: porcentagem, aluguel fixo ou híbrido. Tudo é calculado e transferido automaticamente!">
+                <button
+                  onClick={() => handlePauseAndNavigate('Configurações')}
+                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition shadow-lg"
+                >
+                  <DollarSign className="h-4 w-4" />
+                  Entendi, vamos configurar as taxas
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </GabyTooltip>
             </div>
           </div>
         </div>
@@ -523,7 +498,7 @@ const steps = [
   },
   {
     id: 6,
-    title: 'Conta Asaas e Acesso',
+    title: 'Seu banco está pronto! (Asaas)',
     icon: CreditCard,
     gabyImage: gabyImages.security,
     content: (
@@ -547,66 +522,48 @@ const steps = [
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Sua conta no Asaas está pronta! 🎉
+                    Surpresa! Já criei sua conta no Asaas! 🏦
                   </h3>
                   <p className="text-gray-700 leading-relaxed mb-4">
-                    A conta da sua clínica no <strong>Asaas</strong> foi criada automaticamente durante o cadastro, 
-                    com base nos dados fornecidos.
+                    Já criei sua conta no Asaas com os dados que você me deu. É por lá que você vai gerenciar seus recebimentos. 
+                    Dá uma olhadinha no seu e-mail (e na caixa de spam também!) para pegar suas credenciais de acesso.
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="bg-white rounded-xl p-5 border-2 border-blue-200">
-                <div className="flex items-start gap-4">
-                  <CheckCircle2 className="h-6 w-6 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-2">Credenciais de Acesso</h4>
-                    <p className="text-sm text-gray-600 mb-2">
-                      Vou te enviar as credenciais de acesso para o e-mail cadastrado.
-                    </p>
-                    <p className="text-sm font-semibold text-blue-700">
-                      ⚠️ Confira também na caixa de <strong>Spam</strong>!
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-5 border-2 border-blue-200">
-                <div className="flex items-start gap-4">
-                  <CheckCircle2 className="h-6 w-6 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-2">Destino dos Pagamentos</h4>
-                    <p className="text-sm text-gray-600">
-                      Esta conta será usada como o destino principal para receber todos os pagamentos dos clientes.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-5 border-2 border-blue-200">
-                <div className="flex items-start gap-4">
-                  <CheckCircle2 className="h-6 w-6 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-2">Distribuição Automática (Split)</h4>
-                    <p className="text-sm text-gray-600">
-                      Eu processo automaticamente a distribuição dos valores entre clínica, profissional e plataforma. 
-                      Tudo acontece de forma transparente e segura!
-                    </p>
-                  </div>
+            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <HelpCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-yellow-900 mb-2">
+                    ⚠️ Importante:
+                  </p>
+                  <p className="text-sm text-yellow-800 mb-4">
+                    O acesso pode não chegar no mesmo momento. Pode levar até <strong>24 horas</strong> para você receber as credenciais. 
+                    Fique tranquilo, elas vão chegar!
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <HelpCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-yellow-900 mb-1">⚠️ Atenção da Gaby:</p>
-                  <p className="text-sm text-yellow-800">
-                    Certifique-se de acessar sua conta no Asaas e completar a verificação (KYC) se necessário 
-                    para habilitar os recebimentos. Sem isso, os pagamentos podem ficar pendentes!
+            <div className="bg-white border-2 border-blue-200 rounded-xl p-6">
+              <div className="flex items-start gap-4">
+                <input
+                  type="checkbox"
+                  id="email-checked"
+                  checked={emailChecked}
+                  onChange={(e) => setEmailChecked(e.target.checked)}
+                  className="mt-1 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <div className="flex-1">
+                  <GabyTooltip message="Marque esta opção quando você já tiver verificado seu e-mail (incluindo a caixa de spam) e recebido as credenciais de acesso ao Asaas.">
+                    <label htmlFor="email-checked" className="block text-sm font-medium text-gray-900 cursor-pointer">
+                      Já vi meu e-mail
+                    </label>
+                  </GabyTooltip>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Confirme que você já verificou seu e-mail e recebeu as credenciais
                   </p>
                 </div>
               </div>
@@ -618,7 +575,7 @@ const steps = [
   },
   {
     id: 7,
-    title: 'Demonstração do Fluxo e Automatização',
+    title: 'O Dia a Dia (Operação e WhatsApp)',
     icon: Calendar,
     gabyImage: gabyImages.demo,
     content: (
@@ -642,10 +599,11 @@ const steps = [
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Veja como funciona na prática! 🎬
+                    Tudo pronto! 📱
                   </h3>
                   <p className="text-gray-700 leading-relaxed mb-4">
-                    Vou te mostrar o fluxo completo de um agendamento e como eu automatizo tudo para você:
+                    No dia a dia, eu vou cuidar do seu WhatsApp, enviando lembretes automáticos e criando mensagens para seus pacientes. 
+                    Na agenda, você verá como é fácil fazer o Check-in, ver a Anamnese e fazer o Check-out com um clique!
                   </p>
                 </div>
               </div>
@@ -716,24 +674,7 @@ const steps = [
                       <span className="text-indigo-600 mt-1">•</span>
                       <span><strong>Confirmação de agendamentos:</strong> Automática</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-indigo-600 mt-1">•</span>
-                      <span><strong>Follow-up pós-atendimento:</strong> Para aumentar a retenção</span>
-                    </li>
                   </ul>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <HelpCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-blue-900 mb-1">💡 Dica da Gaby:</p>
-                  <p className="text-sm text-blue-800">
-                    Todo esse processo é gerenciado por mim, com notificações automáticas e registro completo 
-                    de todas as etapas. Você só precisa focar no que importa: cuidar dos seus pacientes!
-                  </p>
                 </div>
               </div>
             </div>
@@ -744,30 +685,127 @@ const steps = [
   },
 ]
 
-function ArrowDown({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-    </svg>
-  )
-}
-
-export function OnboardingAdminFlow() {
+export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) {
   const navigate = useNavigate()
   const toast = useToast()
   const { markOnboardingAsSeen } = useOnboarding()
-  const [currentStep, setCurrentStep] = useState(1)
+  const { setActiveTab } = usePanelContext()
+  const { currentUser } = useScheduler()
+  // Recuperar passo salvo do sessionStorage se existir
+  const savedStep = sessionStorage.getItem('onboarding_step')
+  const [currentStep, setCurrentStep] = useState(savedStep ? parseInt(savedStep, 10) : 1)
   const [isCompleting, setIsCompleting] = useState(false)
+  const [monthlyGoal, setMonthlyGoal] = useState('')
+  const [emailChecked, setEmailChecked] = useState(false)
+  const [hasCostsConfigured, setHasCostsConfigured] = useState(false)
+  const [hasServices, setHasServices] = useState(false)
+  const [hasTeam, setHasTeam] = useState(false)
+
+  // Carregar dados da organização
+  useEffect(() => {
+    const loadData = async () => {
+      if (!currentUser?.clinicId) return
+
+      try {
+        // Carregar meta mensal
+        const { data: settings } = await supabase
+          .from('organization_settings')
+          .select('monthly_revenue_goal_cents')
+          .eq('clinic_id', currentUser.clinicId)
+          .maybeSingle()
+
+        if (settings?.monthly_revenue_goal_cents) {
+          setMonthlyGoal((settings.monthly_revenue_goal_cents / 100).toString())
+        }
+
+        // Verificar se tem custos configurados (simplificado - pode melhorar)
+        setHasCostsConfigured(true) // TODO: Verificar se realmente tem custos configurados
+
+        // Verificar se tem serviços
+        const { data: services } = await supabase
+          .from('services')
+          .select('id')
+          .limit(1)
+
+        setHasServices((services?.length || 0) > 0)
+
+        // Verificar se tem equipe (profissionais ou recepcionistas)
+        const { data: team } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('clinic_id', currentUser.clinicId)
+          .in('role', ['professional', 'receptionist', 'recepcionista'])
+          .limit(1)
+
+        setHasTeam((team?.length || 0) > 0)
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error)
+      }
+    }
+
+    loadData()
+  }, [currentUser?.clinicId])
+
+  // Função para pausar onboarding e navegar
+  const handlePauseAndNavigate = (tab: string) => {
+    if (onPause) onPause()
+    setActiveTab(tab)
+    sessionStorage.setItem('onboarding_paused', 'true')
+    sessionStorage.setItem('onboarding_step', currentStep.toString())
+    setTimeout(() => {
+      navigate('/admin/dashboard', { replace: false })
+    }, 100)
+  }
+
+  // Função para salvar meta
+  const handleSaveGoal = async () => {
+    if (!currentUser?.clinicId || !monthlyGoal) {
+      toast.error('Por favor, informe a meta de faturamento')
+      return
+    }
+
+    try {
+      const goalCents = Math.round(parseFloat(monthlyGoal) * 100)
+      const { error } = await supabase
+        .from('organization_settings')
+        .upsert({
+          clinic_id: currentUser.clinicId,
+          monthly_revenue_goal_cents: goalCents,
+        })
+
+      if (error) throw error
+
+      toast.success('Meta de faturamento salva com sucesso!')
+    } catch (error) {
+      console.error('Erro ao salvar meta:', error)
+      toast.error('Erro ao salvar meta. Tente novamente.')
+    }
+  }
+
+  // Criar steps com acesso aos handlers
+  const steps = createSteps(
+    handlePauseAndNavigate,
+    monthlyGoal,
+    setMonthlyGoal,
+    handleSaveGoal,
+    hasCostsConfigured,
+    hasServices,
+    hasTeam,
+    emailChecked,
+    setEmailChecked
+  )
 
   const handleNext = () => {
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1)
+      sessionStorage.setItem('onboarding_step', (currentStep + 1).toString())
     }
   }
 
   const handlePrevious = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
+      sessionStorage.setItem('onboarding_step', (currentStep - 1).toString())
     }
   }
 
@@ -776,6 +814,8 @@ export function OnboardingAdminFlow() {
     try {
       const success = await markOnboardingAsSeen()
       if (success) {
+        sessionStorage.removeItem('onboarding_paused')
+        sessionStorage.removeItem('onboarding_step')
         toast.success('Onboarding concluído! Bem-vindo ao CLINIC FLOW!')
         // Redirecionar para o dashboard do admin
         navigate('/admin/dashboard')
@@ -858,7 +898,7 @@ export function OnboardingAdminFlow() {
               onClick={handleNext}
               className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition shadow-lg flex items-center gap-2"
             >
-              Próximo
+              {currentStep === 1 ? 'Vamos lá, Gaby!' : 'Próximo'}
               <ArrowRight className="h-4 w-4" />
             </button>
           ) : (
@@ -874,7 +914,7 @@ export function OnboardingAdminFlow() {
                 </>
               ) : (
                 <>
-                  Finalizar Onboarding e Acessar Dashboard
+                  Gaby, vamos começar!
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
