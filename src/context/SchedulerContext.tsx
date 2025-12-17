@@ -131,6 +131,7 @@ export type SchedulerProfessional = {
   commissionRate?: number // Percentual (0-100) - usado quando commissionModel é 'commissioned' ou 'hybrid'
   commissionModel?: 'commissioned' | 'rental' | 'hybrid' // Modelo de comissionamento
   rentalBaseCents?: number // Valor fixo mensal em centavos - usado quando commissionModel é 'hybrid' ou 'rental'
+  rentalDueDay?: number // Dia do mês (1-28) em que a cobrança fixa mensal vence
   avatarUrl?: string
   workSchedule?: WorkSchedule
   clinicId?: string // Opcional: permite super_admin passar clinicId ao criar
@@ -2048,12 +2049,13 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
           profilePayload.fixed_monthly_payout_cents = (p as any).fixed_monthly_payout_cents
         }
         
-        // Adicionar campos KYC se fornecidos
+        // Adicionar CPF (obrigatório para criar conta Asaas)
         if ((p as any).cpf) {
           profilePayload.cpf = (p as any).cpf
         }
-        if ((p as any).bank_account_data) {
-          profilePayload.bank_account_data = (p as any).bank_account_data
+        // Adicionar WhatsApp
+        if ((p as any).whatsapp) {
+          profilePayload.phone = (p as any).whatsapp
         }
         
         // Usar função RPC segura para evitar recursão infinita nas políticas RLS
@@ -2062,14 +2064,10 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
           p_full_name: profilePayload.full_name || '',
           p_clinic_id: profilePayload.clinic_id,
           p_role: profilePayload.role || 'professional',
-          p_phone: profilePayload.phone || null,
+          p_phone: (p as any).whatsapp || profilePayload.phone || null,
           p_avatar_url: profilePayload.avatar_url || null,
           p_professional_id: null, // Será atualizado depois quando criar o registro em professionals
-          p_payout_model: (p as any).payout_model || null,
-          p_payout_percentage: (p as any).payout_percentage ?? null,
-          p_fixed_monthly_payout_cents: (p as any).fixed_monthly_payout_cents ?? null,
           p_cpf: (p as any).cpf || null,
-          p_bank_account_data: (p as any).bank_account_data || null,
         })
 
         if (profileError) {
@@ -2095,6 +2093,7 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
         commission_model: (p as any).commissionModel || 'commissioned',
         commission_rate: (p as any).commissionRate || 0,
         rental_base_cents: (p as any).rentalBaseCents || 0,
+        rental_due_day: (p as any).rentalDueDay || 5, // Dia de vencimento da cobrança fixa
       }
 
       // Mapear avatar
@@ -2180,7 +2179,59 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
       }
 
       // ============================================================================
-      // PASSO 4: Mapear e Retornar
+      // PASSO 4: Criar Conta Asaas Automaticamente (apenas com CPF e Nome)
+      // ============================================================================
+      if ((p as any).cpf && profileUserId) {
+        try {
+          console.log('🔄 addProfessional - Criando conta Asaas para profissional...', {
+            professionalId: professionalData.id,
+            profileId: profileUserId,
+            cpf: (p as any).cpf
+          })
+
+          // Chamar Edge Function para criar subaccount no Asaas
+          // Nota: Dados bancários serão coletados depois pelo profissional quando precisar sacar
+          const { data: asaasData, error: asaasError } = await supabase.functions.invoke('create-asaas-subaccount', {
+            body: {
+              type: 'professional',
+              clinic_id: clinicId,
+              professional_id: profileUserId,
+              cpf: (p as any).cpf,
+              // Dados bancários mínimos - o profissional completa depois
+              bank_account_data: {
+                bank_code: '001', // Placeholder
+                agency: '0000',
+                account: '00000',
+                account_digit: '0',
+                account_type: 'CHECKING',
+                holder_name: p.name,
+                holder_document: (p as any).cpf,
+              },
+            },
+          })
+
+          if (asaasError) {
+            console.warn('⚠️ addProfessional - Erro ao criar conta Asaas (não bloqueia cadastro):', asaasError)
+            // Não bloquear o cadastro se falhar criar conta Asaas
+            // O profissional pode criar depois quando precisar
+          } else if (asaasData?.walletId) {
+            console.log('✅ addProfessional - Conta Asaas criada:', asaasData.walletId)
+            // Atualizar profile com wallet_id
+            await supabase
+              .from('profiles')
+              .update({ asaas_wallet_id: asaasData.walletId })
+              .eq('id', profileUserId)
+          }
+        } catch (asaasErr) {
+          console.warn('⚠️ addProfessional - Erro ao criar conta Asaas (não bloqueia cadastro):', asaasErr)
+          // Não bloquear o cadastro
+        }
+      } else {
+        console.log('ℹ️ addProfessional - CPF não fornecido ou profile não criado, conta Asaas será criada depois')
+      }
+
+      // ============================================================================
+      // PASSO 5: Mapear e Retornar
       // ============================================================================
       const mapped: SchedulerProfessional = {
         id: professionalData.id,
@@ -2190,6 +2241,9 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
         color: professionalData.color,
         role: professionalData.role || professionalData.specialty,
         commissionRate: professionalData.commission_rate || 0,
+        commissionModel: (professionalData.commission_model as 'commissioned' | 'rental' | 'hybrid') || 'commissioned',
+        rentalBaseCents: professionalData.rental_base_cents || 0,
+        rentalDueDay: professionalData.rental_due_day || 5,
         avatarUrl: professionalData.avatar_url,
         workSchedule: professionalData.work_schedule || undefined,
       }
@@ -3188,18 +3242,12 @@ para permitir que super_admin atualize profiles de outros usuários.`
             console.warn('Erro ao ler localStorage:', e)
           }
           
-          // Se não encontrou dados preservados, criar usuário básico
-          const basicUser: SchedulerUser = {
-            id: authUser.id,
-            role: 'professional', // Default
-            clinicId: null,
-            email: authUser.email || '',
-            fullName: authUser.email?.split('@')[0] || 'Usuário',
-          }
-          console.log('⚠️ Criando usuário básico devido a erro ao buscar perfil:', basicUser)
-          setCurrentUser(basicUser)
-          localStorage.setItem('clinicflow_user', JSON.stringify(basicUser))
-          return basicUser
+          // CORRIGIDO: Não criar usuário com role padrão 'professional'
+          // Retornar null e deixar sessionLoading = true até que o role seja confirmado
+          console.warn('⚠️ Erro ao buscar perfil - não definindo role padrão. Aguardando confirmação do banco.')
+          setCurrentUser(null)
+          localStorage.removeItem('clinicflow_user') // Limpar localStorage incorreto
+          return null
         }
 
         if (!profile) {
@@ -3231,18 +3279,12 @@ para permitir que super_admin atualize profiles de outros usuários.`
             console.warn('Erro ao ler localStorage:', e)
           }
           
-          // Se não encontrou dados preservados, criar usuário básico
-          const basicUser: SchedulerUser = {
-            id: authUser.id,
-            role: 'professional', // Default
-            clinicId: null,
-            email: authUser.email || '',
-            fullName: authUser.email?.split('@')[0] || 'Usuário',
-          }
-          console.log('⚠️ Criando usuário básico sem perfil:', basicUser)
-          setCurrentUser(basicUser)
-          localStorage.setItem('clinicflow_user', JSON.stringify(basicUser))
-          return basicUser
+          // CORRIGIDO: Não criar usuário com role padrão 'professional'
+          // Retornar null e deixar sessionLoading = true até que o role seja confirmado
+          console.warn('⚠️ Perfil não encontrado - não definindo role padrão. Aguardando confirmação do banco.')
+          setCurrentUser(null)
+          localStorage.removeItem('clinicflow_user') // Limpar localStorage incorreto
+          return null
         }
 
         // CORRIGIDO: Verificar múltiplas formas de identificar super_admin
@@ -3287,7 +3329,12 @@ para permitir que super_admin atualize profiles de outros usuários.`
         } else if (preservedRole) {
           finalRole = preservedRole
         } else {
-          finalRole = 'professional' // Último recurso
+          // CORRIGIDO: Não usar 'professional' como padrão
+          // Se não houver role confirmado, retornar null e manter sessionLoading
+          console.warn('⚠️ Role não confirmado do banco - não usando padrão. Retornando null.')
+          setCurrentUser(null)
+          localStorage.removeItem('clinicflow_user')
+          return null
         }
         
         console.log('🔍 loadUserProfile - Detecção de role:', {
@@ -3353,18 +3400,11 @@ para permitir que super_admin atualize profiles de outros usuários.`
         return userData
       } catch (error) {
         console.error('❌ loadUserProfile - Erro inesperado:', error)
-        // Em caso de erro inesperado, ainda criar um usuário básico
-        const basicUser: SchedulerUser = {
-          id: authUser.id,
-          role: 'professional',
-          clinicId: null,
-          email: authUser.email || '',
-          fullName: authUser.email?.split('@')[0] || 'Usuário',
-        }
-        console.log('⚠️ loadUserProfile - Criando usuário básico devido a erro inesperado:', basicUser)
-        setCurrentUser(basicUser)
-        localStorage.setItem('clinicflow_user', JSON.stringify(basicUser))
-        return basicUser
+        // CORRIGIDO: Não criar usuário com role padrão em caso de erro
+        console.error('❌ loadUserProfile - Erro inesperado. Não definindo role padrão.')
+        setCurrentUser(null)
+        localStorage.removeItem('clinicflow_user')
+        return null
       }
     }
 
@@ -3389,17 +3429,12 @@ para permitir que super_admin atualize profiles de outros usuários.`
           const loadedUser = await loadUserProfile(session.user)
           if (!loadedUser) {
             console.warn('⚠️ Não foi possível carregar perfil, mas usuário está autenticado')
-            // Mesmo sem perfil, definir um usuário básico para permitir navegação
-            // O usuário pode precisar completar o perfil depois
-            const basicUser: SchedulerUser = {
-              id: session.user.id,
-              role: 'professional', // Default
-              clinicId: null,
-              email: session.user.email || '',
-              fullName: session.user.email?.split('@')[0] || 'Usuário',
-            }
-            setCurrentUser(basicUser)
-            localStorage.setItem('clinicflow_user', JSON.stringify(basicUser))
+            // CORRIGIDO: Não definir role padrão 'professional'
+            // Manter sessionLoading = true até que o perfil seja carregado
+            console.warn('⚠️ Não foi possível carregar perfil. Mantendo sessionLoading = true.')
+            setCurrentUser(null)
+            localStorage.removeItem('clinicflow_user')
+            setSessionLoading(false) // Finalizar loading mesmo sem perfil
           }
         } else {
           console.log('ℹ️ Nenhuma sessão encontrada')

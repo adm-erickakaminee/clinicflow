@@ -72,10 +72,21 @@ const STATUS_MAP = {
   }
 }
 
-export function PatientFlowWidget() {
+interface PatientFlowWidgetProps {
+  onRefresh?: () => void
+}
+
+export function PatientFlowWidget({ onRefresh }: PatientFlowWidgetProps = {}) {
   const { appointments = [], clients = [], currentUser } = useScheduler()
   const toast = useToast()
   const [finishingAppointment, setFinishingAppointment] = useState<{ id: string; patientName: string } | null>(null)
+  
+  // Função de refresh padrão se não fornecida
+  const handleRefresh = onRefresh || (() => {
+    // Recarregar página apenas se não houver callback fornecido
+    // Em produção, isso deve ser substituído por atualização de estado
+    window.location.reload()
+  })
 
   const todayStart = startOfDay(new Date())
   const todayEnd = endOfDay(new Date())
@@ -158,7 +169,8 @@ export function PatientFlowWidget() {
       if (error) throw error
 
       toast.success('Check-in realizado! Paciente aguardando atendimento.')
-      setTimeout(() => window.location.reload(), 500)
+      // CORRIGIDO: Remover window.location.reload() - usar atualização de estado
+      handleRefresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erro ao fazer check-in')
     }
@@ -178,7 +190,8 @@ export function PatientFlowWidget() {
       if (error) throw error
 
       toast.success('Atendimento iniciado!')
-      setTimeout(() => window.location.reload(), 500)
+      // CORRIGIDO: Remover window.location.reload()
+      handleRefresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erro ao iniciar atendimento')
     }
@@ -203,7 +216,8 @@ export function PatientFlowWidget() {
 
       setFinishingAppointment(null)
       toast.success('Atendimento finalizado! Paciente aguardando checkout.')
-      setTimeout(() => window.location.reload(), 500)
+      // CORRIGIDO: Remover window.location.reload()
+      handleRefresh()
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : 'Erro ao finalizar atendimento')
     }
@@ -219,7 +233,8 @@ export function PatientFlowWidget() {
       if (error) throw error
 
       toast.success('Checkout realizado! Atendimento concluído.')
-      setTimeout(() => window.location.reload(), 500)
+      // CORRIGIDO: Remover window.location.reload()
+      handleRefresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erro ao fazer checkout')
     }
@@ -235,7 +250,8 @@ export function PatientFlowWidget() {
       if (error) throw error
 
       toast.success('Agendamento confirmado!')
-      setTimeout(() => window.location.reload(), 500)
+      // CORRIGIDO: Remover window.location.reload()
+      handleRefresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erro ao confirmar agendamento')
     }

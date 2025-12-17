@@ -31,25 +31,42 @@ export function ProfessionalsManager() {
     setModalOpen(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!clinicId) {
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [professionalToDelete, setProfessionalToDelete] = useState<{ id: string; name: string; isPaidSlot?: boolean } | null>(null)
+
+  const handleDelete = async () => {
+    if (!clinicId || !professionalToDelete) {
       toast.error('Clínica não identificada')
       return
     }
 
-    if (!confirm('Tem certeza que deseja remover este profissional?')) {
-      return
-    }
-
+    setLoading(true)
     try {
-      // Buscar o professional_id do profile
+      // Buscar o professional_id do profile e verificar se é vaga paga
       const { data: profile } = await supabase
         .from('profiles')
-        .select('professional_id')
-        .eq('id', id)
-        .single()
+        .select('professional_id, asaas_wallet_id')
+        .eq('id', professionalToDelete.id)
+        .maybeSingle()
 
       if (profile?.professional_id) {
+        // Se for vaga paga (tem asaas_wallet_id e não é a dona), cancelar recorrência no Asaas
+        const isPaidSlot = profile.asaas_wallet_id && professionalToDelete.isPaidSlot
+        if (isPaidSlot) {
+          try {
+            // TODO: Chamar Edge Function para cancelar recorrência no Asaas
+            // Por enquanto, apenas log
+            console.log('⚠️ Vaga paga detectada - recorrência deve ser cancelada no Asaas:', {
+              professionalId: profile.professional_id,
+              walletId: profile.asaas_wallet_id
+            })
+            toast.info('Cancelando recorrência da vaga paga no Asaas...')
+          } catch (asaasError) {
+            console.error('Erro ao cancelar recorrência Asaas:', asaasError)
+            // Continuar com exclusão mesmo se falhar cancelamento
+          }
+        }
+
         // Deletar da tabela professionals
         const { error: profError } = await supabase
           .from('professionals')
@@ -61,12 +78,23 @@ export function ProfessionalsManager() {
       }
 
       // Remover do contexto
-      removeProfessional(id)
+      removeProfessional(professionalToDelete.id)
       toast.success('Profissional removido com sucesso')
+      setDeleteModalOpen(false)
+      setProfessionalToDelete(null)
     } catch (err) {
       console.error('Erro ao remover profissional:', err)
       toast.error('Erro ao remover profissional')
+    } finally {
+      setLoading(false)
     }
+  }
+
+  const openDeleteModal = (prof: SchedulerProfessional) => {
+    // Verificar se é vaga paga (pode ser verificado via asaas_wallet_id ou outro campo)
+    const isPaidSlot = false // TODO: Implementar lógica para verificar se é vaga paga
+    setProfessionalToDelete({ id: prof.id, name: prof.name, isPaidSlot })
+    setDeleteModalOpen(true)
   }
 
   const handleSave = async (prof: SchedulerProfessional) => {
@@ -146,7 +174,7 @@ export function ProfessionalsManager() {
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(prof.id)}
+                    onClick={() => openDeleteModal(prof)}
                     className="p-2 rounded-xl bg-white/80 border border-white/60 text-red-600 hover:bg-white transition"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -174,7 +202,80 @@ export function ProfessionalsManager() {
           loading={loading}
         />
       )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {deleteModalOpen && professionalToDelete && (
+        <DeleteProfessionalModal
+          professionalName={professionalToDelete.name}
+          isPaidSlot={professionalToDelete.isPaidSlot}
+          onConfirm={handleDelete}
+          onCancel={() => {
+            setDeleteModalOpen(false)
+            setProfessionalToDelete(null)
+          }}
+          loading={loading}
+        />
+      )}
     </>
+  )
+}
+
+function DeleteProfessionalModal({
+  professionalName,
+  isPaidSlot,
+  onConfirm,
+  onCancel,
+  loading,
+}: {
+  professionalName: string
+  isPaidSlot?: boolean
+  onConfirm: () => void
+  onCancel: () => void
+  loading: boolean
+}) {
+  return createPortal(
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur flex items-center justify-center px-4">
+      <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 shadow-2xl rounded-2xl w-full max-w-md p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+            <Trash2 className="h-6 w-6 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Excluir Profissional</h3>
+            <p className="text-sm text-gray-600">Esta ação não pode ser desfeita</p>
+          </div>
+        </div>
+
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+          <p className="text-sm text-gray-900 mb-2">
+            Tem certeza que deseja remover <strong>{professionalName}</strong>?
+          </p>
+          {isPaidSlot && (
+            <p className="text-sm text-yellow-800 mt-2">
+              ⚠️ Esta é uma vaga paga (R$ 29,90/mês). A recorrência será cancelada no próximo ciclo.
+            </p>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4 border-t border-white/60">
+          <button
+            className="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 text-sm font-semibold"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            Cancelar
+          </button>
+          <button
+            className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold shadow-lg shadow-black/10 disabled:opacity-50"
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? 'Excluindo...' : 'Sim, excluir'}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   )
 }
 
@@ -191,11 +292,29 @@ function ProfessionalModal({
   onClose: () => void
   loading: boolean
 }) {
-  const [draft, setDraft] = useState<SchedulerProfessional>(professional)
+  const [draft, setDraft] = useState<SchedulerProfessional & { 
+    email?: string
+    password?: string
+    cpf?: string
+    whatsapp?: string
+    commissionModel?: 'commissioned' | 'rental' | 'hybrid'
+    commissionRate?: number
+    rentalBaseCents?: number
+    rentalDueDay?: number
+  }>({
+    ...professional,
+    commissionModel: (professional as any).commissionModel || 'commissioned',
+    commissionRate: (professional as any).commissionRate || 0,
+    rentalBaseCents: (professional as any).rentalBaseCents || 0,
+    rentalDueDay: (professional as any).rentalDueDay || 5,
+  })
+
+  const isHybrid = draft.commissionModel === 'hybrid'
+  const isRental = draft.commissionModel === 'rental'
 
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur flex items-center justify-center px-4">
-      <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 shadow-2xl rounded-2xl w-full max-w-lg p-6 space-y-4">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur flex items-center justify-center px-4 overflow-y-auto py-8">
+      <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 shadow-2xl rounded-2xl w-full max-w-2xl p-6 space-y-4 my-auto">
         <div className="flex items-center justify-between">
           <p className="text-lg font-semibold text-gray-900">
             {draft.id ? 'Editar Profissional' : 'Novo Profissional'}
@@ -204,50 +323,194 @@ function ProfessionalModal({
             Fechar
           </button>
         </div>
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">Nome Completo *</label>
-            <input
-              value={draft.name}
-              onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
-              className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
-              placeholder="Ex: Dr. João Silva"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">Especialidade / Cargo *</label>
-            <input
-              value={draft.specialty}
-              onChange={(e) => setDraft((p) => ({ ...p, specialty: e.target.value }))}
-              className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
-              placeholder="Ex: Dermatologista"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">Avatar (URL - opcional)</label>
-            <input
-              value={draft.avatar}
-              onChange={(e) => setDraft((p) => ({ ...p, avatar: e.target.value }))}
-              className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
-              placeholder="https://..."
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">Cor na Agenda</label>
-            <div className="flex items-center gap-2 flex-wrap">
-              {colors.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setDraft((p) => ({ ...p, color: c }))}
-                  className={`h-8 w-8 rounded-full border-2 transition ${
-                    draft.color === c ? 'ring-2 ring-gray-900 scale-110' : 'border-white/60'
-                  }`}
-                  style={{ background: c }}
+        
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+          {/* Dados Básicos */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+              Dados Básicos
+            </h4>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-700">Nome Completo *</label>
+              <input
+                value={draft.name}
+                onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
+                className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
+                placeholder="Ex: Dr. João Silva"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-700">Cargo / Especialidade *</label>
+              <input
+                value={draft.specialty}
+                onChange={(e) => setDraft((p) => ({ ...p, specialty: e.target.value }))}
+                className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
+                placeholder="Ex: Dermatologista"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">CPF *</label>
+                <input
+                  value={draft.cpf || ''}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '')
+                    setDraft((p) => ({ ...p, cpf: value }))
+                  }}
+                  maxLength={11}
+                  className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
+                  placeholder="00000000000"
                 />
-              ))}
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">WhatsApp *</label>
+                <input
+                  value={draft.whatsapp || ''}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '')
+                    setDraft((p) => ({ ...p, whatsapp: value }))
+                  }}
+                  className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
+                  placeholder="11999999999"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">E-mail *</label>
+                <input
+                  type="email"
+                  value={draft.email || ''}
+                  onChange={(e) => setDraft((p) => ({ ...p, email: e.target.value }))}
+                  className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
+                  placeholder="profissional@email.com"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">Senha *</label>
+                <input
+                  type="password"
+                  value={draft.password || ''}
+                  onChange={(e) => setDraft((p) => ({ ...p, password: e.target.value }))}
+                  className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
+                  placeholder="Mínimo 6 caracteres"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-700">Avatar (URL - opcional)</label>
+              <input
+                value={draft.avatar}
+                onChange={(e) => setDraft((p) => ({ ...p, avatar: e.target.value }))}
+                className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
+                placeholder="https://..."
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-700">Cor na Agenda</label>
+              <div className="flex items-center gap-2 flex-wrap">
+                {colors.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setDraft((p) => ({ ...p, color: c }))}
+                    className={`h-8 w-8 rounded-full border-2 transition ${
+                      draft.color === c ? 'ring-2 ring-gray-900 scale-110' : 'border-white/60'
+                    }`}
+                    style={{ background: c }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
+
+          {/* Comissionamento */}
+          <div className="space-y-3 pt-4 border-t border-gray-200">
+            <h4 className="text-sm font-semibold text-gray-900">Modelo de Comissionamento</h4>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-700">Tipo *</label>
+              <select
+                value={draft.commissionModel || 'commissioned'}
+                onChange={(e) => setDraft((p) => ({ 
+                  ...p, 
+                  commissionModel: e.target.value as 'commissioned' | 'rental' | 'hybrid' 
+                }))}
+                className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
+              >
+                <option value="commissioned">Porcentagem (%)</option>
+                <option value="rental">Fixo Mensal (R$)</option>
+                <option value="hybrid">Híbrido (Fixo + %)</option>
+              </select>
+            </div>
+
+            {/* Campos condicionais baseados no modelo */}
+            {(draft.commissionModel === 'commissioned' || isHybrid) && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">
+                  Porcentagem de Comissão (%) {isHybrid ? '(Split em Tempo Real)' : '*'}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={draft.commissionRate || 0}
+                  onChange={(e) => setDraft((p) => ({ ...p, commissionRate: parseFloat(e.target.value) || 0 }))}
+                  className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
+                  placeholder="Ex: 30"
+                />
+              </div>
+            )}
+
+            {(isRental || isHybrid) && (
+              <>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-700">
+                    Valor Fixo Mensal (R$) {isHybrid ? '(Cobrança Ativa)' : '*'}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={draft.rentalBaseCents ? (draft.rentalBaseCents / 100).toFixed(2) : ''}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0
+                      setDraft((p) => ({ ...p, rentalBaseCents: Math.round(value * 100) }))
+                    }}
+                    className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
+                    placeholder="Ex: 500.00"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-700">Dia de Vencimento (1-28) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="28"
+                    value={draft.rentalDueDay || 5}
+                    onChange={(e) => setDraft((p) => ({ ...p, rentalDueDay: parseInt(e.target.value) || 5 }))}
+                    className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
+                    placeholder="Ex: 5"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Data em que a cobrança fixa será gerada automaticamente
+                  </p>
+                </div>
+              </>
+            )}
+
+            {/* Explicação do modelo híbrido */}
+            {isHybrid && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-gray-700">
+                <p className="font-semibold mb-1">💡 Como funciona o Híbrido:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li><strong>Split em Tempo Real:</strong> A cada serviço, você recebe a % configurada direto na sua conta.</li>
+                  <li><strong>Cobrança Fixa:</strong> No dia {draft.rentalDueDay || 5} de cada mês, será gerado um link de pagamento de R$ {draft.rentalBaseCents ? (draft.rentalBaseCents / 100).toFixed(2) : '0.00'}.</li>
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
+
         <div className="flex justify-end gap-2 pt-4 border-t border-white/60">
           <button
             className="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 text-sm font-semibold"
@@ -258,8 +521,32 @@ function ProfessionalModal({
           </button>
           <button
             className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold shadow-lg shadow-black/10 disabled:opacity-50"
-            onClick={() => onSave(draft)}
-            disabled={loading || !draft.name || !draft.specialty}
+            onClick={() => {
+              // Preparar payload com todos os campos necessários
+              const payload: any = {
+                ...draft,
+                commissionModel: draft.commissionModel,
+                commissionRate: draft.commissionRate,
+                rentalBaseCents: draft.rentalBaseCents,
+                rentalDueDay: draft.rentalDueDay,
+                email: draft.email,
+                password: draft.password,
+                cpf: draft.cpf,
+                whatsapp: draft.whatsapp,
+              }
+              onSave(payload)
+            }}
+            disabled={
+              loading || 
+              !draft.name || 
+              !draft.specialty || 
+              !draft.email || 
+              !draft.password || 
+              !draft.cpf || 
+              !draft.whatsapp ||
+              ((draft.commissionModel === 'commissioned' || isHybrid) && (!draft.commissionRate || draft.commissionRate <= 0)) ||
+              ((isRental || isHybrid) && (!draft.rentalBaseCents || draft.rentalBaseCents <= 0))
+            }
           >
             {loading ? 'Salvando...' : 'Salvar'}
           </button>

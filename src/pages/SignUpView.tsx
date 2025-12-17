@@ -299,6 +299,41 @@ export function SignUpView() {
         }
       }
 
+      // 3.5. Criar registro na tabela professionals para a dona da clínica
+      // Isso permite que ela apareça na lista de profissionais e receba agendamentos
+      try {
+        const { data: professionalData, error: professionalError } = await supabase
+          .from('professionals')
+          .insert({
+            clinic_id: orgData.id,
+            name: formData.fullName,
+            role: 'Proprietária', // ou outro role apropriado
+            color: '#6366f1', // Cor padrão
+            commission_rate: 0, // Dona não paga comissão
+            avatar_url: null,
+          })
+          .select()
+          .single()
+
+        if (professionalError) {
+          console.warn('Aviso: Não foi possível criar registro em professionals:', professionalError)
+          // Não falhar o cadastro se não conseguir criar o professional
+        } else if (professionalData) {
+          // Atualizar o profile com o professional_id
+          const { error: updateProfileError } = await supabase
+            .from('profiles')
+            .update({ professional_id: professionalData.id })
+            .eq('id', authData.user.id)
+
+          if (updateProfileError) {
+            console.warn('Aviso: Não foi possível atualizar profile com professional_id:', updateProfileError)
+          }
+        }
+      } catch (error) {
+        console.warn('Aviso: Erro ao criar professional para admin:', error)
+        // Não falhar o cadastro se houver erro
+      }
+
       // 4. Tokenizar cartão de crédito (SEGURANÇA)
       let creditCardToken: string | null = null
 

@@ -22,7 +22,7 @@ const payloadSchema = z.object({
     account_type: z.enum(['CHECKING', 'SAVINGS']),
     holder_name: z.string(),
     holder_document: z.string(), // CPF ou CNPJ
-  }),
+  }).optional(), // Opcional - pode ser preenchido depois
   cpf: z.string().optional(), // Obrigatório se type === 'professional'
   cnpj: z.string().optional(), // Obrigatório se type === 'clinic'
 })
@@ -52,14 +52,16 @@ async function createAsaasSubaccount(payload: Payload): Promise<AsaasSubaccountR
     city: '',
     state: '',
     country: 'Brasil',
-    // Dados bancários
-    bank: payload.bank_account_data.bank_code,
-    agency: payload.bank_account_data.agency,
-    account: payload.bank_account_data.account,
-    accountDigit: payload.bank_account_data.account_digit,
-    accountType: payload.bank_account_data.account_type === 'CHECKING' ? 'CONTA_CORRENTE' : 'CONTA_POUPANCA',
-    holderName: payload.bank_account_data.holder_name,
-    holderDocument: payload.bank_account_data.holder_document,
+    // Dados bancários (opcional - pode ser preenchido depois)
+    ...(payload.bank_account_data && {
+      bank: payload.bank_account_data.bank_code,
+      agency: payload.bank_account_data.agency,
+      account: payload.bank_account_data.account,
+      accountDigit: payload.bank_account_data.account_digit,
+      accountType: payload.bank_account_data.account_type === 'CHECKING' ? 'CONTA_CORRENTE' : 'CONTA_POUPANCA',
+      holderName: payload.bank_account_data.holder_name,
+      holderDocument: payload.bank_account_data.holder_document,
+    }),
   }
 
   // Buscar dados completos do banco

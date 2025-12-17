@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   ArrowRight,
   ArrowLeft,
+  ArrowDown,
   Sparkles,
   Calculator,
   Target,
@@ -39,13 +40,6 @@ interface OnboardingAdminFlowProps {
   onPause?: () => void
 }
 
-function ArrowDown({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-    </svg>
-  )
-}
 
 // Função para criar os steps com acesso aos handlers
 const createSteps = (
@@ -57,7 +51,25 @@ const createSteps = (
   hasServices: boolean,
   hasTeam: boolean,
   emailChecked: boolean,
-  setEmailChecked: (checked: boolean) => void
+  setEmailChecked: (checked: boolean) => void,
+  // Novos handlers para Passo 2
+  scheduleData: {
+    startTime: string
+    endTime: string
+    weekdays: number[]
+    monthlyCosts: string
+  },
+  setScheduleData: (data: {
+    startTime: string
+    endTime: string
+    weekdays: number[]
+    monthlyCosts: string
+  }) => void,
+  handleSaveSchedule: () => void,
+  calculatedHourlyCost: string,
+  // Handler para verificar limite de equipe
+  teamCount: number,
+  teamLimit: number
 ) => [
   {
     id: 1,
@@ -133,19 +145,148 @@ const createSteps = (
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Antes de qualquer coisa, preciso entender como sua clínica funciona! ⏱️
+                    Oiee! Vamos configurar sua jornada! ⏱️
                   </h3>
                   <p className="text-gray-700 leading-relaxed mb-4">
-                    Vamos cadastrar seus turnos de atendimento e seus custos fixos e variáveis? 
-                    Com isso, eu vou te contar exatamente quanto vale a sua hora de trabalho! 
-                    Isso é essencial para não termos prejuízo.
+                    Preencha seus horários e custos aqui embaixo que eu já calculo seu custo por hora agora mesmo!
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Card de resumo dos dados atuais */}
-            {hasCostsConfigured ? (
+            {/* Formulário de Turnos e Custos */}
+            <div className="bg-white border-2 border-blue-200 rounded-xl p-6 space-y-6">
+              {/* Horários */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-4">Horários de Funcionamento</h4>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <GabyTooltip message="Horário que sua clínica abre. Exemplo: 08:00">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Horário Início
+                      </label>
+                      <input
+                        type="time"
+                        value={scheduleData.startTime}
+                        onChange={(e) => setScheduleData({ ...scheduleData, startTime: e.target.value })}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                      />
+                    </div>
+                  </GabyTooltip>
+                  <GabyTooltip message="Horário que sua clínica fecha. Exemplo: 18:00">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Horário Fim
+                      </label>
+                      <input
+                        type="time"
+                        value={scheduleData.endTime}
+                        onChange={(e) => setScheduleData({ ...scheduleData, endTime: e.target.value })}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                      />
+                    </div>
+                  </GabyTooltip>
+                </div>
+              </div>
+
+              {/* Dias da Semana */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Dias da Semana
+                </label>
+                <GabyTooltip message="Selecione os dias da semana que sua clínica funciona">
+                  <div className="grid grid-cols-7 gap-2">
+                    {[
+                      { label: 'Dom', value: 0 },
+                      { label: 'Seg', value: 1 },
+                      { label: 'Ter', value: 2 },
+                      { label: 'Qua', value: 3 },
+                      { label: 'Qui', value: 4 },
+                      { label: 'Sex', value: 5 },
+                      { label: 'Sáb', value: 6 },
+                    ].map((day) => (
+                      <label
+                        key={day.value}
+                        className={`flex flex-col items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition ${
+                          scheduleData.weekdays.includes(day.value)
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={scheduleData.weekdays.includes(day.value)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setScheduleData({
+                                ...scheduleData,
+                                weekdays: [...scheduleData.weekdays, day.value],
+                              })
+                            } else {
+                              setScheduleData({
+                                ...scheduleData,
+                                weekdays: scheduleData.weekdays.filter((d) => d !== day.value),
+                              })
+                            }
+                          }}
+                          className="sr-only"
+                        />
+                        <span className="text-sm font-medium">{day.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </GabyTooltip>
+              </div>
+
+              {/* Custos Mensais */}
+              <div>
+                <GabyTooltip message="Some todos os seus custos mensais: aluguel, energia, água, internet, salários, materiais, etc. Eu vou calcular o custo por hora automaticamente!">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Total de Custos Mensais (R$)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 font-medium">R$</span>
+                      <input
+                        type="number"
+                        value={scheduleData.monthlyCosts}
+                        onChange={(e) => setScheduleData({ ...scheduleData, monthlyCosts: e.target.value })}
+                        placeholder="0,00"
+                        className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none text-lg"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                </GabyTooltip>
+              </div>
+
+              {/* Cálculo do Custo/Hora */}
+              {calculatedHourlyCost && (
+                <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <Calculator className="h-6 w-6 text-emerald-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-900">Seu Custo por Hora:</p>
+                      <p className="text-2xl font-bold text-emerald-700">R$ {calculatedHourlyCost}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Botão Salvar */}
+              <button
+                onClick={handleSaveSchedule}
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition shadow-lg"
+              >
+                <Calculator className="h-4 w-4" />
+                Salvar e Calcular Custo/Hora
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Card de resumo se já configurado */}
+            {hasCostsConfigured && (
               <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-3">
                   <CheckCircle2 className="h-6 w-6 text-emerald-600" />
@@ -155,41 +296,7 @@ const createSteps = (
                   Seus dados foram salvos. Você pode editar nas configurações a qualquer momento.
                 </p>
               </div>
-            ) : (
-              <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <HelpCircle className="h-6 w-6 text-yellow-600" />
-                  <h4 className="font-semibold text-gray-900">Aguardando Configuração</h4>
-                </div>
-                <p className="text-sm text-gray-600">
-                  Configure seus custos e turnos para eu calcular o valor da sua hora de trabalho.
-                </p>
-              </div>
             )}
-
-            <div className="bg-white border-2 border-blue-200 rounded-xl p-6 hover:border-blue-400 transition">
-              <div className="flex items-start gap-4">
-                <div className="bg-blue-100 p-3 rounded-lg">
-                  <Calculator className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 mb-2">Cadastrar Meus Custos e Turnos</h4>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Configure os custos da sua clínica para eu calcular o custo real por hora de trabalho
-                  </p>
-                  <GabyTooltip message="Aqui você vai cadastrar os horários de funcionamento da clínica e todos os custos (fixos e variáveis). Com essas informações, eu calculo automaticamente quanto vale cada hora de trabalho da sua clínica!">
-                    <button
-                      onClick={() => handlePauseAndNavigate('Configurações')}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition shadow-lg"
-                    >
-                      <Calculator className="h-4 w-4" />
-                      Cadastrar Meus Custos e Turnos
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </GabyTooltip>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -347,37 +454,53 @@ const createSteps = (
               <div className={`bg-white border-2 rounded-xl p-6 transition ${
                 hasTeam 
                   ? 'border-emerald-200 bg-emerald-50' 
+                  : teamCount >= teamLimit
+                  ? 'border-red-200 bg-red-50'
                   : 'border-indigo-200 hover:border-indigo-400'
               }`}>
                 <div className="flex items-start gap-4">
                   <div className={`p-3 rounded-lg ${
-                    hasTeam ? 'bg-emerald-100' : 'bg-indigo-100'
+                    hasTeam ? 'bg-emerald-100' : teamCount >= teamLimit ? 'bg-red-100' : 'bg-indigo-100'
                   }`}>
                     <Users className={`h-6 w-6 ${
-                      hasTeam ? 'text-emerald-600' : 'text-indigo-600'
+                      hasTeam ? 'text-emerald-600' : teamCount >= teamLimit ? 'text-red-600' : 'text-indigo-600'
                     }`} />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h4 className="font-semibold text-gray-900">Convidar Minha Equipe</h4>
                       {hasTeam && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+                      {teamCount >= teamLimit && <HelpCircle className="h-5 w-5 text-red-600" />}
                     </div>
                     <p className="text-sm text-gray-600 mb-4">
-                      {hasTeam
+                      {teamCount >= teamLimit
+                        ? `Limite de ${teamLimit} profissionais atingido (incluindo você).`
+                        : hasTeam
                         ? 'Equipe cadastrada! Você pode adicionar mais membros nas configurações.'
                         : 'Convide recepcionistas e profissionais. Eu explico as permissões de cada função!'
                       }
                     </p>
-                    <GabyTooltip message="A recepcionista pode fazer check-in, check-out e gerenciar a agenda. Os profissionais podem acessar seus agendamentos e prontuários. Vou te explicar tudo durante o cadastro!">
-                      <button
-                        onClick={() => handlePauseAndNavigate('Cadastros')}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg"
-                      >
-                        <Users className="h-4 w-4" />
-                        {hasTeam ? 'Gerenciar Equipe' : 'Convidar Minha Equipe'}
-                        <ArrowRight className="h-4 w-4" />
-                      </button>
-                    </GabyTooltip>
+                    {teamCount >= teamLimit ? (
+                      <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
+                        <p className="text-sm font-semibold text-yellow-900 mb-1">
+                          Limite do Plano Atingido
+                        </p>
+                        <p className="text-sm text-yellow-800">
+                          Para adicionar mais membros à equipe, o valor é de <strong>R$ 29,90</strong> por novo acesso.
+                        </p>
+                      </div>
+                    ) : (
+                      <GabyTooltip message="A recepcionista pode fazer check-in, check-out e gerenciar a agenda. Os profissionais podem acessar seus agendamentos e prontuários. Vou te explicar tudo durante o cadastro!">
+                        <button
+                          onClick={() => handlePauseAndNavigate('Cadastros')}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg"
+                        >
+                          <Users className="h-4 w-4" />
+                          {hasTeam ? 'Gerenciar Equipe' : 'Convidar Minha Equipe'}
+                          <ArrowRight className="h-4 w-4" />
+                        </button>
+                      </GabyTooltip>
+                    )}
                   </div>
                 </div>
               </div>
@@ -416,9 +539,7 @@ const createSteps = (
                     Aqui a mágica acontece! 💸
                   </h3>
                   <p className="text-gray-700 leading-relaxed mb-4">
-                    Configure a comissão dos profissionais. Funciona assim: o paciente paga, eu desconto as taxas do cartão, 
-                    separo a parte do profissional (que já vai direto para a conta dele!), tiro a taxa da plataforma e o restante 
-                    cai limpinho na conta da clínica. Transparente e automático!
+                    A divisão funciona assim: <strong>1º</strong> Descontamos a taxa do cartão → <strong>2º</strong> Sua parte ou do profissional cai na conta → <strong>3º</strong> Taxa da plataforma → <strong>4º</strong> O que sobrar é o lucro da clínica!
                   </p>
                 </div>
               </div>
@@ -702,6 +823,17 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
   const [hasCostsConfigured, setHasCostsConfigured] = useState(false)
   const [hasServices, setHasServices] = useState(false)
   const [hasTeam, setHasTeam] = useState(false)
+  const [teamCount, setTeamCount] = useState(1) // Começa com 1 (a dona)
+  const teamLimit = 2 // Limite do plano inicial
+  
+  // Estado do formulário de turnos e custos (Passo 2)
+  const [scheduleData, setScheduleData] = useState({
+    startTime: '08:00',
+    endTime: '18:00',
+    weekdays: [1, 2, 3, 4, 5], // Segunda a Sexta por padrão
+    monthlyCosts: '',
+  })
+  const [calculatedHourlyCost, setCalculatedHourlyCost] = useState('')
 
   // Carregar dados da organização
   useEffect(() => {
@@ -731,15 +863,38 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
 
         setHasServices((services?.length || 0) > 0)
 
-        // Verificar se tem equipe (profissionais ou recepcionistas)
+        // Verificar se tem equipe (profissionais ou recepcionistas) e contar total
         const { data: team } = await supabase
           .from('profiles')
-          .select('id')
+          .select('id, role')
           .eq('clinic_id', currentUser.clinicId)
-          .in('role', ['professional', 'receptionist', 'recepcionista'])
-          .limit(1)
+          .in('role', ['professional', 'receptionist', 'recepcionista', 'admin', 'clinic_owner'])
 
-        setHasTeam((team?.length || 0) > 0)
+        const teamMembers = (team || []).length
+        setHasTeam(teamMembers > 1) // Mais de 1 porque a dona já conta
+        setTeamCount(teamMembers)
+
+        // Carregar dados de turnos e custos se existirem
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('schedule_start_time, schedule_end_time, schedule_weekdays, monthly_costs_cents, hourly_cost_cents')
+          .eq('id', currentUser.clinicId)
+          .maybeSingle()
+
+        if (org) {
+          if (org.schedule_start_time && org.schedule_end_time) {
+            setScheduleData({
+              startTime: org.schedule_start_time.substring(0, 5), // HH:mm
+              endTime: org.schedule_end_time.substring(0, 5),
+              weekdays: org.schedule_weekdays || [],
+              monthlyCosts: org.monthly_costs_cents ? (org.monthly_costs_cents / 100).toString() : '',
+            })
+            setHasCostsConfigured(true)
+          }
+          if (org.hourly_cost_cents) {
+            setCalculatedHourlyCost((org.hourly_cost_cents / 100).toFixed(2))
+          }
+        }
       } catch (error) {
         console.error('Erro ao carregar dados:', error)
       }
@@ -761,6 +916,68 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
     setTimeout(() => {
       navigate('/admin/dashboard', { replace: false })
     }, 100)
+  }
+
+  // Função para salvar turnos e custos (Passo 2)
+  const handleSaveSchedule = async () => {
+    if (!currentUser?.clinicId) {
+      toast.error('Erro: Clínica não encontrada')
+      return
+    }
+
+    if (!scheduleData.startTime || !scheduleData.endTime) {
+      toast.error('Por favor, informe os horários de funcionamento')
+      return
+    }
+
+    if (scheduleData.weekdays.length === 0) {
+      toast.error('Por favor, selecione pelo menos um dia da semana')
+      return
+    }
+
+    if (!scheduleData.monthlyCosts || parseFloat(scheduleData.monthlyCosts) <= 0) {
+      toast.error('Por favor, informe o total de custos mensais')
+      return
+    }
+
+    try {
+      // Calcular horas trabalhadas por mês
+      const start = new Date(`2000-01-01T${scheduleData.startTime}:00`)
+      const end = new Date(`2000-01-01T${scheduleData.endTime}:00`)
+      let diffMs = end.getTime() - start.getTime()
+      if (diffMs < 0) {
+        // Se o horário de fim é menor que o de início, assumir que passa da meia-noite
+        diffMs = (24 * 60 * 60 * 1000) + diffMs
+      }
+      const hoursPerDay = diffMs / (1000 * 60 * 60)
+      const daysPerMonth = scheduleData.weekdays.length * 4.33 // Aproximação: semanas no mês
+      const totalHoursPerMonth = hoursPerDay * daysPerMonth
+
+      // Calcular custo por hora
+      const monthlyCostsCents = Math.round(parseFloat(scheduleData.monthlyCosts) * 100)
+      const hourlyCostCents = Math.round(monthlyCostsCents / totalHoursPerMonth)
+
+      // Salvar na tabela organizations
+      const { error } = await supabase
+        .from('organizations')
+        .update({
+          schedule_start_time: scheduleData.startTime,
+          schedule_end_time: scheduleData.endTime,
+          schedule_weekdays: scheduleData.weekdays,
+          monthly_costs_cents: monthlyCostsCents,
+          hourly_cost_cents: hourlyCostCents,
+        })
+        .eq('id', currentUser.clinicId)
+
+      if (error) throw error
+
+      setCalculatedHourlyCost((hourlyCostCents / 100).toFixed(2))
+      setHasCostsConfigured(true)
+      toast.success('Turnos e custos salvos! Custo por hora calculado.')
+    } catch (error) {
+      console.error('Erro ao salvar turnos e custos:', error)
+      toast.error('Erro ao salvar. Tente novamente.')
+    }
   }
 
   // Função para salvar meta
@@ -798,7 +1015,13 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
     hasServices,
     hasTeam,
     emailChecked,
-    setEmailChecked
+    setEmailChecked,
+    scheduleData,
+    setScheduleData,
+    handleSaveSchedule,
+    calculatedHourlyCost,
+    teamCount,
+    teamLimit
   )
 
   const handleNext = () => {
