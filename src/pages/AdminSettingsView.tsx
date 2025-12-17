@@ -16,6 +16,7 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
+  Calculator,
 } from 'lucide-react'
 import { usePanelContext } from '../context/PanelContext'
 
@@ -83,6 +84,14 @@ export function AdminSettingsView() {
     asaas_wallet_id: string | null
   }>>([])
   const [loadingKYC, setLoadingKYC] = useState(false)
+  // Estado para edição de turnos e custos
+  const [scheduleData, setScheduleData] = useState({
+    startTime: '08:00',
+    endTime: '18:00',
+    weekdays: [1, 2, 3, 4, 5],
+    monthlyCosts: '',
+  })
+  const [calculatedHourlyCost, setCalculatedHourlyCost] = useState('')
 
   const clinicId = currentUser?.clinicId
   const isSuperAdmin = currentUser?.role === 'super_admin'
@@ -109,6 +118,7 @@ export function AdminSettingsView() {
         loadFeeLedgerBalance(),
         loadOrganization(),
         loadKYCStatus(),
+        loadScheduleAndCosts(),
       ])
     } catch (err) {
       console.error('Erro ao carregar dados:', err)
@@ -511,6 +521,91 @@ export function AdminSettingsView() {
     return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`
   }
 
+  const loadScheduleAndCosts = async () => {
+    if (!clinicId) return
+
+    try {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('schedule_start_time, schedule_end_time, schedule_weekdays, monthly_costs_cents, hourly_cost_cents')
+        .eq('id', clinicId)
+        .maybeSingle()
+
+      if (org) {
+        setScheduleData({
+          startTime: org.schedule_start_time ? org.schedule_start_time.substring(0, 5) : '08:00',
+          endTime: org.schedule_end_time ? org.schedule_end_time.substring(0, 5) : '18:00',
+          weekdays: org.schedule_weekdays || [1, 2, 3, 4, 5],
+          monthlyCosts: org.monthly_costs_cents ? (org.monthly_costs_cents / 100).toString() : '',
+        })
+        if (org.hourly_cost_cents) {
+          setCalculatedHourlyCost((org.hourly_cost_cents / 100).toFixed(2))
+        }
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar turnos e custos:', err)
+    }
+  }
+
+  const handleSaveScheduleAndCosts = async () => {
+    if (!clinicId) return
+
+    if (!scheduleData.startTime || !scheduleData.endTime) {
+      toast.error('Por favor, informe os horários de funcionamento')
+      return
+    }
+
+    if (scheduleData.weekdays.length === 0) {
+      toast.error('Por favor, selecione pelo menos um dia da semana')
+      return
+    }
+
+    if (!scheduleData.monthlyCosts || parseFloat(scheduleData.monthlyCosts) <= 0) {
+      toast.error('Por favor, informe o total de custos mensais')
+      return
+    }
+
+    setSaving(true)
+    try {
+      // Calcular horas trabalhadas por mês
+      const start = new Date(`2000-01-01T${scheduleData.startTime}:00`)
+      const end = new Date(`2000-01-01T${scheduleData.endTime}:00`)
+      let diffMs = end.getTime() - start.getTime()
+      if (diffMs < 0) {
+        diffMs = (24 * 60 * 60 * 1000) + diffMs
+      }
+      const hoursPerDay = diffMs / (1000 * 60 * 60)
+      const daysPerMonth = scheduleData.weekdays.length * 4.33
+      const totalHoursPerMonth = hoursPerDay * daysPerMonth
+
+      // Calcular custo por hora
+      const monthlyCostsCents = Math.round(parseFloat(scheduleData.monthlyCosts) * 100)
+      const hourlyCostCents = Math.round(monthlyCostsCents / totalHoursPerMonth)
+
+      const { error } = await supabase
+        .from('organizations')
+        .update({
+          schedule_start_time: scheduleData.startTime,
+          schedule_end_time: scheduleData.endTime,
+          schedule_weekdays: scheduleData.weekdays,
+          monthly_costs_cents: monthlyCostsCents,
+          hourly_cost_cents: hourlyCostCents,
+        })
+        .eq('id', clinicId)
+
+      if (error) throw error
+
+      setCalculatedHourlyCost((hourlyCostCents / 100).toFixed(2))
+      toast.success('Turnos e custos salvos com sucesso!')
+      await loadScheduleAndCosts()
+    } catch (err) {
+      console.error('Erro ao salvar turnos e custos:', err)
+      toast.error('Erro ao salvar. Tente novamente.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleCancelSubscription = async () => {
     if (!clinicId || !isAdmin) return
 
@@ -832,6 +927,114 @@ export function AdminSettingsView() {
           ) : (
             <p className="text-sm text-gray-600">Nenhum profissional cadastrado com dados KYC</p>
           )}
+        </div>
+      )}
+
+      {/* MÓDULO II.7: PERFIL DA CLÍNICA (Turnos e Custos) */}
+      {isAdmin && (
+        <div className="rounded-3xl bg-white/60 border border-white/40 shadow-xl p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Calculator className="h-6 w-6 text-purple-500" />
+            <h3 className="text-lg font-semibold text-gray-900">Perfil da Clínica - Turnos e Custos</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Horário de Início</label>
+                <input
+                  type="time"
+                  value={scheduleData.startTime}
+                  onChange={(e) => setScheduleData({ ...scheduleData, startTime: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-white/70 border border-white/60 text-sm text-gray-900 focus:ring-2 focus:ring-purple-500/20"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Horário de Fim</label>
+                <input
+                  type="time"
+                  value={scheduleData.endTime}
+                  onChange={(e) => setScheduleData({ ...scheduleData, endTime: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-white/70 border border-white/60 text-sm text-gray-900 focus:ring-2 focus:ring-purple-500/20"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Dias da Semana</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: 0, label: 'Dom' },
+                  { value: 1, label: 'Seg' },
+                  { value: 2, label: 'Ter' },
+                  { value: 3, label: 'Qua' },
+                  { value: 4, label: 'Qui' },
+                  { value: 5, label: 'Sex' },
+                  { value: 6, label: 'Sáb' },
+                ].map((day) => (
+                  <label key={day.value} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={scheduleData.weekdays.includes(day.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setScheduleData({
+                            ...scheduleData,
+                            weekdays: [...scheduleData.weekdays, day.value],
+                          })
+                        } else {
+                          setScheduleData({
+                            ...scheduleData,
+                            weekdays: scheduleData.weekdays.filter((d) => d !== day.value),
+                          })
+                        }
+                      }}
+                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <span className="text-sm text-gray-700">{day.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Total de Custos Mensais (R$)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={scheduleData.monthlyCosts}
+                onChange={(e) => setScheduleData({ ...scheduleData, monthlyCosts: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-white/70 border border-white/60 text-sm text-gray-900 focus:ring-2 focus:ring-purple-500/20"
+                placeholder="0.00"
+              />
+            </div>
+
+            {calculatedHourlyCost && (
+              <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-purple-900 mb-1">Custo por Hora Calculado</p>
+                <p className="text-2xl font-bold text-purple-600">R$ {calculatedHourlyCost}</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleSaveScheduleAndCosts}
+              disabled={saving}
+              className="w-full px-4 py-3 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Salvar Turnos e Custos
+                </>
+              )}
+            </button>
+          </div>
         </div>
       )}
 

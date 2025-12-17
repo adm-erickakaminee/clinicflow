@@ -69,7 +69,10 @@ const createSteps = (
   calculatedHourlyCost: string,
   // Handler para verificar limite de equipe
   teamCount: number,
-  teamLimit: number
+  teamLimit: number,
+  // Handlers para modais inline
+  setServiceModalOpen: (open: boolean) => void,
+  setProfessionalModalOpen: (open: boolean) => void
 ) => [
   {
     id: 1,
@@ -438,11 +441,11 @@ const createSteps = (
                     </p>
                     <GabyTooltip message="Ao cadastrar um serviço, eu já vou preencher o custo por hora que você configurou. Você pode adicionar impostos, despesas específicas do serviço, e eu vou sugerir um preço ideal para você!">
                       <button
-                        onClick={() => handlePauseAndNavigate('Cadastros')}
+                        onClick={() => setServiceModalOpen(true)}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg"
                       >
                         <Settings className="h-4 w-4" />
-                        {hasServices ? 'Gerenciar Serviços' : 'Cadastrar Primeiro Serviço'}
+                        {hasServices ? 'Adicionar Mais Serviços' : 'Cadastrar Primeiro Serviço'}
                         <ArrowRight className="h-4 w-4" />
                       </button>
                     </GabyTooltip>
@@ -492,11 +495,12 @@ const createSteps = (
                     ) : (
                       <GabyTooltip message="A recepcionista pode fazer check-in, check-out e gerenciar a agenda. Os profissionais podem acessar seus agendamentos e prontuários. Vou te explicar tudo durante o cadastro!">
                         <button
-                          onClick={() => handlePauseAndNavigate('Cadastros')}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg"
+                          onClick={() => setProfessionalModalOpen(true)}
+                          disabled={teamCount >= teamLimit}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Users className="h-4 w-4" />
-                          {hasTeam ? 'Gerenciar Equipe' : 'Convidar Minha Equipe'}
+                          {hasTeam ? 'Adicionar Mais Membros' : 'Convidar Minha Equipe'}
                           <ArrowRight className="h-4 w-4" />
                         </button>
                       </GabyTooltip>
@@ -723,7 +727,7 @@ const createSteps = (
                     Tudo pronto! 📱
                   </h3>
                   <p className="text-gray-700 leading-relaxed mb-4">
-                    No dia a dia, eu vou cuidar do seu WhatsApp, enviando lembretes automáticos e criando mensagens para seus pacientes. 
+                    No dia a dia, eu vou criar lembretes de WhatsApp para você enviar aos seus pacientes. Você pode revisar e enviar quando quiser! 
                     Na agenda, você verá como é fácil fazer o Check-in, ver a Anamnese e fazer o Check-out com um clique!
                   </p>
                 </div>
@@ -778,22 +782,22 @@ const createSteps = (
                   <MessageSquare className="h-6 w-6 text-indigo-600" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 mb-3">Automação de WhatsApp</h4>
+                  <h4 className="font-semibold text-gray-900 mb-3">Lembretes de WhatsApp</h4>
                   <p className="text-sm text-gray-700 mb-3">
-                    Eu automatizo toda a comunicação com seus pacientes via WhatsApp:
+                    Eu crio lembretes de WhatsApp para você revisar e enviar quando quiser:
                   </p>
                   <ul className="space-y-2 text-sm text-gray-600 ml-4">
                     <li className="flex items-start gap-2">
                       <span className="text-indigo-600 mt-1">•</span>
-                      <span><strong>Lembretes automáticos:</strong> 24h e 2h antes da consulta</span>
+                      <span><strong>Lembretes criados:</strong> 24h e 2h antes da consulta (você envia quando quiser)</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-indigo-600 mt-1">•</span>
-                      <span><strong>Mensagens personalizadas:</strong> Para cada paciente</span>
+                      <span><strong>Mensagens personalizadas:</strong> Criadas para cada paciente, você revisa e envia</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-indigo-600 mt-1">•</span>
-                      <span><strong>Confirmação de agendamentos:</strong> Automática</span>
+                      <span><strong>Confirmação de agendamentos:</strong> Mensagens prontas para você enviar</span>
                     </li>
                   </ul>
                 </div>
@@ -823,8 +827,10 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
   const [hasCostsConfigured, setHasCostsConfigured] = useState(false)
   const [hasServices, setHasServices] = useState(false)
   const [hasTeam, setHasTeam] = useState(false)
-  const [teamCount, setTeamCount] = useState(1) // Começa com 1 (a dona)
+  const [teamCount, setTeamCount] = useState(2) // ✅ Começa com 2 (dona + 1 profissional já contabilizado)
   const teamLimit = 2 // Limite do plano inicial
+  const [serviceModalOpen, setServiceModalOpen] = useState(false)
+  const [professionalModalOpen, setProfessionalModalOpen] = useState(false)
   
   // Estado do formulário de turnos e custos (Passo 2)
   const [scheduleData, setScheduleData] = useState({
@@ -871,8 +877,9 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
           .in('role', ['professional', 'receptionist', 'recepcionista', 'admin', 'clinic_owner'])
 
         const teamMembers = (team || []).length
-        setHasTeam(teamMembers > 1) // Mais de 1 porque a dona já conta
-        setTeamCount(teamMembers)
+        setHasTeam(teamMembers > 2) // Mais de 2 porque já contamos dona + 1
+        // ✅ Contabilização correta: começa com 2 (dona + 1 já contabilizado)
+        setTeamCount(Math.max(teamMembers, 2)) // Mínimo 2 (dona + 1)
 
         // Carregar dados de turnos e custos se existirem
         const { data: org } = await supabase
@@ -980,7 +987,7 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
     }
   }
 
-  // Função para salvar meta
+  // Função para salvar meta e calcular preços/ações necessárias
   const handleSaveGoal = async () => {
     if (!currentUser?.clinicId || !monthlyGoal) {
       toast.error('Por favor, informe a meta de faturamento')
@@ -989,16 +996,96 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
 
     try {
       const goalCents = Math.round(parseFloat(monthlyGoal) * 100)
-      const { error } = await supabase
+      const goalValue = parseFloat(monthlyGoal)
+
+      // 1. Salvar meta em organization_settings
+      const { error: settingsError } = await supabase
         .from('organization_settings')
         .upsert({
           clinic_id: currentUser.clinicId,
           monthly_revenue_goal_cents: goalCents,
         })
 
-      if (error) throw error
+      if (settingsError) throw settingsError
 
-      toast.success('Meta de faturamento salva com sucesso!')
+      // 2. Buscar custo por hora e serviços existentes
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('hourly_cost_cents, schedule_weekdays, schedule_start_time, schedule_end_time')
+        .eq('id', currentUser.clinicId)
+        .maybeSingle()
+
+      const { data: services } = await supabase
+        .from('services')
+        .select('id, name, price, duration_minutes')
+        .eq('clinic_id', currentUser.clinicId)
+        .eq('is_active', true)
+
+      // 3. Calcular ações necessárias
+      const hourlyCost = org?.hourly_cost_cents ? org.hourly_cost_cents / 100 : 0
+      const servicesList = services || []
+      const avgServicePrice = servicesList.length > 0
+        ? servicesList.reduce((sum, s) => sum + (s.price || 0), 0) / servicesList.length
+        : 0
+
+      // Calcular quantos serviços precisam ser vendidos
+      const servicesNeeded = avgServicePrice > 0 ? Math.ceil(goalValue / avgServicePrice) : 0
+
+      // Calcular horas necessárias (se tiver custo/hora)
+      let hoursNeeded = 0
+      if (hourlyCost > 0 && avgServicePrice > 0) {
+        // Assumir que cada serviço gera lucro = preço - custo/hora * duração
+        const avgDuration = servicesList.length > 0
+          ? servicesList.reduce((sum, s) => sum + (s.duration_minutes || 60), 0) / servicesList.length
+          : 60
+        const profitPerService = avgServicePrice - (hourlyCost * (avgDuration / 60))
+        if (profitPerService > 0) {
+          hoursNeeded = Math.ceil((goalValue / profitPerService) * (avgDuration / 60))
+        }
+      }
+
+      // 4. Criar registro de meta com cálculos
+      const goalData = {
+        clinic_id: currentUser.clinicId,
+        goal_month: new Date().toISOString().slice(0, 7), // YYYY-MM
+        target_revenue_cents: goalCents,
+        current_revenue_cents: 0,
+        services_needed: servicesNeeded,
+        hours_needed: hoursNeeded,
+        avg_service_price_cents: Math.round(avgServicePrice * 100),
+        hourly_cost_cents: org?.hourly_cost_cents || 0,
+        calculated_at: new Date().toISOString(),
+      }
+
+      // Tentar inserir em uma tabela de metas (se existir) ou salvar em organization_settings como JSON
+      const { error: goalError } = await supabase
+        .from('organization_settings')
+        .update({
+          monthly_revenue_goal_cents: goalCents,
+          goal_calculations: goalData, // Salvar cálculos como JSONB
+        })
+        .eq('clinic_id', currentUser.clinicId)
+
+      if (goalError) {
+        console.warn('Erro ao salvar cálculos da meta:', goalError)
+        // Continuar mesmo se falhar salvar cálculos
+      }
+
+      // 5. Mostrar resumo para o usuário
+      const summary = []
+      if (servicesNeeded > 0) {
+        summary.push(`${servicesNeeded} serviços vendidos`)
+      }
+      if (hoursNeeded > 0) {
+        summary.push(`${Math.ceil(hoursNeeded)} horas trabalhadas`)
+      }
+      if (avgServicePrice > 0 && avgServicePrice < goalValue / 20) {
+        summary.push(`Considere aumentar o preço médio dos serviços (atual: R$ ${avgServicePrice.toFixed(2)})`)
+      }
+
+      toast.success(
+        `Meta salva! Para atingir R$ ${goalValue.toFixed(2)}: ${summary.join(', ')}.`
+      )
     } catch (error) {
       console.error('Erro ao salvar meta:', error)
       toast.error('Erro ao salvar meta. Tente novamente.')
@@ -1021,7 +1108,9 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
     handleSaveSchedule,
     calculatedHourlyCost,
     teamCount,
-    teamLimit
+    teamLimit,
+    setServiceModalOpen,
+    setProfessionalModalOpen
   )
 
   const handleNext = () => {
@@ -1149,6 +1238,397 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
               )}
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Modal Inline de Cadastro de Serviço */}
+      {serviceModalOpen && (
+        <InlineServiceModal
+          currentUser={currentUser}
+          hourlyCostCents={calculatedHourlyCost ? Math.round(parseFloat(calculatedHourlyCost) * 100) : 0}
+          onClose={() => {
+            setServiceModalOpen(false)
+            // Recarregar serviços para atualizar hasServices
+            if (currentUser?.clinicId) {
+              supabase
+                .from('services')
+                .select('id')
+                .eq('clinic_id', currentUser.clinicId)
+                .limit(1)
+                .then(({ data }) => {
+                  setHasServices((data?.length || 0) > 0)
+                })
+            }
+          }}
+          onSuccess={() => {
+            setHasServices(true)
+            toast.success('Serviço cadastrado com sucesso!')
+          }}
+        />
+      )}
+
+      {/* Modal Inline de Cadastro de Profissional */}
+      {professionalModalOpen && (
+        <InlineProfessionalModal
+          currentUser={currentUser}
+          teamCount={teamCount}
+          teamLimit={teamLimit}
+          onClose={() => {
+            setProfessionalModalOpen(false)
+            // Recarregar equipe para atualizar hasTeam e teamCount
+            if (currentUser?.clinicId) {
+              supabase
+                .from('profiles')
+                .select('id, role')
+                .eq('clinic_id', currentUser.clinicId)
+                .in('role', ['professional', 'receptionist', 'recepcionista', 'admin', 'clinic_owner'])
+                .then(({ data }) => {
+                  const count = (data || []).length
+                  setHasTeam(count > 2)
+                  setTeamCount(Math.max(count, 2))
+                })
+            }
+          }}
+          onSuccess={() => {
+            setHasTeam(true)
+            setTeamCount((prev) => Math.min(prev + 1, teamLimit))
+            toast.success('Profissional cadastrado com sucesso!')
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// Componente Modal Inline para Cadastro de Serviço
+function InlineServiceModal({
+  currentUser,
+  hourlyCostCents,
+  onClose,
+  onSuccess,
+}: {
+  currentUser: any
+  hourlyCostCents: number
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const { addService } = useScheduler()
+  const toast = useToast()
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    duration: 60,
+    price: hourlyCostCents > 0 ? (hourlyCostCents / 100) * 1.5 : 0, // Sugestão: 1.5x o custo/hora
+    tax_rate_percent: 0,
+    category: '',
+  })
+
+  const handleSave = async () => {
+    if (!currentUser?.clinicId || !formData.name || formData.price <= 0) {
+      toast.error('Preencha todos os campos obrigatórios')
+      return
+    }
+
+    setLoading(true)
+    try {
+      await addService({
+        name: formData.name,
+        duration: formData.duration,
+        price: formData.price,
+        tax_rate_percent: formData.tax_rate_percent,
+        category: formData.category,
+        professionalId: 'all',
+      } as any)
+      onSuccess()
+      onClose()
+    } catch (err) {
+      console.error('Erro ao salvar serviço:', err)
+      toast.error('Erro ao salvar serviço')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Cadastrar Serviço</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            ✕
+          </button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className="text-sm font-medium text-gray-700">Nome do Serviço *</label>
+            <input
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+              placeholder="Ex: Consulta Dermatológica"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Preço (R$) *</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+              />
+              {hourlyCostCents > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Sugestão baseada no custo/hora: R$ {((hourlyCostCents / 100) * 1.5).toFixed(2)}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Duração (min) *</label>
+              <select
+                value={formData.duration}
+                onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+              >
+                {[15, 30, 45, 60, 75, 90, 120].map((d) => (
+                  <option key={d} value={d}>
+                    {d} min
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Taxa de Imposto (%)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={formData.tax_rate_percent}
+                onChange={(e) => setFormData({ ...formData, tax_rate_percent: Number(e.target.value) })}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Categoria</label>
+              <input
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                placeholder="Opcional"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 font-medium"
+            disabled={loading}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading || !formData.name || formData.price <= 0}
+            className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-medium disabled:opacity-50"
+          >
+            {loading ? 'Salvando...' : 'Salvar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Componente Modal Inline para Cadastro de Profissional
+function InlineProfessionalModal({
+  currentUser,
+  teamCount,
+  teamLimit,
+  onClose,
+  onSuccess,
+}: {
+  currentUser: any
+  teamCount: number
+  teamLimit: number
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const { addProfessional } = useScheduler()
+  const toast = useToast()
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    specialty: '',
+    email: '',
+    password: '',
+    cpf: '',
+    whatsapp: '',
+    commissionModel: 'commissioned' as 'commissioned' | 'rental' | 'hybrid',
+    commissionRate: 30, // 30% para a clínica
+  })
+
+  const handleSave = async () => {
+    if (!currentUser?.clinicId || !formData.name || !formData.specialty) {
+      toast.error('Preencha todos os campos obrigatórios')
+      return
+    }
+
+    if (teamCount >= teamLimit) {
+      toast.error(`Limite de ${teamLimit} profissionais atingido`)
+      return
+    }
+
+    setLoading(true)
+    try {
+      await addProfessional({
+        id: '',
+        name: formData.name,
+        specialty: formData.specialty,
+        avatar: '',
+        color: '#6366f1',
+        email: formData.email || undefined,
+        password: formData.password || undefined,
+        cpf: formData.cpf || undefined,
+        whatsapp: formData.whatsapp || undefined,
+        commissionModel: formData.commissionModel,
+        commissionRate: formData.commissionRate,
+      } as any)
+      onSuccess()
+      onClose()
+    } catch (err) {
+      console.error('Erro ao salvar profissional:', err)
+      toast.error('Erro ao salvar profissional')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Cadastrar Profissional</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            ✕
+          </button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className="text-sm font-medium text-gray-700">Nome Completo *</label>
+            <input
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Cargo/Especialidade *</label>
+            <input
+              value={formData.specialty}
+              onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+              placeholder="Ex: Fisioterapeuta, Recepcionista"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium text-gray-700">E-mail</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Senha</label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium text-gray-700">CPF</label>
+              <input
+                value={formData.cpf}
+                onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                placeholder="000.000.000-00"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">WhatsApp</label>
+              <input
+                value={formData.whatsapp}
+                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Comissionamento</label>
+            <select
+              value={formData.commissionModel}
+              onChange={(e) => setFormData({ ...formData, commissionModel: e.target.value as any })}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="commissioned">Porcentagem (%)</option>
+              <option value="rental">Fixo Mensal (R$)</option>
+              <option value="hybrid">Híbrido (Fixo + %)</option>
+            </select>
+          </div>
+          {formData.commissionModel === 'commissioned' || formData.commissionModel === 'hybrid' ? (
+            <div>
+              <label className="text-sm font-medium text-gray-700">
+                Taxa para a Clínica (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={formData.commissionRate}
+                onChange={(e) => setFormData({ ...formData, commissionRate: Number(e.target.value) })}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Ex: 30 = a clínica recebe 30% e o profissional recebe 70%
+              </p>
+            </div>
+          ) : null}
+        </div>
+        {teamCount >= teamLimit && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+            <p className="text-sm text-yellow-800">
+              Limite de {teamLimit} profissionais atingido. Para adicionar mais, o valor é de R$ 29,90 por novo acesso.
+            </p>
+          </div>
+        )}
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 font-medium"
+            disabled={loading}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading || !formData.name || !formData.specialty || teamCount >= teamLimit}
+            className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-medium disabled:opacity-50"
+          >
+            {loading ? 'Salvando...' : 'Salvar'}
+          </button>
         </div>
       </div>
     </div>

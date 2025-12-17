@@ -48,30 +48,33 @@ function computeSplit(input: Payload, hasReferral: boolean, referralPercentage: 
   const remaining = Math.max(net - platform_fee_total_cents, 0)
 
   // 4. Calcular split entre profissional e clínica
+  // ✅ CORREÇÃO CRÍTICA: commission_rate é a % que a CLÍNICA recebe, não o profissional
+  // Exemplo: Se commission_rate = 0.30 (30%), a clínica recebe 30% e o profissional recebe 70%
   let professional_share_cents = 0
   let clinic_share_cents = 0
 
-  const rate = input.commission_rate ?? 0.5
+  const clinic_rate = input.commission_rate ?? 0.5 // % que a clínica recebe (padrão 50%)
   const rental_base = input.rental_base_cents ?? 0
 
   switch (input.commission_model) {
     case 'commissioned': {
-      professional_share_cents = Math.round(remaining * rate)
-      clinic_share_cents = Math.max(remaining - professional_share_cents, 0)
+      // clinic_rate = % que a clínica recebe (ex: 0.30 = 30%)
+      clinic_share_cents = Math.round(remaining * clinic_rate)
+      professional_share_cents = Math.max(remaining - clinic_share_cents, 0)
       break
     }
     case 'rental': {
+      // No modelo rental, profissional recebe tudo (clínica recebe apenas o fixo mensal)
       professional_share_cents = remaining
       clinic_share_cents = 0
       break
     }
     case 'hybrid': {
-      const variablePart = Math.round(remaining * rate)
-      professional_share_cents = Math.max(variablePart + rental_base, 0)
-      if (professional_share_cents > remaining) {
-        professional_share_cents = remaining
-      }
-      clinic_share_cents = Math.max(remaining - professional_share_cents, 0)
+      // No modelo híbrido: clínica recebe % do variável + fixo mensal é cobrado separadamente
+      const clinic_variable_part = Math.round(remaining * clinic_rate)
+      clinic_share_cents = clinic_variable_part
+      professional_share_cents = Math.max(remaining - clinic_share_cents, 0)
+      // Nota: rental_base é cobrado separadamente via generate-rental-billing
       break
     }
   }

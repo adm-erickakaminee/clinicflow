@@ -501,45 +501,12 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
           // Adicionar "Visão Geral" no início se não existir
           const hasAllView = professionalsData.some((p) => p.id === 'all')
           
-          // Adicionar 3 profissionais fictícios para recepcionistas, admins e super_admins
-          // Verificar role tanto do currentUser quanto do localStorage para garantir detecção
-          const userRole = currentUser?.role
-          const storedUser = localStorage.getItem('clinicflow_user')
-          let storedRole: string | null = null
-          try {
-            if (storedUser) {
-              const parsed = JSON.parse(storedUser)
-              storedRole = parsed?.role || null
-            }
-          } catch (e) {
-            // Ignorar erro de parsing
-          }
-          const role = userRole || storedRole
-          // Adicionar profissionais fictícios para recepcionistas, admins e super_admins
-          const shouldAddFictional = role === 'receptionist' || role === 'admin' || role === 'super_admin' || role === 'clinic_owner'
-          const fictionalProfessionals: SchedulerProfessional[] = shouldAddFictional ? [
-            { id: 'fictional-prof-1', name: 'Dr. João Silva', specialty: 'Clínico Geral', avatar: '', avatarUrl: '' },
-            { id: 'fictional-prof-2', name: 'Dra. Maria Santos', specialty: 'Dermatologia', avatar: '', avatarUrl: '' },
-            { id: 'fictional-prof-3', name: 'Dr. Pedro Oliveira', specialty: 'Cardiologia', avatar: '', avatarUrl: '' },
-          ] : []
-          
-          console.log('🔍 SchedulerContext - Debug profissionais:', {
-            currentUserRole: currentUser?.role,
-            storedRole,
-            role,
-            shouldAddFictional,
-            fictionalCount: fictionalProfessionals.length,
-            professionalsDataCount: professionalsData.length,
-            hasAllView,
-            fictionalIds: fictionalProfessionals.map(p => p.id),
-            fictionalNames: fictionalProfessionals.map(p => p.name)
-          })
+          // ✅ REMOVIDO: Profissionais fictícios não devem aparecer no calendário
           
           if (!hasAllView) {
             const finalProfessionals = [
               { id: 'all', name: 'Visão Geral', specialty: 'Clínica', avatar: '' },
               ...professionalsData,
-              ...fictionalProfessionals,
             ]
             console.log('📋 SchedulerContext - Definindo profissionais (sem all):', {
               total: finalProfessionals.length,
@@ -548,92 +515,27 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
             })
             setProfessionals(finalProfessionals)
           } else {
-            const finalProfessionals = [
-              ...professionalsData,
-              ...fictionalProfessionals,
-            ]
-            console.log('📋 SchedulerContext - Definindo profissionais (com all):', {
-              total: finalProfessionals.length,
-              ids: finalProfessionals.map(p => p.id),
-              names: finalProfessionals.map(p => p.name)
-            })
-            setProfessionals(finalProfessionals)
+            setProfessionals(professionalsData)
           }
           
-          console.log('✅ SchedulerContext - Profissionais carregados (super_admin excluído):', {
+          console.log('✅ SchedulerContext - Profissionais carregados:', {
             total: profRes.data.length,
             filtrados: professionalsData.length,
-            fictionalCount: fictionalProfessionals.length,
             currentUserRole: currentUser?.role,
             currentUserId: currentUser?.id
           })
         } else if (profRes.error) {
           console.warn('Erro ao carregar professionals:', profRes.error.message)
-          // Se houver erro e for recepcionista, adicionar profissionais fictícios
-          // Verificar role tanto do currentUser quanto do localStorage
-          const userRole = currentUser?.role
-          const storedUser = localStorage.getItem('clinicflow_user')
-          let storedRole: string | null = null
-          try {
-            if (storedUser) {
-              const parsed = JSON.parse(storedUser)
-              storedRole = parsed?.role || null
-            }
-          } catch (e) {
-            // Ignorar erro de parsing
-          }
-          const role = userRole || storedRole
-          const shouldAddFictional = role === 'receptionist' || role === 'admin' || role === 'super_admin' || role === 'clinic_owner'
-          const fictionalProfessionals: SchedulerProfessional[] = shouldAddFictional ? [
-            { id: 'fictional-prof-1', name: 'Dr. João Silva', specialty: 'Clínico Geral', avatar: '', avatarUrl: '' },
-            { id: 'fictional-prof-2', name: 'Dra. Maria Santos', specialty: 'Dermatologia', avatar: '', avatarUrl: '' },
-            { id: 'fictional-prof-3', name: 'Dr. Pedro Oliveira', specialty: 'Cardiologia', avatar: '', avatarUrl: '' },
-          ] : []
-          console.log('⚠️ SchedulerContext - Erro ao carregar, usando profissionais fictícios:', {
-            shouldAddFictional,
-            userRole,
-            storedRole,
-            role,
-            fictionalCount: fictionalProfessionals.length,
-            currentUserRole: currentUser?.role
-          })
+          // ✅ REMOVIDO: Não adicionar profissionais fictícios em caso de erro
           setProfessionals([
             { id: 'all', name: 'Visão Geral', specialty: 'Clínica', avatar: '' },
-            ...fictionalProfessionals,
           ])
         } else {
           // Caso não haja erro mas também não haja dados (array vazio)
-          const userRole = currentUser?.role
-          const storedUser = localStorage.getItem('clinicflow_user')
-          let storedRole: string | null = null
-          try {
-            if (storedUser) {
-              const parsed = JSON.parse(storedUser)
-              storedRole = parsed?.role || null
-            }
-          } catch (e) {
-            // Ignorar erro de parsing
-          }
-          const role = userRole || storedRole
-          const shouldAddFictional = role === 'receptionist' || role === 'admin' || role === 'super_admin' || role === 'clinic_owner'
-          if (shouldAddFictional) {
-            const fictionalProfessionals: SchedulerProfessional[] = [
-              { id: 'fictional-prof-1', name: 'Dr. João Silva', specialty: 'Clínico Geral', avatar: '', avatarUrl: '' },
-              { id: 'fictional-prof-2', name: 'Dra. Maria Santos', specialty: 'Dermatologia', avatar: '', avatarUrl: '' },
-              { id: 'fictional-prof-3', name: 'Dr. Pedro Oliveira', specialty: 'Cardiologia', avatar: '', avatarUrl: '' },
-            ]
-            console.log('ℹ️ SchedulerContext - Nenhum profissional no banco, adicionando fictícios:', {
-              shouldAddFictional,
-              userRole,
-              storedRole,
-              role,
-              fictionalCount: fictionalProfessionals.length
-            })
-            setProfessionals([
-              { id: 'all', name: 'Visão Geral', specialty: 'Clínica', avatar: '' },
-              ...fictionalProfessionals,
-            ])
-          }
+          // ✅ REMOVIDO: Não adicionar profissionais fictícios quando não há dados
+          setProfessionals([
+            { id: 'all', name: 'Visão Geral', specialty: 'Clínica', avatar: '' },
+          ])
         }
         
         if (!cliRes.error && cliRes.data) {
