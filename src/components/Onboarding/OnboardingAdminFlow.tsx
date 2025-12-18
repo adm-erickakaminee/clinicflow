@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOnboarding } from '../../hooks/useOnboarding'
 import { useToast } from '../ui/Toast'
@@ -86,7 +86,7 @@ const createSteps = (
             <img 
               src={gabyImages.welcome} 
               alt="Gaby acenando" 
-              className="w-40 h-40 object-contain animate-bounce"
+              className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 object-contain animate-bounce mx-auto"
               style={{
                 animation: 'wave 2s ease-in-out infinite',
               }}
@@ -103,17 +103,17 @@ const createSteps = (
             `}</style>
           </div>
         </div>
-        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 border-2 border-purple-200 text-center">
+        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-purple-200 text-center">
           <div className="flex items-start gap-3 mb-4">
             <div className="bg-purple-100 p-2 rounded-lg mx-auto">
-              <Hand className="h-5 w-5 text-purple-600" />
+              <Hand className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
             </div>
           </div>
           <div className="flex-1">
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mb-3">
               Oiee! Eu sou a Gaby, sua nova assistente pessoal. 💁‍♀️
             </h3>
-            <p className="text-gray-700 leading-relaxed text-lg mb-6">
+            <p className="text-sm sm:text-base text-gray-700 leading-relaxed text-base sm:text-lg mb-4 sm:mb-6">
               Estou aqui para tirar o peso da gestão das suas costas e te ajudar a focar no que importa: 
               sua <strong>rentabilidade e eficiência</strong>. Vamos configurar tudo juntinhos?
             </p>
@@ -129,28 +129,28 @@ const createSteps = (
     gabyImage: gabyImages.config,
     content: (
       <div className="space-y-6">
-        <div className="flex items-start gap-6">
-          <div className="flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+          <div className="flex-shrink-0 w-full sm:w-auto flex justify-center sm:justify-start">
             <img 
               src={gabyImages.config} 
               alt="Gaby - Configuração" 
-              className="w-32 h-32 object-contain"
+              className="w-48 h-48 sm:w-40 sm:h-40 md:w-48 md:h-48 object-contain"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = gabyImages.default
               }}
             />
           </div>
-          <div className="flex-1 space-y-4">
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border-2 border-blue-200">
+          <div className="flex-1 space-y-4 w-full">
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-blue-200">
               <div className="flex items-start gap-3 mb-4">
                 <div className="bg-blue-100 p-2 rounded-lg">
-                  <Calculator className="h-5 w-5 text-blue-600" />
+                  <Calculator className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-lg sm:text-lg sm:text-xl font-bold text-gray-900 mb-2">
                     Oiee! Vamos configurar sua jornada! ⏱️
                   </h3>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-sm sm:text-base text-sm sm:text-base text-gray-700 leading-relaxed mb-4">
                     Preencha seus horários e custos aqui embaixo que eu já calculo seu custo por hora agora mesmo!
                   </p>
                 </div>
@@ -158,7 +158,7 @@ const createSteps = (
             </div>
 
             {/* Formulário de Turnos e Custos */}
-            <div className="bg-white border-2 border-blue-200 rounded-xl p-6 space-y-6">
+            <div className="bg-white border-2 border-blue-200 rounded-xl p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Horários */}
               <div>
                 <h4 className="font-semibold text-gray-900 mb-4">Horários de Funcionamento</h4>
@@ -312,28 +312,28 @@ const createSteps = (
     gabyImage: gabyImages.finances,
     content: (
       <div className="space-y-6">
-        <div className="flex items-start gap-6">
-          <div className="flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+          <div className="flex-shrink-0 w-full sm:w-auto flex justify-center sm:justify-start">
             <img 
               src={gabyImages.finances} 
               alt="Gaby - Metas" 
-              className="w-32 h-32 object-contain"
+              className="w-48 h-48 sm:w-40 sm:h-40 md:w-48 md:h-48 object-contain"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = gabyImages.default
               }}
             />
           </div>
-          <div className="flex-1 space-y-4">
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-emerald-200">
+          <div className="flex-1 space-y-4 w-full">
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-emerald-200">
               <div className="flex items-start gap-3 mb-4">
                 <div className="bg-emerald-100 p-2 rounded-lg">
-                  <Target className="h-5 w-5 text-emerald-600" />
+                  <Target className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
                     Agora que sei seus custos, me diga: qual sua meta de faturamento para este mês? 🚀
                   </h3>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed mb-4">
                     Vou usar esse número para monitorar sua ocupação e te avisar se estivermos saindo do trilho!
                   </p>
                 </div>
@@ -384,28 +384,28 @@ const createSteps = (
     gabyImage: gabyImages.config,
     content: (
       <div className="space-y-6">
-        <div className="flex items-start gap-6">
-          <div className="flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+          <div className="flex-shrink-0 w-full sm:w-auto flex justify-center sm:justify-start">
             <img 
               src={gabyImages.config} 
               alt="Gaby - Cadastros" 
-              className="w-32 h-32 object-contain"
+              className="w-48 h-48 sm:w-40 sm:h-40 md:w-48 md:h-48 object-contain"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = gabyImages.default
               }}
             />
           </div>
-          <div className="flex-1 space-y-4">
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border-2 border-indigo-200">
+          <div className="flex-1 space-y-4 w-full">
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-indigo-200">
               <div className="flex items-start gap-3 mb-4">
                 <div className="bg-indigo-100 p-2 rounded-lg">
-                  <Settings className="h-5 w-5 text-indigo-600" />
+                  <Settings className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
                     Hora de dar vida ao sistema! 👩‍⚕️
                   </h3>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed mb-4">
                     Cadastre os serviços que você oferece e convide sua recepcionista ou outros profissionais. 
                     No cadastro da recepcionista, eu te explico tudinho sobre as permissões dela.
                   </p>
@@ -431,7 +431,7 @@ const createSteps = (
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h4 className="font-semibold text-gray-900">Cadastrar Primeiro Serviço</h4>
-                      {hasServices && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+                      {hasServices && <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />}
                     </div>
                     <p className="text-sm text-gray-600 mb-4">
                       {hasServices 
@@ -472,8 +472,8 @@ const createSteps = (
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h4 className="font-semibold text-gray-900">Convidar Minha Equipe</h4>
-                      {hasTeam && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
-                      {teamCount >= teamLimit && <HelpCircle className="h-5 w-5 text-red-600" />}
+                      {hasTeam && <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />}
+                      {teamCount >= teamLimit && <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />}
                     </div>
                     <p className="text-sm text-gray-600 mb-4">
                       {teamCount >= teamLimit
@@ -533,16 +533,16 @@ const createSteps = (
             />
           </div>
           <div className="flex-1 space-y-4">
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-emerald-200">
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-emerald-200">
               <div className="flex items-start gap-3 mb-4">
                 <div className="bg-emerald-100 p-2 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-emerald-600" />
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
                     Aqui a mágica acontece! 💸
                   </h3>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed mb-4">
                     A divisão funciona assim: <strong>1º</strong> Descontamos a taxa do cartão → <strong>2º</strong> Sua parte ou do profissional cai na conta → <strong>3º</strong> Taxa da plataforma → <strong>4º</strong> O que sobrar é o lucro da clínica!
                   </p>
                 </div>
@@ -581,7 +581,7 @@ const createSteps = (
                 <div className="flex items-center justify-center gap-4">
                   <div className="bg-purple-100 rounded-xl p-4 border-2 border-purple-300 text-center flex-1">
                     <p className="font-bold text-purple-900">Profissional</p>
-                    <p className="text-sm text-purple-700">-R$ 29,10 (30%)</p>
+                    <p className="text-sm text-purple-700">-R$ 65,81 (70%)</p>
                     <p className="text-xs text-purple-600 mt-1">Vai direto para conta dele</p>
                   </div>
                   <div className="bg-orange-100 rounded-xl p-4 border-2 border-orange-300 text-center flex-1">
@@ -597,7 +597,7 @@ const createSteps = (
                 <div className="flex items-center justify-center">
                   <div className="bg-emerald-100 rounded-xl p-4 border-2 border-emerald-300 text-center min-w-[200px]">
                     <p className="font-bold text-emerald-900 text-lg">Sua Clínica</p>
-                    <p className="text-sm text-emerald-700">Recebe R$ 61,92</p>
+                    <p className="text-sm text-emerald-700">Recebe R$ 28,20 (30%)</p>
                     <p className="text-xs text-emerald-600 mt-1">Cai limpinho na conta</p>
                   </div>
                 </div>
@@ -628,28 +628,28 @@ const createSteps = (
     gabyImage: gabyImages.security,
     content: (
       <div className="space-y-6">
-        <div className="flex items-start gap-6">
-          <div className="flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+          <div className="flex-shrink-0 w-full sm:w-auto flex justify-center sm:justify-start">
             <img 
               src={gabyImages.security} 
               alt="Gaby - Segurança" 
-              className="w-32 h-32 object-contain"
+              className="w-48 h-48 sm:w-40 sm:h-40 md:w-48 md:h-48 object-contain"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = gabyImages.default
               }}
             />
           </div>
-          <div className="flex-1 space-y-4">
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border-2 border-blue-200">
+          <div className="flex-1 space-y-4 w-full">
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-blue-200">
               <div className="flex items-start gap-3 mb-4">
                 <div className="bg-blue-100 p-2 rounded-lg">
-                  <CreditCard className="h-5 w-5 text-blue-600" />
+                  <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
                     Surpresa! Já criei sua conta no Asaas! 🏦
                   </h3>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed mb-4">
                     Já criei sua conta no Asaas com os dados que você me deu. É por lá que você vai gerenciar seus recebimentos. 
                     Dá uma olhadinha no seu e-mail (e na caixa de spam também!) para pegar suas credenciais de acesso.
                   </p>
@@ -659,7 +659,7 @@ const createSteps = (
 
             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
               <div className="flex items-start gap-3 mb-4">
-                <HelpCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-yellow-900 mb-2">
                     ⚠️ Importante:
@@ -679,7 +679,7 @@ const createSteps = (
                   id="email-checked"
                   checked={emailChecked}
                   onChange={(e) => setEmailChecked(e.target.checked)}
-                  className="mt-1 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="mt-1 h-4 w-4 sm:h-5 sm:w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <div className="flex-1">
                   <GabyTooltip message="Marque esta opção quando você já tiver verificado seu e-mail (incluindo a caixa de spam) e recebido as credenciais de acesso ao Asaas.">
@@ -705,28 +705,28 @@ const createSteps = (
     gabyImage: gabyImages.demo,
     content: (
       <div className="space-y-6">
-        <div className="flex items-start gap-6">
-          <div className="flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+          <div className="flex-shrink-0 w-full sm:w-auto flex justify-center sm:justify-start">
             <img 
               src={gabyImages.demo} 
               alt="Gaby - Demonstração" 
-              className="w-32 h-32 object-contain"
+              className="w-48 h-48 sm:w-40 sm:h-40 md:w-48 md:h-48 object-contain"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = gabyImages.default
               }}
             />
           </div>
-          <div className="flex-1 space-y-4">
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200">
+          <div className="flex-1 space-y-4 w-full">
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-purple-200">
               <div className="flex items-start gap-3 mb-4">
                 <div className="bg-purple-100 p-2 rounded-lg">
-                  <Calendar className="h-5 w-5 text-purple-600" />
+                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
                     Tudo pronto! 📱
                   </h3>
-                  <p className="text-gray-700 leading-relaxed mb-4">
+                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed mb-4">
                     No dia a dia, eu vou criar lembretes de WhatsApp para você enviar aos seus pacientes. Você pode revisar e enviar quando quiser! 
                     Na agenda, você verá como é fácil fazer o Check-in, ver a Anamnese e fazer o Check-out com um clique!
                   </p>
@@ -1152,60 +1152,60 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
   const Icon = currentStepData.icon
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-5xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col my-2 sm:my-0">
         {/* Header */}
-        <div className="border-b border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-3 rounded-xl">
-                <Icon className="h-6 w-6 text-white" />
+        <div className="border-b border-gray-200 p-3 sm:p-6">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-2 sm:p-3 rounded-xl">
+                <Icon className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Onboarding CLINIC FLOW</h1>
-                <p className="text-sm text-gray-600">Passo {currentStep} de {steps.length}</p>
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Onboarding CLINIC FLOW</h1>
+                <p className="text-xs sm:text-sm text-gray-600">Passo {currentStep} de {steps.length}</p>
               </div>
             </div>
           </div>
           
           {/* Progress Bar */}
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-gray-200 rounded-full h-1.5 sm:h-2">
             <div
-              className="bg-gradient-to-r from-purple-500 to-indigo-600 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-purple-500 to-indigo-600 h-1.5 sm:h-2 rounded-full transition-all duration-300"
               style={{ width: `${(currentStep / steps.length) * 100}%` }}
             />
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">{currentStepData.title}</h2>
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6">
+          <div className="mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-3xl font-bold text-gray-900 mb-2">{currentStepData.title}</h2>
           </div>
           {currentStepData.content}
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 p-6 flex items-center justify-between">
+        <div className="border-t border-gray-200 p-3 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
           <button
             onClick={handlePrevious}
             disabled={currentStep === 1}
-            className="px-6 py-3 rounded-xl border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <ArrowLeft className="h-4 w-4" />
             Anterior
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 order-first sm:order-none">
             {steps.map((_, index) => (
               <div
                 key={index}
-                className={`w-2 h-2 rounded-full transition ${
+                className={`h-2 sm:h-2 rounded-full transition ${
                   index + 1 === currentStep
-                    ? 'bg-purple-600 w-8'
+                    ? 'bg-purple-600 w-6 sm:w-8'
                     : index + 1 < currentStep
-                    ? 'bg-purple-300'
-                    : 'bg-gray-300'
+                    ? 'bg-purple-300 w-2'
+                    : 'bg-gray-300 w-2'
                 }`}
               />
             ))}
@@ -1214,7 +1214,7 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
           {currentStep < steps.length ? (
             <button
               onClick={handleNext}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition shadow-lg flex items-center gap-2"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               {currentStep === 1 ? 'Vamos lá, Gaby!' : 'Próximo'}
               <ArrowRight className="h-4 w-4" />
@@ -1223,7 +1223,7 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
             <button
               onClick={handleComplete}
               disabled={isCompleting}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition shadow-lg flex items-center gap-2 disabled:opacity-50"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base"
             >
               {isCompleting ? (
                 <>
@@ -1315,28 +1315,80 @@ function InlineServiceModal({
   const { addService } = useScheduler()
   const toast = useToast()
   const [loading, setLoading] = useState(false)
+  const hourlyCost = hourlyCostCents / 100
   const [formData, setFormData] = useState({
     name: '',
     duration: 60,
-    price: hourlyCostCents > 0 ? (hourlyCostCents / 100) * 1.5 : 0, // Sugestão: 1.5x o custo/hora
-    tax_rate_percent: 0,
+    supplyCost: '', // ✅ Mudado para string para permitir apagar o "0"
+    tax_rate_percent: '', // ✅ Mudado para string para permitir apagar o "0"
     category: '',
+    price: '', // ✅ Mudado para string para permitir apagar o "0"
   })
 
+  // Calcular preço sugerido baseado em: custo/hora + insumo + impostos + margem
+  const calculateSuggestedPrice = useMemo(() => {
+    const supplyCostNum = parseFloat(formData.supplyCost.toString()) || 0
+    const taxRateNum = parseFloat(formData.tax_rate_percent.toString()) || 0
+    
+    if (hourlyCost <= 0 && supplyCostNum <= 0) return 0
+
+    // Custo base = (custo/hora * duração em horas) + custo de insumo
+    const durationHours = formData.duration / 60
+    const hourlyCostForService = hourlyCost * durationHours
+    const totalCost = hourlyCostForService + supplyCostNum
+
+    // Margem de lucro sugerida: 50% (1.5x o custo)
+    const priceWithMargin = totalCost * 1.5
+
+    // Ajustar para incluir impostos (se houver)
+    // Se a taxa de imposto é X%, o preço final deve ser: preço_sugerido / (1 - X/100)
+    if (taxRateNum > 0) {
+      return priceWithMargin / (1 - taxRateNum / 100)
+    }
+
+    return priceWithMargin
+  }, [hourlyCost, formData.duration, formData.supplyCost, formData.tax_rate_percent])
+
+  // Atualizar preço sugerido quando os campos mudarem (apenas na primeira vez ou se o preço estiver vazio/zerado)
+  useEffect(() => {
+    const currentPrice = parseFloat(formData.price.toString()) || 0
+    if (calculateSuggestedPrice > 0 && currentPrice === 0) {
+      setFormData((prev) => ({ ...prev, price: calculateSuggestedPrice.toFixed(2) }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calculateSuggestedPrice])
+
   const handleSave = async () => {
-    if (!currentUser?.clinicId || !formData.name || formData.price <= 0) {
-      toast.error('Preencha todos os campos obrigatórios')
+    // ✅ Validação melhorada: verificar todos os campos necessários
+    if (!currentUser?.clinicId) {
+      toast.error('Erro: Clínica não encontrada')
+      return
+    }
+    
+    if (!formData.name || formData.name.trim() === '') {
+      toast.error('Por favor, informe o nome do serviço')
+      return
+    }
+    
+    if (!formData.duration || formData.duration <= 0) {
+      toast.error('Por favor, informe a duração do serviço')
+      return
+    }
+    
+    const priceNum = parseFloat(formData.price.toString()) || 0
+    if (priceNum <= 0 || isNaN(priceNum)) {
+      toast.error('Por favor, informe um preço válido para o serviço')
       return
     }
 
     setLoading(true)
     try {
       await addService({
-        name: formData.name,
+        name: formData.name.trim(),
         duration: formData.duration,
-        price: formData.price,
-        tax_rate_percent: formData.tax_rate_percent,
-        category: formData.category,
+        price: priceNum,
+        tax_rate_percent: parseFloat(formData.tax_rate_percent.toString()) || 0,
+        category: formData.category || '',
         professionalId: 'all',
       } as any)
       onSuccess()
@@ -1370,22 +1422,6 @@ function InlineServiceModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-gray-700">Preço (R$) *</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
-              />
-              {hourlyCostCents > 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Sugestão baseada no custo/hora: R$ {((hourlyCostCents / 100) * 1.5).toFixed(2)}
-                </p>
-              )}
-            </div>
-            <div>
               <label className="text-sm font-medium text-gray-700">Duração (min) *</label>
               <select
                 value={formData.duration}
@@ -1399,6 +1435,19 @@ function InlineServiceModal({
                 ))}
               </select>
             </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Custo de Insumo (R$)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.supplyCost}
+                onChange={(e) => setFormData({ ...formData, supplyCost: e.target.value })}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                placeholder="0.00"
+              />
+              <p className="text-xs text-gray-500 mt-1">Custo de materiais/insumos por serviço</p>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -1409,9 +1458,11 @@ function InlineServiceModal({
                 min="0"
                 max="100"
                 value={formData.tax_rate_percent}
-                onChange={(e) => setFormData({ ...formData, tax_rate_percent: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, tax_rate_percent: e.target.value })}
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                placeholder="0"
               />
+              <p className="text-xs text-gray-500 mt-1">Ex: 5% para ISS</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Categoria</label>
@@ -1421,6 +1472,42 @@ function InlineServiceModal({
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
                 placeholder="Opcional"
               />
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Preço Sugerido (R$) *</label>
+            <div className="relative">
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                className="w-full mt-1 px-3 py-2 border-2 border-indigo-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-indigo-50"
+              />
+              {calculateSuggestedPrice > 0 && (
+                <div className="mt-2 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl">
+                  <p className="text-xs font-semibold text-indigo-900 mb-1">💡 Cálculo da Sugestão:</p>
+                  <div className="text-xs text-indigo-700 space-y-1">
+                    {hourlyCost > 0 && (
+                      <p>• Custo/hora (R$ {hourlyCost.toFixed(2)}/h) × {formData.duration}min = R$ {(hourlyCost * (formData.duration / 60)).toFixed(2)}</p>
+                    )}
+                    {(parseFloat(formData.supplyCost.toString()) || 0) > 0 && (
+                      <p>• Custo de insumo: R$ {(parseFloat(formData.supplyCost.toString()) || 0).toFixed(2)}</p>
+                    )}
+                    {hourlyCost > 0 || (parseFloat(formData.supplyCost.toString()) || 0) > 0 ? (
+                      <>
+                        <p>• Custo total: R$ {((hourlyCost * (formData.duration / 60)) + (parseFloat(formData.supplyCost.toString()) || 0)).toFixed(2)}</p>
+                        <p>• Margem de lucro (50%): R$ {(((hourlyCost * (formData.duration / 60)) + (parseFloat(formData.supplyCost.toString()) || 0)) * 1.5).toFixed(2)}</p>
+                        {(parseFloat(formData.tax_rate_percent.toString()) || 0) > 0 && (
+                          <p>• Ajuste para impostos ({(parseFloat(formData.tax_rate_percent.toString()) || 0)}%): R$ {calculateSuggestedPrice.toFixed(2)}</p>
+                        )}
+                      </>
+                    ) : null}
+                    <p className="font-bold text-indigo-900 mt-2 text-sm">💰 Preço Final Sugerido: R$ {calculateSuggestedPrice.toFixed(2)}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1434,7 +1521,7 @@ function InlineServiceModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={loading || !formData.name || formData.price <= 0}
+            disabled={loading || !formData.name || !formData.name.trim() || (parseFloat(formData.price.toString()) || 0) <= 0}
             className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-medium disabled:opacity-50"
           >
             {loading ? 'Salvando...' : 'Salvar'}
@@ -1597,8 +1684,8 @@ function InlineProfessionalModal({
                 type="number"
                 min="0"
                 max="100"
-                value={formData.commissionRate}
-                onChange={(e) => setFormData({ ...formData, commissionRate: Number(e.target.value) })}
+                value={formData.commissionRate || ''}
+                onChange={(e) => setFormData({ ...formData, commissionRate: e.target.value === '' ? 0 : Number(e.target.value) })}
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
               />
               <p className="text-xs text-gray-500 mt-1">

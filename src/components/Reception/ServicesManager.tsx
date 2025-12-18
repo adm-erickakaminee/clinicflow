@@ -217,8 +217,8 @@ function ServiceModal({
                 type="number"
                 step="0.01"
                 min="0"
-                value={draft.price}
-                onChange={(e) => setDraft((p) => ({ ...p, price: Number(e.target.value) }))}
+                value={draft.price || ''}
+                onChange={(e) => setDraft((p) => ({ ...p, price: e.target.value === '' ? 0 : Number(e.target.value) }))}
                 className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
                 placeholder="0.00"
               />
@@ -246,8 +246,8 @@ function ServiceModal({
                 step="0.01"
                 min="0"
                 max="100"
-                value={(draft as any).tax_rate_percent ?? 0}
-                onChange={(e) => setDraft((p) => ({ ...p, tax_rate_percent: Number(e.target.value) } as any))}
+                value={(draft as any).tax_rate_percent ?? ''}
+                onChange={(e) => setDraft((p) => ({ ...p, tax_rate_percent: e.target.value === '' ? 0 : Number(e.target.value) } as any))}
                 className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
                 placeholder="0.00"
               />

@@ -246,6 +246,13 @@ const initialProfessionals: SchedulerProfessional[] = [
 export function SchedulerProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<SchedulerUser | null>(initialUser)
   const [sessionLoading, setSessionLoading] = useState(true) // Iniciar como true para indicar que está carregando
+  // ✅ Ref para acessar currentUser dentro do callback sem problemas de closure
+  const currentUserRef = React.useRef<SchedulerUser | null>(initialUser)
+  
+  // Atualizar ref sempre que currentUser mudar
+  React.useEffect(() => {
+    currentUserRef.current = currentUser
+  }, [currentUser])
 
   const [appointments, setAppointments] = useState<SchedulerAppointment[]>([])
   const [blocks, setBlocks] = useState<SchedulerBlock[]>([])
@@ -265,6 +272,12 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
   const login = async ({ email, password, mode }: { email: string; password: string; mode: 'pro' | 'client' }) => {
     try {
       console.log('🔐 Iniciando login...', { email, mode })
+      
+      // ✅ LIMPEZA DE CACHE NO LOGIN: Limpar dados antigos antes de fazer login
+      console.log('🧹 Limpando cache/localStorage antes do login...')
+      localStorage.removeItem('clinicflow_user')
+      setCurrentUser(null)
+      
       setSessionLoading(true)
       
       if (!email || !password) {
@@ -3221,19 +3234,40 @@ para permitir que super_admin atualize profiles de outros usuários.`
         // Determinar se é super_admin (prioridade: flag > role no banco > localStorage)
         const isSuperAdmin = isSuperAdminFlag || roleFromDb === 'super_admin' || preservedRole === 'super_admin'
         
-        // Determinar role final (prioridade: super_admin se identificado > role do banco > preservedRole > 'professional')
-        // CRÍTICO: Se já foi identificado como super_admin antes, SEMPRE manter como super_admin
-        let finalRole: Role
+        // ✅ VERIFICAÇÃO SÍNCRONA DE ROLE: Priorizar SEMPRE o banco de dados sobre localStorage
+        // Determinar role final (prioridade: super_admin > role do banco > NÃO usar localStorage para evitar dados antigos)
+        // CRÍTICO: Para evitar bugs de role incorreto, SEMPRE priorizar o banco de dados
+        let finalRole: Role | null = null
+
         if (isSuperAdmin || preservedRole === 'super_admin') {
           finalRole = 'super_admin'
+          console.log('✅ loadUserProfile - Role determinado: super_admin (flag ou preserved)')
         } else if (roleFromDb && ['admin', 'clinic_owner', 'receptionist', 'professional', 'client'].includes(roleFromDb)) {
+          // ✅ PRIORIDADE 1: Sempre usar role do banco se existir e for válido
           finalRole = roleFromDb
-        } else if (preservedRole) {
+          console.log('✅ loadUserProfile - Usando role do banco de dados:', finalRole)
+        } else if (preservedRole && ['admin', 'clinic_owner', 'receptionist', 'professional', 'client'].includes(preservedRole)) {
+          // ✅ PRIORIDADE 2: Usar preservedRole (do contexto interno) apenas se não houver no banco
           finalRole = preservedRole
+          console.log('✅ loadUserProfile - Usando preservedRole (contexto interno):', finalRole)
         } else {
-          // CORRIGIDO: Não usar 'professional' como padrão
-          // Se não houver role confirmado, retornar null e manter sessionLoading
-          console.warn('⚠️ Role não confirmado do banco - não usando padrão. Retornando null.')
+          // ❌ NÃO usar localStorage para preservar role - pode ter dados antigos/incorretos
+          // Se não houver role confirmado no banco, retornar null
+          console.error('❌ loadUserProfile - Role não encontrado no banco de dados!')
+          console.error('❌ Dados disponíveis:', { 
+            roleFromDb, 
+            preservedRole, 
+            isSuperAdmin,
+            profileData: profile ? { role: profile.role, clinic_id: profile.clinic_id } : null
+          })
+          setCurrentUser(null)
+          localStorage.removeItem('clinicflow_user')
+          return null
+        }
+        
+        // ✅ VALIDAÇÃO FINAL: Garantir que o role foi determinado corretamente
+        if (!finalRole) {
+          console.error('❌ loadUserProfile - Falha crítica: finalRole não foi determinado!')
           setCurrentUser(null)
           localStorage.removeItem('clinicflow_user')
           return null
@@ -3355,61 +3389,73 @@ para permitir que super_admin atualize profiles de outros usuários.`
     initializeSession()
 
     // Listener para mudanças de autenticação
+    // ✅ CORREÇÃO: Evitar recarregar perfil em TOKEN_REFRESHED se já estiver carregado (evita reload no mobile)
+    let hasLoadedUser = false
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔔 Auth state change:', event, session?.user?.id)
+      console.log('🔔 Auth state change:', event, session?.user?.id, 'hasLoadedUser:', hasLoadedUser, 'currentUser:', !!currentUser)
       
       if (event === 'SIGNED_OUT') {
         console.log('👋 Usuário deslogado')
         setCurrentUser(null)
         localStorage.removeItem('clinicflow_user')
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-        // IMPORTANTE: Carregar perfil quando há uma sessão válida
+        hasLoadedUser = false // Reset flag ao deslogar
+      } else if (event === 'SIGNED_IN') {
+        // ✅ Sempre carregar em SIGNED_IN (novo login)
+        hasLoadedUser = false // Reset para forçar reload em novo login
         if (session?.user) {
-          console.log('✅ Sessão válida detectada, carregando perfil...', { event, userId: session.user.id })
+          console.log('✅ Novo login detectado, carregando perfil...', { userId: session.user.id })
           setSessionLoading(true)
           try {
             const loadedUser = await loadUserProfile(session.user)
-            console.log('📋 onAuthStateChange - Resultado do loadUserProfile:', { 
-              loadedUser: !!loadedUser, 
-              userId: loadedUser?.id,
-              role: loadedUser?.role 
-            })
-            
             if (!loadedUser) {
-              console.warn('⚠️ Não foi possível carregar perfil no auth state change, mas usuário está autenticado')
-              // Mesmo sem perfil, definir um usuário básico para permitir navegação
-              const basicUser: SchedulerUser = {
-                id: session.user.id,
-                role: 'professional', // Default
-                clinicId: null,
-                email: session.user.email || '',
-                fullName: session.user.email?.split('@')[0] || 'Usuário',
-              }
-              console.log('✅ onAuthStateChange - Definindo usuário básico:', basicUser)
-              setCurrentUser(basicUser)
-              localStorage.setItem('clinicflow_user', JSON.stringify(basicUser))
+              console.error('❌ onAuthStateChange - Não foi possível carregar perfil do banco de dados!')
+              setCurrentUser(null)
+              localStorage.removeItem('clinicflow_user')
             } else {
               console.log('✅ onAuthStateChange - Usuário carregado com sucesso:', loadedUser)
+              hasLoadedUser = true
             }
           } catch (error) {
             console.error('❌ onAuthStateChange - Erro ao carregar perfil:', error)
-            // Em caso de erro, ainda assim criar um usuário básico
-            const basicUser: SchedulerUser = {
-              id: session.user.id,
-              role: 'professional',
-              clinicId: null,
-              email: session.user.email || '',
-              fullName: session.user.email?.split('@')[0] || 'Usuário',
-            }
-            setCurrentUser(basicUser)
-            localStorage.setItem('clinicflow_user', JSON.stringify(basicUser))
+            setCurrentUser(null)
+            localStorage.removeItem('clinicflow_user')
           } finally {
-            console.log('✅ onAuthStateChange - Finalizando, setSessionLoading(false)')
             setSessionLoading(false)
           }
-        } else {
-          console.warn('⚠️ onAuthStateChange - Evento SIGNED_IN mas sem session.user')
         }
+      } else if (event === 'INITIAL_SESSION') {
+        // ✅ Apenas na primeira vez (INITIAL_SESSION) - carregar se não tiver usuário
+        // Usar ref para verificar estado atual sem problemas de closure
+        if (session?.user && !currentUserRef.current && !hasLoadedUser) {
+          console.log('✅ Sessão inicial detectada, carregando perfil...', { userId: session.user.id })
+          setSessionLoading(true)
+          try {
+            const loadedUser = await loadUserProfile(session.user)
+            if (!loadedUser) {
+              console.error('❌ onAuthStateChange - Não foi possível carregar perfil do banco de dados!')
+              setCurrentUser(null)
+              localStorage.removeItem('clinicflow_user')
+            } else {
+              console.log('✅ onAuthStateChange - Usuário carregado com sucesso:', loadedUser)
+              hasLoadedUser = true
+            }
+          } catch (error) {
+            console.error('❌ onAuthStateChange - Erro ao carregar perfil:', error)
+            setCurrentUser(null)
+            localStorage.removeItem('clinicflow_user')
+          } finally {
+            setSessionLoading(false)
+          }
+        } else if (currentUserRef.current || hasLoadedUser) {
+          // ✅ Já tem usuário carregado, não recarregar
+          console.log('ℹ️ onAuthStateChange - Usuário já carregado, ignorando INITIAL_SESSION')
+        }
+      } else if (event === 'TOKEN_REFRESHED') {
+        // ✅ CORREÇÃO CRÍTICA: NUNCA recarregar perfil em TOKEN_REFRESHED
+        // Isso evita reloads desnecessários quando a página volta ao foco no mobile
+        // O token refresh é apenas para renovar a autenticação, não para recarregar dados
+        console.log('ℹ️ onAuthStateChange - Token refreshed, mantendo usuário atual (sem reload)')
+        // Não fazer nada - apenas manter o usuário atual
       }
     })
 
