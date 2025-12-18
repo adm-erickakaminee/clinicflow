@@ -51,6 +51,7 @@ export function OrganizationDetailsCard() {
     }
 
     loadOrganization();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.clinicId]);
 
   const loadOrganization = async () => {

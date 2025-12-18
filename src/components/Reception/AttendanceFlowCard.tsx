@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Clock, User, Calendar, CheckCircle2, CreditCard, Play, FileText, X } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useScheduler } from "../../context/SchedulerContext";
@@ -50,7 +50,7 @@ export function AttendanceFlowCard() {
 
   const clinicId = currentUser?.clinicId;
 
-  const loadActiveAppointments = async () => {
+  const loadActiveAppointments = useCallback(async () => {
     if (!clinicId) {
       setLoading(false);
       return;
@@ -143,7 +143,7 @@ export function AttendanceFlowCard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [clinicId, toast]);
 
   useEffect(() => {
     loadActiveAppointments();
@@ -179,7 +179,7 @@ export function AttendanceFlowCard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [clinicId, toast]);
+  }, [clinicId, loadActiveAppointments]);
 
   const handleCheckIn = async (appointment: ActiveAppointment) => {
     if (processingIds.has(appointment.id)) return;

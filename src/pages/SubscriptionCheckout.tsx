@@ -33,6 +33,7 @@ export function SubscriptionCheckout() {
     if (currentUser?.clinicId) {
       loadData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   const loadData = async () => {

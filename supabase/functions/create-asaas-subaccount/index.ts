@@ -235,6 +235,7 @@ async function handler(req: Request): Promise<Response> {
       JSON.stringify({
         success: true,
         wallet_id: asaasResult.walletId,
+        customer_id: asaasResult.customerId, // ✅ Retornar customer_id no response
         status: asaasResult.status,
         message: 'Subconta Asaas criada com sucesso',
       }),

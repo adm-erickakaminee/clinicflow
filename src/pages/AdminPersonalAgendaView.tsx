@@ -42,6 +42,7 @@ export function AdminPersonalAgendaView() {
     };
 
     loadSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinicId]);
 
   useEffect(() => {

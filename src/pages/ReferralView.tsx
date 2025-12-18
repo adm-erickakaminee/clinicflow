@@ -73,6 +73,7 @@ export function ReferralView() {
       loadAllData();
       generateReferralLink();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinicId]);
 
   const loadAllData = async () => {

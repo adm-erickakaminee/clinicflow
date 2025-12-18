@@ -43,6 +43,7 @@ export function PostExecutionAuditView() {
     }
 
     loadPendingAudits();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinicId]);
 
   const loadPendingAudits = async () => {

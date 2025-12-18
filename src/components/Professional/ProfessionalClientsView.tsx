@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { User, Search, Phone, Mail } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../ui/Toast";
@@ -19,7 +19,7 @@ export function ProfessionalClientsView({
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const loadClients = async () => {
+  const loadClients = useCallback(async () => {
     if (!professionalId || !clinicId) {
       setLoading(false);
       return;
@@ -60,11 +60,11 @@ export function ProfessionalClientsView({
     } finally {
       setLoading(false);
     }
-  };
+  }, [professionalId, clinicId, toast]);
 
   useEffect(() => {
     loadClients();
-  }, [professionalId, clinicId, toast]);
+  }, [loadClients]);
 
   const filteredClients = clients.filter(
     (client) =>

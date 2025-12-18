@@ -98,6 +98,7 @@ export function ServiceFlow({
     if (appointment.client_id) {
       loadAux();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointment.client_id]);
 
   const canFinalize = evolutionText.trim().length > 0 && !isSaving;

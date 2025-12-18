@@ -110,6 +110,7 @@ export function AdminSettingsView() {
     }
 
     loadAllData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinicId]);
 
   const loadAllData = async () => {

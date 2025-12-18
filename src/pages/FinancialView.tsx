@@ -46,6 +46,7 @@ export function FinancialView() {
     }
 
     loadTransactions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinicId, filterStatus, filterAudited]);
 
   const loadTransactions = async () => {

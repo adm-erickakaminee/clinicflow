@@ -112,8 +112,7 @@ export interface SchedulerClient {
   color?: string;
 }
 // export value placeholders for runtime compatibility
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const Service = {} as any;
+export const Service = {} as unknown;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const SchedulerProfessional = {} as any;
 // Export de valor somente para satisfazer import runtime (ClientSelector)
@@ -1178,6 +1177,7 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
       }
     };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.clinicId]);
 
   const canUser = (
@@ -3472,6 +3472,7 @@ para permitir que super_admin atualize profiles de outros usuários.`;
       logout,
       updateUserProfile,
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       appointments,
       blocks,

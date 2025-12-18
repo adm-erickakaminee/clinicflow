@@ -164,6 +164,7 @@ export function SchedulerView() {
       });
       return filtered;
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [professionals, filtersString] // Usar filtersString para estabilidade
   );
 
@@ -226,6 +227,7 @@ export function SchedulerView() {
 
       return filtered;
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [appointments, filtersString, filters, professionals, selectedDate] // Adicionar selectedDate como dependência
   );
 
@@ -334,6 +336,7 @@ export function SchedulerView() {
         toast.error("Erro ao mover agendamento");
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [selectedDate, checkAvailability, updateAppointment, toast, blocks, timeOffs, ctxProfessionals]
   );
 
@@ -463,6 +466,7 @@ export function SchedulerView() {
 
       return () => clearTimeout(timeoutId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Executar apenas na montagem
 
   // Calcular dias do calendário

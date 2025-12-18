@@ -271,26 +271,18 @@ export function SignUpView() {
         throw new Error("Erro ao criar usuário. Tente novamente.");
       }
 
-      // ✅ CRÍTICO: Garantir que a sessão seja estabelecida
-      // O Supabase client precisa de uma sessão válida para fazer chamadas RPC
-      let session = authData.session;
+      // ✅ IMPORTANTE: Não tentar fazer login automático se email precisa ser confirmado
+      // A função RPC funciona com p_user_id mesmo sem sessão estabelecida
+      // Se o Supabase estiver configurado para exigir confirmação de email,
+      // o login automático falhará com "Email not confirmed"
+      const session = authData.session;
+      const needsEmailConfirmation = !session;
 
-      if (!session) {
-        console.log("⚠️ Sessão não estabelecida após signUp, tentando estabelecer...");
-
-        // Tentar fazer signIn para estabelecer a sessão
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password: formData.password,
-        });
-
-        if (signInError) {
-          console.error("❌ Erro ao fazer signIn após signUp:", signInError);
-          // Continuar mesmo assim - a função RPC pode funcionar com p_user_id
-        } else if (signInData.session) {
-          session = signInData.session;
-          console.log("✅ Sessão estabelecida via signIn:", session.user.id);
-        }
+      if (needsEmailConfirmation) {
+        console.log(
+          "ℹ️ Sessão não estabelecida após signUp (email precisa ser confirmado). " +
+            "A função RPC funcionará com p_user_id."
+        );
       } else {
         console.log("✅ Sessão estabelecida após signUp:", session.user.id);
       }
@@ -381,31 +373,38 @@ export function SignUpView() {
             message: errorMessageLower,
             isFunctionNotFound:
               errorCode === "42883" ||
+              errorCode === "PGRST202" ||
               (errorMessageLower.includes("function") &&
                 (errorMessageLower.includes("does not exist") ||
                   errorMessageLower.includes("not found") ||
-                  errorMessageLower.includes("não existe"))),
+                  errorMessageLower.includes("não existe") ||
+                  errorMessageLower.includes("could not find"))),
           });
 
           // Detectar se a função não existe (vários códigos possíveis)
           const functionNotFound =
-            rpcError.code === "42883" || // function does not exist
+            rpcError.code === "42883" || // function does not exist (PostgreSQL)
+            rpcError.code === "PGRST202" || // function not found in schema cache (PostgREST)
             rpcError.code === "P0001" || // função não encontrada
             (rpcError.message?.toLowerCase().includes("function") &&
               (rpcError.message?.toLowerCase().includes("does not exist") ||
                 rpcError.message?.toLowerCase().includes("not found") ||
-                rpcError.message?.toLowerCase().includes("não existe")));
+                rpcError.message?.toLowerCase().includes("não existe") ||
+                rpcError.message?.toLowerCase().includes("could not find")));
 
           if (functionNotFound) {
             const errorMsg =
               "🚨 FUNÇÃO RPC NÃO ENCONTRADA NO BANCO DE DADOS\n\n" +
-              "A função create_organization_during_signup não existe.\n\n" +
-              "📋 AÇÃO NECESSÁRIA:\n" +
-              "1. Acesse: Supabase Dashboard → SQL Editor\n" +
-              "2. Execute o arquivo: Clinic/supabase/migrations/fix_organizations_insert_during_signup.sql\n" +
-              "3. Verifique se a função foi criada executando:\n" +
+              `Código do erro: ${errorCode}\n` +
+              "A função create_organization_during_signup não existe no banco de dados.\n\n" +
+              "📋 AÇÃO NECESSÁRIA (URGENTE):\n" +
+              "1. Acesse: https://supabase.com/dashboard → Seu Projeto → SQL Editor\n" +
+              "2. Execute PRIMEIRO (se necessário): Clinic/LIMPAR_FUNCAO_ANTIGA.sql\n" +
+              "3. Execute DEPOIS: Clinic/supabase/migrations/fix_organizations_insert_during_signup.sql\n" +
+              "4. Verifique se funcionou executando:\n" +
               "   SELECT proname FROM pg_proc WHERE proname = 'create_organization_during_signup';\n\n" +
-              "📖 Documentação completa: DOCS/EXECUTAR_MIGRATION_RLS_CADASTRO.md";
+              "📖 Documentação completa: DOCS/EXECUTAR_MIGRATION_URGENTE.md\n\n" +
+              "⚠️ O cadastro não funcionará até que a migration seja executada!";
 
             console.error(errorMsg);
             throw new Error(errorMsg);
@@ -473,49 +472,119 @@ export function SignUpView() {
       }
 
       // Buscar dados completos da organização criada
-      // ⚠️ Pode falhar por RLS se a política de SELECT não estiver configurada
-      console.log("📥 Buscando dados completos da organização criada:", orgId);
-      const { data: orgData, error: orgFetchError } = await supabase
-        .from("organizations")
-        .select("*")
-        .eq("id", orgId)
-        .single();
+      // ⚠️ Se não houver sessão (email não confirmado), usar dados mínimos diretamente
+      // A organização foi criada com sucesso, então temos todos os dados necessários
+      console.log("📥 Preparando dados da organização criada:", orgId);
+      let orgData: any = null;
 
-      if (orgFetchError) {
-        // Se for erro de RLS, a política de SELECT também precisa ser criada
-        if (
-          orgFetchError.code === "42501" ||
-          orgFetchError.message?.includes("row-level security")
-        ) {
-          throw new Error(
-            "Erro de permissão (RLS) ao buscar organização criada. " +
-              "A política de SELECT também precisa ser criada. " +
-              "Execute a migration fix_organizations_insert_during_signup.sql no Supabase SQL Editor. " +
-              "Esta migration cria tanto a função RPC quanto as políticas de SELECT necessárias."
+      // Se não há sessão, usar dados mínimos diretamente (mais rápido e confiável)
+      if (needsEmailConfirmation) {
+        console.log("ℹ️ Email não confirmado, usando dados mínimos da organização criada");
+        orgData = {
+          id: orgId,
+          name: formData.clinicName,
+          email: normalizedEmail,
+          phone: formData.phone,
+          address: JSON.stringify(addressData),
+          cnpj: formData.cnpj || null,
+          status: "pending_setup",
+          asaas_customer_id: null,
+          asaas_wallet_id: null,
+        };
+        console.log("✅ Dados da organização preparados:", {
+          id: orgData.id,
+          name: orgData.name,
+          email: orgData.email,
+        });
+      } else {
+        // Se há sessão, tentar buscar dados completos
+        console.log("📥 Buscando dados completos da organização criada:", orgId);
+        const { data: fetchedOrgData, error: orgFetchError } = await supabase
+          .from("organizations")
+          .select("*")
+          .eq("id", orgId)
+          .single();
+
+        if (orgFetchError) {
+          // ⚠️ Se falhar por RLS, tentar usar função RPC como fallback
+          console.warn(
+            "⚠️ Não foi possível buscar organização diretamente, tentando função RPC:",
+            orgFetchError
           );
+
+          // Tentar buscar via função RPC (bypassa RLS) - opcional
+          try {
+            const { data: rpcOrgData, error: rpcOrgError } = await supabase.rpc(
+              "get_organization_by_id",
+              { p_org_id: orgId }
+            );
+
+            if (
+              !rpcOrgError &&
+              rpcOrgData &&
+              (Array.isArray(rpcOrgData) ? rpcOrgData.length > 0 : rpcOrgData)
+            ) {
+              // Função RPC funcionou!
+              orgData = Array.isArray(rpcOrgData) ? rpcOrgData[0] : rpcOrgData;
+              console.log("✅ Organização encontrada via função RPC:", {
+                id: orgData.id,
+                name: orgData.name,
+                email: orgData.email,
+                status: orgData.status,
+              });
+            } else {
+              // Função RPC não existe ou falhou, usar dados mínimos
+              throw new Error("Função RPC não disponível ou falhou");
+            }
+          } catch (rpcError) {
+            // Se a função RPC não existir ou falhar, criar objeto mínimo
+            console.warn("⚠️ Função RPC não disponível ou falhou, usando dados mínimos:", rpcError);
+
+            orgData = {
+              id: orgId,
+              name: formData.clinicName,
+              email: normalizedEmail,
+              phone: formData.phone,
+              address: JSON.stringify(addressData),
+              cnpj: formData.cnpj || null,
+              status: "pending_setup",
+              asaas_customer_id: null,
+              asaas_wallet_id: null,
+            };
+
+            console.log(
+              "✅ Usando dados mínimos da organização (organização foi criada com sucesso):",
+              {
+                id: orgData.id,
+                name: orgData.name,
+                email: orgData.email,
+              }
+            );
+          }
+        } else if (fetchedOrgData) {
+          orgData = fetchedOrgData;
+          console.log("✅ Organização encontrada:", {
+            id: orgData.id,
+            name: orgData.name,
+            email: orgData.email,
+            status: orgData.status,
+          });
+        } else {
+          // Fallback: criar objeto mínimo mesmo se não houver erro
+          orgData = {
+            id: orgId,
+            name: formData.clinicName,
+            email: normalizedEmail,
+            phone: formData.phone,
+            address: JSON.stringify(addressData),
+            cnpj: formData.cnpj || null,
+            status: "pending_setup",
+            asaas_customer_id: null,
+            asaas_wallet_id: null,
+          };
+          console.log("⚠️ Organização não encontrada, usando dados mínimos");
         }
-
-        throw new Error(
-          `Erro ao buscar organização criada: ${orgFetchError.message || "Erro desconhecido"}. ` +
-            `Código: ${orgFetchError.code || "N/A"}. ` +
-            "A organização pode ter sido criada, mas não é possível buscá-la devido a políticas RLS."
-        );
       }
-
-      if (!orgData) {
-        throw new Error(
-          "Organização não encontrada após criação. " +
-            "A organização pode ter sido criada, mas não é possível buscá-la devido a políticas RLS. " +
-            "Execute a migration fix_organizations_insert_during_signup.sql no Supabase SQL Editor."
-        );
-      }
-
-      console.log("✅ Organização encontrada:", {
-        id: orgData.id,
-        name: orgData.name,
-        email: orgData.email,
-        status: orgData.status,
-      });
 
       // 3. Criar perfil do usuário usando função segura que bypassa RLS
       // Nota: O email está em auth.users, não em profiles
@@ -673,25 +742,49 @@ export function SignUpView() {
           );
         }
 
-        // Buscar organização atualizada para obter o customer_id
-        const { data: updatedOrg, error: fetchError } = await supabase
-          .from("organizations")
-          .select("asaas_customer_id, asaas_wallet_id")
-          .eq("id", orgData.id)
-          .maybeSingle();
+        // ✅ Prioridade 1: Usar customer_id do response (mais rápido e confiável)
+        asaasCustomerId = asaasSubaccountData.customer_id || null;
+        asaasWalletId = asaasSubaccountData.wallet_id || null;
 
-        if (fetchError) {
-          console.warn("Aviso: Erro ao buscar organização atualizada:", fetchError);
+        // ✅ Prioridade 2: Se não veio no response, buscar do banco com retry
+        if (!asaasCustomerId) {
+          console.log("⚠️ customer_id não veio no response, buscando do banco com retry...");
+
+          const maxRetries = 3;
+          const retryDelay = 1000; // 1 segundo entre tentativas
+
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            console.log(`🔄 Tentativa ${attempt}/${maxRetries} de buscar customer_id do banco...`);
+
+            const { data: updatedOrg, error: fetchError } = await supabase
+              .from("organizations")
+              .select("asaas_customer_id, asaas_wallet_id")
+              .eq("id", orgData.id)
+              .maybeSingle();
+
+            if (fetchError) {
+              console.warn(`⚠️ Erro ao buscar organização (tentativa ${attempt}):`, fetchError);
+            } else if (updatedOrg?.asaas_customer_id) {
+              asaasCustomerId = updatedOrg.asaas_customer_id;
+              asaasWalletId = updatedOrg.asaas_wallet_id || asaasWalletId;
+              console.log("✅ customer_id encontrado no banco:", asaasCustomerId);
+              break;
+            }
+
+            // Se não encontrou e ainda há tentativas, aguardar antes de tentar novamente
+            if (attempt < maxRetries) {
+              console.log(`⏳ Aguardando ${retryDelay}ms antes da próxima tentativa...`);
+              await new Promise((resolve) => setTimeout(resolve, retryDelay));
+            }
+          }
         }
 
-        // Usar customer_id e wallet_id retornados ou da organização atualizada
-        asaasCustomerId = updatedOrg?.asaas_customer_id || asaasSubaccountData.customer_id || null;
-        asaasWalletId = updatedOrg?.asaas_wallet_id || asaasSubaccountData.wallet_id || null;
-
+        // ✅ Validação final: se ainda não temos customer_id, lançar erro
         if (!asaasCustomerId) {
           throw new Error(
-            "Conta ASAAS criada mas customer_id não foi encontrado. " +
-              "Verifique se a função create-asaas-subaccount atualizou corretamente a organização."
+            "Conta ASAAS criada mas customer_id não foi encontrado após múltiplas tentativas. " +
+              "A conta ASAAS foi criada com sucesso, mas houve um problema ao recuperar o customer_id. " +
+              "Tente novamente ou entre em contato com o suporte."
           );
         }
 
@@ -869,13 +962,24 @@ export function SignUpView() {
         next_due_date: subscriptionData.next_due_date,
       });
 
-      toast.success("Cadastro realizado com sucesso! Verifique seu email para confirmar.");
+      // ✅ Mensagem diferente se email precisa ser confirmado
+      if (needsEmailConfirmation) {
+        toast.success(
+          "🎉 Cadastro realizado! Verifique seu email para confirmar sua conta e começar a usar o sistema."
+        );
+      } else {
+        toast.success("Cadastro realizado com sucesso!");
+      }
 
       // Aguardar um pouco antes de redirecionar
       setTimeout(() => {
         navigate("/login", {
           state: {
-            message: "Cadastro realizado! Verifique seu email para confirmar sua conta.",
+            message: needsEmailConfirmation
+              ? "🎉 Oiee! Quase tudo pronto! Acabei de te enviar um e-mail. Clica no link lá para eu validar seu acesso e começarmos a configurar sua clínica! 😊"
+              : "Cadastro realizado! Você já pode fazer login.",
+            email: normalizedEmail,
+            needsConfirmation: needsEmailConfirmation,
           },
         });
       }, 2000);

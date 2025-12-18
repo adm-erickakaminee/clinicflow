@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Clock, User, Calendar, CheckCircle2, X } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { format } from "date-fns";
@@ -20,7 +20,7 @@ export function ProfessionalRequestQueueCard({
   const [loading, setLoading] = useState(true);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     if (!professionalId) {
       setLoading(false);
       return;
@@ -57,7 +57,7 @@ export function ProfessionalRequestQueueCard({
     } finally {
       setLoading(false);
     }
-  };
+  }, [professionalId, toast]);
 
   useEffect(() => {
     loadRequests();
@@ -89,7 +89,7 @@ export function ProfessionalRequestQueueCard({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [professionalId, toast]);
+  }, [professionalId, loadRequests]);
 
   const handleAccept = async (request: RequestedAppointment) => {
     if (processingIds.has(request.id)) return;

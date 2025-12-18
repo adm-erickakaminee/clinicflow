@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Clock, User, Calendar, CheckCircle2, X, AlertCircle } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useScheduler } from "../../context/SchedulerContext";
@@ -35,7 +35,7 @@ export function RequestQueueCard() {
 
   const clinicId = currentUser?.clinicId;
 
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     if (!clinicId) {
       setLoading(false);
       return;
@@ -116,7 +116,7 @@ export function RequestQueueCard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [clinicId, toast]);
 
   useEffect(() => {
     loadRequests();
@@ -148,7 +148,7 @@ export function RequestQueueCard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [clinicId, toast]);
+  }, [clinicId, loadRequests]);
 
   const handleConfirm = async (request: RequestedAppointment) => {
     if (processingIds.has(request.id)) return;

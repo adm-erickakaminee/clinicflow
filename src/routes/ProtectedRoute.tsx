@@ -20,6 +20,7 @@ export function ProtectedRoute({ children, requiredRole }: Props) {
     } else {
       setCheckingStatus(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   const checkOrganizationStatus = async () => {

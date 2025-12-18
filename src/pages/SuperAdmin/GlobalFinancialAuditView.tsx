@@ -55,6 +55,7 @@ export function GlobalFinancialAuditView() {
 
   useEffect(() => {
     loadAllData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFilter]);
 
   const loadAllData = async () => {

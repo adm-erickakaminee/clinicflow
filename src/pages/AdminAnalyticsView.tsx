@@ -193,6 +193,7 @@ export function AdminAnalyticsView() {
     }
 
     loadAllMetrics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinicId, dateRange, toast]);
 
   const loadAllMetrics = async () => {
@@ -1284,6 +1285,7 @@ function PeriodAppointmentsChart({ appointments, dateRange }: PeriodAppointments
         dayIndex,
       };
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointments, dateRange]);
 
   const total = dailyData.reduce((sum, day) => sum + day.count, 0);
