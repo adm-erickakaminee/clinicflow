@@ -316,14 +316,16 @@ export function ClientsView() {
           }}
           onSave={(data) => {
             if (editingClient?.id) {
-              updateClient({ ...editingClient, ...data })
+              updateClient({ ...editingClient, ...data, name: data.name || '' })
               setSelectedId(editingClient.id)
             } else {
               addClient({
-                ...data,
+                name: data.name || '',
+                mobile: data.mobile || '',
+                email: data.email || undefined,
+                birthDate: data.birthDate || undefined,
                 walletBalance: 0,
-                createdAt: new Date().toISOString(),
-              } as Partial<SchedulerClient>)
+              })
                 .then((created) => {
                   setSelectedId(created.id)
                 })

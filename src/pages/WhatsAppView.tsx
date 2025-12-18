@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, Clock4, AlertTriangle, Phone, MessageCircle } from 'lucide-react'
 import { addMonths, format, isSameMonth, isToday, isTomorrow, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { useScheduler, type SchedulerClient, type SchedulerAppointment } from '../context/SchedulerContext'
+import { useScheduler } from '../context/SchedulerContext'
 
 type TemplateKey = 'confirm' | 'recall' | 'rescue' | 'birthday'
 
@@ -14,6 +14,14 @@ const templates: Record<TemplateKey, string> = {
 }
 
 type TabKey = 'confirmations' | 'recalls' | 'rescues' | 'birthdays'
+
+interface DatasetItem {
+  id: string
+  clientId: string
+  patient?: string
+  start: string
+  professionalId?: string
+}
 
 function generateMessage(template: TemplateKey, data: { patient?: string; title?: string; start?: string }, professionalName?: string) {
   const nome = data.patient || data.title || 'Paciente'
@@ -98,13 +106,6 @@ export function WhatsAppView() {
       .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
   }, [appointments])
 
-  interface BirthdayAppointment {
-    id: string
-    clientId: string
-    patient: string
-    start: string
-  }
-
   const birthdayList = useMemo(() => {
     const today = new Date()
     return clients
@@ -119,17 +120,30 @@ export function WhatsAppView() {
         clientId: c.id,
         patient: c.name,
         start: new Date().toISOString(),
+        professionalId: undefined as string | undefined,
       }))
   }, [clients])
 
-  const dataset = useMemo(() => {
+  const dataset = useMemo((): DatasetItem[] => {
     switch (tab) {
       case 'confirmations':
-        return confirmAppointments
+        return confirmAppointments.map((a) => ({
+          id: a.id,
+          clientId: a.clientId,
+          patient: a.patient,
+          start: a.start,
+          professionalId: a.professionalId,
+        }))
       case 'recalls':
         return recallAppointments
       case 'rescues':
-        return rescueAppointments
+        return rescueAppointments.map((a) => ({
+          id: a.id,
+          clientId: a.clientId,
+          patient: a.patient,
+          start: a.start,
+          professionalId: a.professionalId,
+        }))
       case 'birthdays':
         return birthdayList
       default:
