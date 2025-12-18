@@ -32,7 +32,7 @@ export function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#ffb3a7] via-[#ffc78f] to-[#ffe7a3]">
+    <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-[#ffb3a7] via-[#ffc78f] to-[#ffe7a3]">
       {/* Header */}
       <header className="relative z-10 px-4 sm:px-6 py-4 sm:py-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">

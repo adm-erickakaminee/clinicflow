@@ -92,11 +92,16 @@
 /* Base styles */
 html {
   scroll-behavior: smooth;
+  width: 100%;
+  overflow-x: hidden; /* ✅ Prevenir scroll horizontal no mobile */
+  -webkit-text-size-adjust: 100%; /* ✅ Prevenir ajuste automático de texto no iOS */
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden; /* ✅ Prevenir scroll horizontal no mobile */
   background-color: #f8fafc;
   color: #0f172a;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -105,6 +110,9 @@ body {
   /* ✅ Prevenir zoom automático no mobile */
   touch-action: pan-x pan-y;
   -webkit-tap-highlight-color: transparent;
+  /* ✅ Prevenir problemas de renderização no mobile */
+  -webkit-overflow-scrolling: touch;
+  position: relative;
 }
 
 /* ✅ Prevenir zoom em inputs no iOS */
@@ -122,6 +130,8 @@ textarea {
 
 #root {
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden; /* ✅ Prevenir scroll horizontal no mobile */
 }
 
 /* Focus styles */

@@ -3354,9 +3354,17 @@ para permitir que super_admin atualize profiles de outros usuários.`
       console.log('🔄 Inicializando sessão...')
       setSessionLoading(true)
       
+      // ✅ TIMEOUT DE SEGURANÇA: Se demorar mais de 10 segundos, finalizar loading
+      const timeoutId = setTimeout(() => {
+        console.warn('⚠️ Timeout na inicialização da sessão (10s), finalizando loading...')
+        setSessionLoading(false)
+      }, 10000)
+      
       try {
         // PRIMEIRO: Tentar ler a sessão persistida do storage
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        clearTimeout(timeoutId) // Limpar timeout se completou
         
         if (sessionError) {
           console.warn('⚠️ Erro ao ler sessão:', sessionError)
@@ -3370,22 +3378,23 @@ para permitir que super_admin atualize profiles de outros usuários.`
           const loadedUser = await loadUserProfile(session.user)
           if (!loadedUser) {
             console.warn('⚠️ Não foi possível carregar perfil, mas usuário está autenticado')
-            // CORRIGIDO: Não definir role padrão 'professional'
-            // Manter sessionLoading = true até que o perfil seja carregado
-            console.warn('⚠️ Não foi possível carregar perfil. Mantendo sessionLoading = true.')
             setCurrentUser(null)
             localStorage.removeItem('clinicflow_user')
-            setSessionLoading(false) // Finalizar loading mesmo sem perfil
+            setSessionLoading(false)
           }
         } else {
           console.log('ℹ️ Nenhuma sessão encontrada')
           setCurrentUser(null)
           localStorage.removeItem('clinicflow_user')
+          setSessionLoading(false)
         }
       } catch (error) {
+        clearTimeout(timeoutId) // Limpar timeout em caso de erro
         console.error('❌ Erro ao inicializar sessão:', error)
         setCurrentUser(null)
+        setSessionLoading(false)
       } finally {
+        clearTimeout(timeoutId) // Garantir que timeout seja limpo
         setSessionLoading(false)
       }
     }
