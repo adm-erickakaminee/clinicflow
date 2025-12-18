@@ -190,8 +190,8 @@ function ServiceModal({
   const [draft, setDraft] = useState<Service>(service)
 
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur flex items-center justify-center px-4">
-      <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 shadow-2xl rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-white/95 flex items-center justify-center px-4">
+      <div className="relative bg-white border border-gray-200 shadow-2xl rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <p className="text-lg font-semibold text-gray-900">
             {draft.id ? 'Editar Serviço' : 'Novo Serviço'}

@@ -566,7 +566,7 @@ export function AttendanceFlowCard() {
 
       {/* Notes Modal */}
       {notesModalOpen && notesAppointment && createPortal(
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-50 bg-white/95 flex items-center justify-center px-4">
           <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 shadow-2xl rounded-2xl w-full max-w-lg p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>

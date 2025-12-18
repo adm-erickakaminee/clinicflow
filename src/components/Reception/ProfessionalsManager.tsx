@@ -234,8 +234,8 @@ function DeleteProfessionalModal({
   loading: boolean
 }) {
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur flex items-center justify-center px-4">
-      <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 shadow-2xl rounded-2xl w-full max-w-md p-6 space-y-4">
+    <div className="fixed inset-0 z-50 bg-white/95 flex items-center justify-center px-4">
+      <div className="relative bg-white border border-gray-200 shadow-2xl rounded-2xl w-full max-w-md p-6 space-y-4">
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
             <Trash2 className="h-6 w-6 text-red-600" />
@@ -292,6 +292,32 @@ function ProfessionalModal({
   onClose: () => void
   loading: boolean
 }) {
+  // Inicializar work_schedule se não existir
+  const initializeWorkSchedule = () => {
+    const existing = (professional as any)?.work_schedule
+    if (existing && typeof existing === 'object') {
+      return existing
+    }
+    // Padrão: Seg-Sex 09:00-18:00
+    const defaultSchedule = {
+      enabled: true,
+      startTime: '09:00',
+      endTime: '18:00',
+      hasBreak: true,
+      breakStart: '12:00',
+      breakEnd: '13:00',
+    }
+    return {
+      1: defaultSchedule, // Segunda
+      2: defaultSchedule, // Terça
+      3: defaultSchedule, // Quarta
+      4: defaultSchedule, // Quinta
+      5: defaultSchedule, // Sexta
+      6: { enabled: false, startTime: '09:00', endTime: '18:00', hasBreak: false, breakStart: '12:00', breakEnd: '13:00' }, // Sábado
+      0: { enabled: false, startTime: '09:00', endTime: '18:00', hasBreak: false, breakStart: '12:00', breakEnd: '13:00' }, // Domingo
+    }
+  }
+
   const [draft, setDraft] = useState<SchedulerProfessional & { 
     email?: string
     password?: string
@@ -301,20 +327,29 @@ function ProfessionalModal({
     commissionRate?: number
     rentalBaseCents?: number
     rentalDueDay?: number
+    work_schedule?: Record<number, {
+      enabled: boolean
+      startTime: string
+      endTime: string
+      hasBreak: boolean
+      breakStart: string
+      breakEnd: string
+    }>
   }>({
     ...professional,
     commissionModel: (professional as any).commissionModel || 'commissioned',
     commissionRate: (professional as any).commissionRate || 0,
     rentalBaseCents: (professional as any).rentalBaseCents || 0,
     rentalDueDay: (professional as any).rentalDueDay || 5,
+    work_schedule: initializeWorkSchedule(),
   })
 
   const isHybrid = draft.commissionModel === 'hybrid'
   const isRental = draft.commissionModel === 'rental'
 
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur flex items-center justify-center px-4 overflow-y-auto py-8">
-      <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 shadow-2xl rounded-2xl w-full max-w-2xl p-6 space-y-4 my-auto">
+    <div className="fixed inset-0 z-50 bg-white/95 flex items-center justify-center px-4 overflow-y-auto py-8">
+      <div className="relative bg-white border border-gray-200 shadow-2xl rounded-2xl w-full max-w-2xl p-6 space-y-4 my-auto">
         <div className="flex items-center justify-between">
           <p className="text-lg font-semibold text-gray-900">
             {draft.id ? 'Editar Profissional' : 'Novo Profissional'}
@@ -423,9 +458,12 @@ function ProfessionalModal({
             </div>
           </div>
 
-          {/* Comissionamento */}
+          {/* Comissionamento - O que o PROFISSIONAL PAGA para a CLÍNICA */}
           <div className="space-y-3 pt-4 border-t border-gray-200">
-            <h4 className="text-sm font-semibold text-gray-900">Modelo de Comissionamento</h4>
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900">Comissionamento</h4>
+              <p className="text-xs text-gray-500 mt-1">Configure o que este profissional <strong>paga para a clínica</strong> sobre cada serviço</p>
+            </div>
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-700">Tipo *</label>
               <select
@@ -446,7 +484,7 @@ function ProfessionalModal({
             {(draft.commissionModel === 'commissioned' || isHybrid) && (
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-700">
-                  Porcentagem de Comissão (%) {isHybrid ? '(Split em Tempo Real)' : '*'}
+                  Percentual que o Profissional Paga para a Clínica (%) {isHybrid ? '(Split em Tempo Real)' : '*'}
                 </label>
                 <input
                   type="number"
@@ -458,6 +496,9 @@ function ProfessionalModal({
                   className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
                   placeholder="Ex: 30"
                 />
+                <p className="text-xs text-gray-500">
+                  Ex: 30% = o profissional paga 30% para a clínica e recebe 70% do valor líquido
+                </p>
               </div>
             )}
 
@@ -509,9 +550,174 @@ function ProfessionalModal({
               </div>
             )}
           </div>
+
+          {/* Jornada de Trabalho - Horários por Dia */}
+          <div className="space-y-3 pt-4 border-t border-gray-200">
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900">Jornada de Trabalho</h4>
+              <p className="text-xs text-gray-500 mt-1">Configure os horários de trabalho para cada dia da semana</p>
+            </div>
+            
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5, 6, 0].map((dayIndex) => {
+                const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+                const schedule = draft.work_schedule?.[dayIndex] || {
+                  enabled: false,
+                  startTime: '09:00',
+                  endTime: '18:00',
+                  hasBreak: false,
+                  breakStart: '12:00',
+                  breakEnd: '13:00',
+                }
+
+                return (
+                  <div key={dayIndex} className="border border-gray-200 rounded-xl p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={schedule.enabled}
+                          onChange={(e) => {
+                            setDraft((p) => ({
+                              ...p,
+                              work_schedule: {
+                                ...(p.work_schedule || {}),
+                                [dayIndex]: { ...schedule, enabled: e.target.checked },
+                              },
+                            }))
+                          }}
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span className="text-sm font-medium text-gray-900">{dayNames[dayIndex]}</span>
+                      </label>
+                      {schedule.enabled && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDraft((p) => ({
+                              ...p,
+                              work_schedule: {
+                                ...(p.work_schedule || {}),
+                                [dayIndex]: { ...schedule, enabled: false },
+                              },
+                            }))
+                          }}
+                          className="text-xs text-red-600 hover:text-red-700"
+                        >
+                          Remover jornada
+                        </button>
+                      )}
+                    </div>
+
+                    {schedule.enabled && (
+                      <div className="space-y-2 pl-6">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-xs text-gray-600">Início</label>
+                            <input
+                              type="time"
+                              value={schedule.startTime}
+                              onChange={(e) => {
+                                setDraft((p) => ({
+                                  ...p,
+                                  work_schedule: {
+                                    ...(p.work_schedule || {}),
+                                    [dayIndex]: { ...schedule, startTime: e.target.value },
+                                  },
+                                }))
+                              }}
+                              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+                              style={{ fontSize: '16px' }}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-600">Fim</label>
+                            <input
+                              type="time"
+                              value={schedule.endTime}
+                              onChange={(e) => {
+                                setDraft((p) => ({
+                                  ...p,
+                                  work_schedule: {
+                                    ...(p.work_schedule || {}),
+                                    [dayIndex]: { ...schedule, endTime: e.target.value },
+                                  },
+                                }))
+                              }}
+                              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+                              style={{ fontSize: '16px' }}
+                            />
+                          </div>
+                        </div>
+
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={schedule.hasBreak}
+                            onChange={(e) => {
+                              setDraft((p) => ({
+                                ...p,
+                                work_schedule: {
+                                  ...(p.work_schedule || {}),
+                                  [dayIndex]: { ...schedule, hasBreak: e.target.checked },
+                                },
+                              }))
+                            }}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="text-xs text-gray-700">Intervalo de Almoço</span>
+                        </label>
+
+                        {schedule.hasBreak && (
+                          <div className="grid grid-cols-2 gap-2 pl-6">
+                            <div>
+                              <label className="text-xs text-gray-600">Início</label>
+                              <input
+                                type="time"
+                                value={schedule.breakStart}
+                                onChange={(e) => {
+                                  setDraft((p) => ({
+                                    ...p,
+                                    work_schedule: {
+                                      ...(p.work_schedule || {}),
+                                      [dayIndex]: { ...schedule, breakStart: e.target.value },
+                                    },
+                                  }))
+                                }}
+                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+                                style={{ fontSize: '16px' }}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-600">Fim</label>
+                              <input
+                                type="time"
+                                value={schedule.breakEnd}
+                                onChange={(e) => {
+                                  setDraft((p) => ({
+                                    ...p,
+                                    work_schedule: {
+                                      ...(p.work_schedule || {}),
+                                      [dayIndex]: { ...schedule, breakEnd: e.target.value },
+                                    },
+                                  }))
+                                }}
+                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+                                style={{ fontSize: '16px' }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-white/60">
+        <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
           <button
             className="px-4 py-2 rounded-xl bg-gray-200 text-gray-700 text-sm font-semibold"
             onClick={onClose}
@@ -529,6 +735,7 @@ function ProfessionalModal({
                 commissionRate: draft.commissionRate,
                 rentalBaseCents: draft.rentalBaseCents,
                 rentalDueDay: draft.rentalDueDay,
+                work_schedule: draft.work_schedule,
                 email: draft.email,
                 password: draft.password,
                 cpf: draft.cpf,

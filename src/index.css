@@ -102,6 +102,22 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* ✅ Prevenir zoom automático no mobile */
+  touch-action: pan-x pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ✅ Prevenir zoom em inputs no iOS */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+  font-size: 16px !important; /* iOS não faz zoom se font-size >= 16px */
 }
 
 #root {

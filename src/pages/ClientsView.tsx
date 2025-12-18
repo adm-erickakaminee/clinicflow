@@ -398,8 +398,8 @@ function ClientModal({
   })
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur flex items-center justify-center px-4">
-      <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 shadow-2xl rounded-2xl w-full max-w-lg p-6 space-y-4">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 shadow-2xl rounded-xl sm:rounded-2xl w-full max-w-lg p-4 sm:p-6 space-y-4 max-h-[95vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <p className="text-lg font-semibold text-gray-900">{client ? 'Editar cliente' : 'Novo cliente'}</p>
           <button className="text-sm text-gray-500 hover:text-gray-700" onClick={onClose}>
@@ -414,9 +414,10 @@ function ClientModal({
             <p className="text-xs font-semibold text-gray-700">Data de aniversário</p>
             <input
               type="date"
-              value={form.birthDate}
+              value={form.birthDate || ''}
               onChange={(e) => setForm((p) => ({ ...p, birthDate: e.target.value }))}
-              className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
+              className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2.5 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 min-h-[44px]"
+              style={{ fontSize: '16px' }} // ✅ Previne zoom no iOS
             />
           </div>
         </div>

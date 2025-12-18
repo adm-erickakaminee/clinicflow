@@ -38,7 +38,7 @@ export function FinishAppointmentModal({ isOpen, onClose, patientName, onSave }:
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/95 px-4">
       <div className="relative w-full max-w-lg rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-2xl p-6 space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Resumo do Atendimento</h2>

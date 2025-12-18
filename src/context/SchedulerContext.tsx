@@ -2004,6 +2004,7 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
         specialty: p.specialty,
         clinic_id: clinicId,
         color: p.color || '#6366f1',
+        work_schedule: (p as any).work_schedule || null, // Jornada de trabalho por dia
         role: p.role || p.specialty,
         commission_model: (p as any).commissionModel || 'commissioned',
         commission_rate: (p as any).commissionRate || 0,
@@ -2018,8 +2019,10 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
         professionalPayload.avatar_url = p.avatar
       }
 
-      // Adicionar work_schedule se fornecido
-      if (p.workSchedule) {
+      // Adicionar work_schedule se fornecido (pode vir como work_schedule ou workSchedule)
+      if ((p as any).work_schedule) {
+        professionalPayload.work_schedule = (p as any).work_schedule
+      } else if (p.workSchedule) {
         professionalPayload.work_schedule = p.workSchedule
       }
 
@@ -2212,6 +2215,8 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
       commission_model: (p as any).commissionModel || 'commissioned',
       commission_rate: (p as any).commissionRate || 0, // Backend: commission_rate (nome unificado, não mais taxa_de_comissao)
       rental_base_cents: (p as any).rentalBaseCents || 0,
+      rental_due_day: (p as any).rentalDueDay || 5,
+      work_schedule: (p as any).work_schedule || null, // Jornada de trabalho por dia
     }
     
     // Atualizar avatar

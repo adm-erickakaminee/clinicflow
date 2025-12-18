@@ -549,55 +549,51 @@ const createSteps = (
               </div>
             </div>
 
-            {/* Infográfico Visual do Fluxo */}
-            <div className="bg-white rounded-xl p-6 border-2 border-emerald-200">
-              <h4 className="font-semibold text-gray-900 mb-6 text-lg text-center">
+            {/* Infográfico Visual do Fluxo - Otimizado para Mobile */}
+            <div className="bg-white rounded-xl p-3 sm:p-6 border-2 border-emerald-200 overflow-x-auto">
+              <h4 className="font-semibold text-gray-900 mb-4 sm:mb-6 text-base sm:text-lg text-center">
                 Fluxo do Dinheiro
               </h4>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4 min-w-0">
                 {/* Cliente */}
-                <div className="flex items-center justify-center">
-                  <div className="bg-blue-100 rounded-xl p-4 border-2 border-blue-300 text-center min-w-[200px]">
-                    <p className="font-bold text-blue-900 text-lg">Cliente</p>
-                    <p className="text-sm text-blue-700">Paga R$ 100,00</p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+                  <div className="bg-blue-100 rounded-xl p-3 sm:p-4 border-2 border-blue-300 text-center w-full sm:w-auto sm:min-w-[200px]">
+                    <p className="font-bold text-blue-900 text-base sm:text-lg">Cliente</p>
+                    <p className="text-xs sm:text-sm text-blue-700">Paga R$ 100,00</p>
                   </div>
-                  <ArrowRight className="h-8 w-8 text-emerald-400 mx-4" />
+                  <ArrowRight className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-400 rotate-90 sm:rotate-0" />
                 </div>
 
                 {/* Taxa Cartão */}
-                <div className="flex items-center justify-center">
-                  <ArrowDown className="h-6 w-6 text-emerald-400" />
-                </div>
-                <div className="flex items-center justify-center">
-                  <div className="bg-red-100 rounded-xl p-4 border-2 border-red-300 text-center min-w-[200px]">
-                    <p className="font-bold text-red-900">Taxa Cartão</p>
-                    <p className="text-sm text-red-700">-R$ 2,99 (2.99%)</p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+                  <ArrowDown className="h-4 w-4 sm:h-6 sm:w-6 text-emerald-400 sm:hidden" />
+                  <div className="bg-red-100 rounded-xl p-3 sm:p-4 border-2 border-red-300 text-center w-full sm:w-auto sm:min-w-[200px]">
+                    <p className="font-bold text-red-900 text-sm sm:text-base">Taxa Cartão</p>
+                    <p className="text-xs sm:text-sm text-red-700">-R$ 2,99 (2.99%)</p>
                     <p className="text-xs text-red-600 mt-1">Líquido: R$ 97,01</p>
                   </div>
-                  <ArrowRight className="h-8 w-8 text-emerald-400 mx-4" />
+                  <ArrowRight className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-400 rotate-90 sm:rotate-0" />
                 </div>
 
                 {/* Split: Profissional e Plataforma */}
-                <div className="flex items-center justify-center gap-4">
-                  <div className="bg-purple-100 rounded-xl p-4 border-2 border-purple-300 text-center flex-1">
-                    <p className="font-bold text-purple-900">Profissional</p>
-                    <p className="text-sm text-purple-700">-R$ 65,81 (70%)</p>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4">
+                  <div className="bg-purple-100 rounded-xl p-3 sm:p-4 border-2 border-purple-300 text-center flex-1 sm:flex-1">
+                    <p className="font-bold text-purple-900 text-sm sm:text-base">Profissional</p>
+                    <p className="text-xs sm:text-sm text-purple-700">-R$ 65,81 (70%)</p>
                     <p className="text-xs text-purple-600 mt-1">Vai direto para conta dele</p>
                   </div>
-                  <div className="bg-orange-100 rounded-xl p-4 border-2 border-orange-300 text-center flex-1">
-                    <p className="font-bold text-orange-900">Plataforma</p>
-                    <p className="text-sm text-orange-700">-R$ 5,99 (5.99%)</p>
+                  <div className="bg-orange-100 rounded-xl p-3 sm:p-4 border-2 border-orange-300 text-center flex-1 sm:flex-1">
+                    <p className="font-bold text-orange-900 text-sm sm:text-base">Plataforma</p>
+                    <p className="text-xs sm:text-sm text-orange-700">-R$ 5,99 (5.99%)</p>
                   </div>
                 </div>
 
                 {/* Clínica */}
-                <div className="flex items-center justify-center">
-                  <ArrowDown className="h-6 w-6 text-emerald-400" />
-                </div>
-                <div className="flex items-center justify-center">
-                  <div className="bg-emerald-100 rounded-xl p-4 border-2 border-emerald-300 text-center min-w-[200px]">
-                    <p className="font-bold text-emerald-900 text-lg">Sua Clínica</p>
-                    <p className="text-sm text-emerald-700">Recebe R$ 28,20 (30%)</p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+                  <ArrowDown className="h-4 w-4 sm:h-6 sm:w-6 text-emerald-400 sm:hidden" />
+                  <div className="bg-emerald-100 rounded-xl p-3 sm:p-4 border-2 border-emerald-300 text-center w-full sm:w-auto sm:min-w-[200px]">
+                    <p className="font-bold text-emerald-900 text-base sm:text-lg">Sua Clínica</p>
+                    <p className="text-xs sm:text-sm text-emerald-700">Recebe R$ 28,20 (30%)</p>
                     <p className="text-xs text-emerald-600 mt-1">Cai limpinho na conta</p>
                   </div>
                 </div>
@@ -1152,17 +1148,17 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
   const Icon = currentStepData.icon
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-5xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col my-2 sm:my-0">
-        {/* Header */}
-        <div className="border-b border-gray-200 p-3 sm:p-6">
+    <div className="fixed inset-0 z-50 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-start sm:items-center justify-center p-0 sm:p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-none sm:rounded-2xl sm:rounded-3xl shadow-2xl max-w-5xl w-full h-full sm:h-auto sm:max-h-[95vh] sm:max-h-[90vh] flex flex-col my-0 sm:my-2 sm:my-0">
+        {/* Header - Ajustado para mobile */}
+        <div className="border-b border-gray-200 p-4 sm:p-6 sticky top-0 bg-white z-10">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-2 sm:p-3 rounded-xl">
                 <Icon className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Onboarding CLINIC FLOW</h1>
+                <h1 className="text-base sm:text-2xl font-bold text-gray-900">Onboarding CLINIC FLOW</h1>
                 <p className="text-xs sm:text-sm text-gray-600">Passo {currentStep} de {steps.length}</p>
               </div>
             </div>
@@ -1402,8 +1398,8 @@ function InlineServiceModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+    <div className="fixed inset-0 z-[60] bg-white/95 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 space-y-4 max-h-[95vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Cadastrar Serviço</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -1597,8 +1593,8 @@ function InlineProfessionalModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[60] bg-white/95 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 space-y-4 max-h-[95vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Cadastrar Profissional</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Building2, Bell, LogOut } from 'lucide-react'
+import { Building2, Bell, LogOut, Menu, X } from 'lucide-react'
 import { useScheduler } from '../context/SchedulerContext'
 import UserProfileModal from '../components/UserProfileModal'
 import { PanelProvider, usePanelContext } from '../context/PanelContext'
@@ -69,7 +69,7 @@ export function AdminPanel() {
 
   return (
     <PanelProvider filterType="professional" defaultTab="Dashboard" defaultFilter="all">
-      <div className="relative min-h-screen bg-gradient-to-br from-[#ffb3a7] via-[#ffc78f] to-[#ffe7a3] text-gray-900 font-sans overflow-hidden">
+      <div className="relative min-h-screen bg-gradient-to-br from-[#ffb3a7] via-[#ffc78f] to-[#ffe7a3] text-gray-900 font-sans overflow-x-hidden">
         {/* Blobs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -left-32 -top-24 h-96 w-96 rounded-full bg-[#ff8fa3] blur-3xl opacity-70 animate-pulse" />
@@ -78,7 +78,7 @@ export function AdminPanel() {
           <div className="absolute left-10 bottom-10 h-64 w-64 rounded-full bg-white/50 blur-[90px] opacity-70" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-6 py-8 space-y-6">
+        <div className="relative max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
           <Header />
           <TopMenu onTabChange={(tab) => setActiveTabSnapshot(tab)} />
 
@@ -169,6 +169,7 @@ function Header() {
 function TopMenu({ onTabChange }: { onTabChange?: (tab: string) => void }) {
   const { activeTab, setActiveTab } = usePanelContext()
   const { currentUser } = useScheduler()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   
   // Verificar se o Admin tem professional_id (é também um profissional ativo)
   const hasProfessionalId = !!currentUser?.professionalId
@@ -188,28 +189,67 @@ function TopMenu({ onTabChange }: { onTabChange?: (tab: string) => void }) {
     'Indicação',
   ]
 
+  const handleTabClick = (item: string) => {
+    setActiveTab(item)
+    onTabChange?.(item)
+    setMobileMenuOpen(false) // Fechar menu mobile ao clicar
+  }
+
   return (
-    <div className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl rounded-2xl px-3 py-2 flex items-center gap-2 flex-wrap">
-      {tabs.map((item) => {
-        const active = activeTab === item
-        return (
-          <button
-            key={item}
-            onClick={() => {
-              setActiveTab(item)
-              onTabChange?.(item)
-            }}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition border ${
-              active
-                ? 'bg-gray-900 text-white border-gray-900 shadow-lg shadow-black/10'
-                : 'bg-white/60 text-gray-800 border-white/60 hover:bg-white/80'
-            }`}
-          >
-            {item}
-          </button>
-        )
-      })}
-    </div>
+    <>
+      {/* Menu Mobile - Hamburger */}
+      <div className="sm:hidden bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl rounded-2xl p-3">
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="w-full flex items-center justify-between px-4 py-2 rounded-xl bg-white/60 text-gray-800 font-semibold"
+        >
+          <span>{activeTab || 'Menu'}</span>
+          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+        
+        {/* Menu Dropdown Mobile */}
+        {mobileMenuOpen && (
+          <div className="mt-2 space-y-1 max-h-[60vh] overflow-y-auto">
+            {tabs.map((item) => {
+              const active = activeTab === item
+              return (
+                <button
+                  key={item}
+                  onClick={() => handleTabClick(item)}
+                  className={`w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition ${
+                    active
+                      ? 'bg-gray-900 text-white shadow-lg'
+                      : 'bg-white/60 text-gray-800 hover:bg-white/80'
+                  }`}
+                >
+                  {item}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Menu Desktop */}
+      <div className="hidden sm:flex bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl rounded-2xl px-3 py-2 items-center gap-2 flex-wrap">
+        {tabs.map((item) => {
+          const active = activeTab === item
+          return (
+            <button
+              key={item}
+              onClick={() => handleTabClick(item)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition border ${
+                active
+                  ? 'bg-gray-900 text-white border-gray-900 shadow-lg shadow-black/10'
+                  : 'bg-white/60 text-gray-800 border-white/60 hover:bg-white/80'
+              }`}
+            >
+              {item}
+            </button>
+          )
+        })}
+      </div>
+    </>
   )
 }
 
