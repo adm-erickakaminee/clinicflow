@@ -10,4 +10,19 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
   },
+  build: {
+    // ✅ Aumentar limite de aviso de tamanho de chunk (padrão é 500kb)
+    chunkSizeWarningLimit: 1000, // 1MB
+    rollupOptions: {
+      output: {
+        // ✅ Dividir chunks para melhor performance
+        manualChunks: {
+          // Separar vendor chunks grandes
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+          'ui-vendor': ['lucide-react'],
+        },
+      },
+    },
+  },
 })

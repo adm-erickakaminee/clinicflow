@@ -45,23 +45,33 @@ export function useOnboarding() {
   }, [])
 
   const markOnboardingAsSeen = async () => {
-    if (!userId) return false
+    if (!userId) {
+      console.warn('⚠️ markOnboardingAsSeen - userId não disponível')
+      return false
+    }
 
     try {
+      console.log('🔄 markOnboardingAsSeen - Atualizando flag no banco...', { userId })
       const { error } = await supabase
         .from('profiles')
         .update({ has_seen_gaby_onboarding: true })
         .eq('id', userId)
 
       if (error) {
-        console.error('Erro ao atualizar onboarding:', error)
+        console.error('❌ Erro ao atualizar onboarding:', error)
         return false
       }
 
+      console.log('✅ markOnboardingAsSeen - Flag atualizada com sucesso')
+      // ✅ Atualizar estado imediatamente
       setHasSeenOnboarding(true)
+      
+      // ✅ Aguardar um pouco para garantir que o estado seja propagado
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
       return true
     } catch (error) {
-      console.error('Erro ao marcar onboarding como visto:', error)
+      console.error('❌ Erro ao marcar onboarding como visto:', error)
       return false
     }
   }

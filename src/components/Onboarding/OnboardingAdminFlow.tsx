@@ -1131,8 +1131,13 @@ export function OnboardingAdminFlow({ onPause }: OnboardingAdminFlowProps = {}) 
         sessionStorage.removeItem('onboarding_paused')
         sessionStorage.removeItem('onboarding_step')
         toast.success('Onboarding concluído! Bem-vindo ao CLINIC FLOW!')
-        // Redirecionar para o dashboard do admin
-        navigate('/admin/dashboard')
+        
+        // ✅ Aguardar um pouco para garantir que o toast seja exibido
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        // ✅ Recarregar a página para garantir que o estado seja atualizado
+        // Isso força o AdminPanel a re-verificar o onboarding
+        window.location.href = '/admin/dashboard'
       } else {
         toast.error('Erro ao finalizar onboarding. Tente novamente.')
         setIsCompleting(false)
