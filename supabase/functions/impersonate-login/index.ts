@@ -4,10 +4,32 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.3'
 import { z } from 'https://esm.sh/zod@3.22.4'
 import { create, getNumericDate, Payload } from 'https://deno.land/x/djwt@v2.9.1/mod.ts'
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET')!
-const supabase = createClient(supabaseUrl, serviceRole)
+/**
+ * Valida variáveis de ambiente obrigatórias
+ * Retorna erro 500 com mensagem clara se alguma estiver faltando
+ */
+function validateEnvVars(): { supabaseUrl: string; serviceRole: string; jwtSecret: string } {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET')
+
+  const missing: string[] = []
+  if (!supabaseUrl) missing.push('SUPABASE_URL')
+  if (!serviceRole) missing.push('SUPABASE_SERVICE_ROLE_KEY')
+  if (!jwtSecret) missing.push('SUPABASE_JWT_SECRET')
+
+  if (missing.length > 0) {
+    const errorMessage = `❌ Variáveis de ambiente não configuradas: ${missing.join(', ')}\n\n` +
+      `Configure no Supabase Dashboard:\n` +
+      `1. Vá em Settings → Edge Functions → Secrets\n` +
+      `2. Adicione as variáveis: ${missing.join(', ')}\n` +
+      `3. Marque para Production, Preview e Development\n\n` +
+      `Consulte: DOCS/arquivo/URGENTE_CONFIGURAR_VARIAVEIS.md`
+    throw new Error(errorMessage)
+  }
+
+  return { supabaseUrl, serviceRole, jwtSecret }
+}
 
 const schema = z.object({
   super_admin_id: z.string().uuid(),
@@ -22,6 +44,10 @@ async function handler(req: Request): Promise<Response> {
   }
 
   try {
+    // Validar variáveis de ambiente
+    const { supabaseUrl, serviceRole, jwtSecret } = validateEnvVars()
+    const supabase = createClient(supabaseUrl, serviceRole)
+
     const body = await req.json()
     const parsed = schema.parse(body)
 

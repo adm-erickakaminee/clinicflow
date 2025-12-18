@@ -1,14 +1,62 @@
-// deno-lint-ignore-file no-explicit-any
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.3'
 import { z } from 'https://esm.sh/zod@3.22.4'
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const asaasApiKey = Deno.env.get('ASAAS_API_KEY')! // ✅ API Key do Asaas
-const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') || 'https://api.asaas.com/v3'
+interface SplitItem {
+  walletId: string
+  totalValue: number
+  description: string
+}
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+interface AsaasResult {
+  simulated: boolean
+  split: SplitItem[]
+  hasReferral: boolean
+  referralWalletId: string | null
+  amount_cents: number
+  platform_fee_cents: number
+  platform_fee_total_cents: number
+  referral_fee_cents: number
+  professional_share_cents: number
+  clinic_share_cents: number
+  transfers_pending?: SplitItem[]
+  note?: string
+  error?: string
+  customer?: string
+  customerId?: string
+  payment_id?: string
+  id?: string
+}
+
+/**
+ * Valida variáveis de ambiente obrigatórias
+ * Retorna erro 500 com mensagem clara se alguma estiver faltando
+ */
+function validateEnvVars(): { supabaseUrl: string; supabaseKey: string; asaasApiKey: string; asaasBaseUrl: string } {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const asaasApiKey = Deno.env.get('ASAAS_API_KEY')
+  const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') || 'https://api.asaas.com/v3'
+
+  const missing: string[] = []
+  if (!supabaseUrl) missing.push('SUPABASE_URL')
+  if (!supabaseKey) missing.push('SUPABASE_SERVICE_ROLE_KEY')
+  if (!asaasApiKey) missing.push('ASAAS_API_KEY')
+
+  if (missing.length > 0) {
+    const errorMessage = `❌ Variáveis de ambiente não configuradas: ${missing.join(', ')}\n\n` +
+      `Configure no Supabase Dashboard:\n` +
+      `1. Vá em Settings → Edge Functions → Secrets\n` +
+      `2. Adicione as variáveis: ${missing.join(', ')}\n` +
+      `3. Marque para Production, Preview e Development\n\n` +
+      `Consulte: DOCS/arquivo/URGENTE_CONFIGURAR_VARIAVEIS.md`
+    throw new Error(errorMessage)
+  }
+
+  return { supabaseUrl, supabaseKey, asaasApiKey, asaasBaseUrl }
+}
+
+// Variáveis serão validadas e inicializadas no handler
 
 const payloadSchema = z.object({
   clinic_id: z.string().uuid(), // ✅ Mudado de organization_id para clinic_id
@@ -94,6 +142,10 @@ async function handler(req: Request): Promise<Response> {
   }
 
   try {
+    // Validar variáveis de ambiente
+    const { supabaseUrl, supabaseKey, asaasApiKey, asaasBaseUrl } = validateEnvVars()
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
     const body = await req.json()
     const parsed = payloadSchema.parse(body)
 
@@ -161,7 +213,7 @@ async function handler(req: Request): Promise<Response> {
     }, hasReferral, referralPercentage, referralWalletId)
 
     // Montar payload de split do Asaas
-    const asaasSplitPayload: any[] = []
+    const asaasSplitPayload: SplitItem[] = []
     
     // 1. Profissional
     if (split.professional_share_cents > 0 && prof?.asaas_wallet_id) {
@@ -200,7 +252,7 @@ async function handler(req: Request): Promise<Response> {
     }
 
     // ✅ Implementar chamada real ao Asaas para split de pagamento
-    let asaasResult: any = {
+    let asaasResult: AsaasResult = {
       simulated: false,
       split: asaasSplitPayload,
       hasReferral,
@@ -214,7 +266,7 @@ async function handler(req: Request): Promise<Response> {
       try {
         // Verificar se temos wallet IDs configurados
         const hasWallets = asaasSplitPayload.length > 0 && 
-          asaasSplitPayload.every((item: any) => item.walletId)
+          asaasSplitPayload.every((item) => item.walletId)
 
         if (hasWallets && asaasApiKey) {
           // Criar pagamento com split no Asaas
@@ -241,13 +293,14 @@ async function handler(req: Request): Promise<Response> {
           console.warn('⚠️ Wallets não configurados ou API key ausente, usando modo simulado')
           asaasResult.simulated = true
         }
-      } catch (asaasError: any) {
+      } catch (asaasError: unknown) {
+        const errorMessage = asaasError instanceof Error ? asaasError.message : 'Erro ao processar split no Asaas'
         console.error('❌ Erro ao processar split no Asaas:', asaasError)
         // Em caso de erro, continuar com modo simulado mas registrar o erro
         asaasResult = {
           ...asaasResult,
           simulated: true,
-          error: asaasError.message || 'Erro ao processar split no Asaas',
+          error: errorMessage,
         }
       }
     } else {
@@ -256,6 +309,11 @@ async function handler(req: Request): Promise<Response> {
       asaasResult.note = 'Pagamento em dinheiro - split não processado no Asaas'
     }
 
+    // Extrair customer_id e payment_id do resultado Asaas (se disponível)
+    // Esses campos podem vir em asaasResult se houver resposta real da API
+    const asaasCustomerId = asaasResult.customer || asaasResult.customerId || clinic?.asaas_customer_id || null
+    const asaasPaymentId = asaasResult.payment_id || asaasResult.id || null
+    
     // Registrar transação
     const { error: insertError } = await supabase.from('financial_transactions').insert({
       clinic_id: parsed.clinic_id, // ✅ Mudado de organization_id para clinic_id
@@ -270,6 +328,8 @@ async function handler(req: Request): Promise<Response> {
       status: 'completed',
       is_fee_ledger_pending: false,
       asaas_wallet_id: prof?.asaas_wallet_id,
+      asaas_customer_id: asaasCustomerId, // ✅ Armazenar customer_id se disponível
+      asaas_payment_id: asaasPaymentId, // ✅ Armazenar payment_id se disponível
       asaas_split_payload: asaasResult,
     })
 
@@ -281,10 +341,11 @@ async function handler(req: Request): Promise<Response> {
       headers: { 'Content-Type': 'application/json' },
       status: 200,
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
     console.error('process-payment error', err)
     return new Response(
-      JSON.stringify({ ok: false, error: err?.message || 'Erro desconhecido' }),
+      JSON.stringify({ ok: false, error: errorMessage }),
       { status: 400, headers: { 'Content-Type': 'application/json' } },
     )
   }

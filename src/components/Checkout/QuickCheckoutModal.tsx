@@ -64,6 +64,7 @@ export function QuickCheckoutModal({
   } | null>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [cashbackEarned, setCashbackEarned] = useState<number>(0)
+  const [professionalId, setProfessionalId] = useState<string | null>(null) // ✅ Armazenar professional_id do appointment
 
   const toast = useToast()
 
@@ -94,7 +95,7 @@ export function QuickCheckoutModal({
     }
   }, [open, clientId])
 
-  // Buscar configuração de cashback do profissional
+  // Buscar configuração de cashback do profissional e armazenar professional_id
   useEffect(() => {
     const loadProfessionalCashback = async () => {
       if (!appointmentId) return
@@ -107,6 +108,9 @@ export function QuickCheckoutModal({
           .single()
         
         if (appointment?.professional_id) {
+          // ✅ Armazenar professional_id para usar no payload
+          setProfessionalId(appointment.professional_id)
+          
           const { data: prof } = await supabase
             .from('profiles')
             .select('cashback_enabled, cashback_mode, cashback_percent, cashback_fixed_cents')
@@ -123,13 +127,18 @@ export function QuickCheckoutModal({
             // Definir se deve dar cashback baseado na configuração
             setGiveCashback(prof.cashback_enabled || false)
           }
+        } else {
+          setProfessionalId(null)
         }
       } catch (err) {
         console.error('Erro ao carregar configuração de cashback:', err)
+        setProfessionalId(null)
       }
     }
     if (open && appointmentId) {
       loadProfessionalCashback()
+    } else {
+      setProfessionalId(null)
     }
   }, [open, appointmentId])
 
@@ -211,8 +220,29 @@ export function QuickCheckoutModal({
 
       // Processar pagamento
       if (paymentMethod === 'pix' || paymentMethod === 'credit') {
+        // ✅ Validar que temos professional_id antes de processar pagamento
+        if (!professionalId) {
+          toast.error('Erro: Profissional não encontrado no agendamento. Não é possível processar o pagamento.')
+          return
+        }
+        
+        // ✅ Construir payload correto para process-payment (schema diferente do checkoutSchema)
+        // O process-payment espera campos específicos, não o payload completo do checkout
+        const processPaymentPayload = {
+          clinic_id: clinicId,
+          appointment_id: appointmentId,
+          professional_id: professionalId, // ✅ Campo obrigatório que estava faltando
+          amount_cents: calculation.total_to_pay_clinic, // ✅ Usar total_to_pay_clinic como amount_cents
+          platform_fee_percent: 0.0599, // 5.99% padrão (pode ser configurável no futuro)
+          payment_method: paymentMethod,
+          // commission_model, commission_rate e rental_base_cents serão buscados do perfil do profissional
+          // na função process-payment, então não precisamos enviar aqui
+        }
+        
+        console.log('📤 Enviando payload para process-payment:', processPaymentPayload)
+        
         const { error } = await supabase.functions.invoke('process-payment', {
-          body: payload,
+          body: processPaymentPayload,
         })
         if (error) throw error
       } else {

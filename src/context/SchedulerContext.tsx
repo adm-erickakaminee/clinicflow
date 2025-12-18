@@ -248,10 +248,16 @@ export function SchedulerProvider({ children }: { children: React.ReactNode }) {
   const [sessionLoading, setSessionLoading] = useState(true) // Iniciar como true para indicar que está carregando
   // ✅ Ref para acessar currentUser dentro do callback sem problemas de closure
   const currentUserRef = React.useRef<SchedulerUser | null>(initialUser)
+  const hasLoadedUserRef = React.useRef<boolean>(false) // ✅ Flag persistente para evitar reloads desnecessários
+  const isInitializingRef = React.useRef<boolean>(false) // ✅ Flag para evitar conflito entre initializeSession e onAuthStateChange
   
   // Atualizar ref sempre que currentUser mudar
   React.useEffect(() => {
     currentUserRef.current = currentUser
+    // Atualizar flag quando usuário for carregado
+    if (currentUser) {
+      hasLoadedUserRef.current = true
+    }
   }, [currentUser])
 
   const [appointments, setAppointments] = useState<SchedulerAppointment[]>([])
@@ -3351,13 +3357,28 @@ para permitir que super_admin atualize profiles de outros usuários.`
 
     // Carregar sessão persistida na inicialização
     const initializeSession = async () => {
+      // ✅ Evitar múltiplas inicializações simultâneas
+      if (isInitializingRef.current) {
+        console.log('ℹ️ Inicialização já em andamento, ignorando...')
+        return
+      }
+      
+      // ✅ Se já tiver usuário carregado, não reinicializar
+      if (hasLoadedUserRef.current && currentUserRef.current) {
+        console.log('ℹ️ Usuário já carregado, ignorando inicialização...')
+        setSessionLoading(false)
+        return
+      }
+      
       console.log('🔄 Inicializando sessão...')
+      isInitializingRef.current = true
       setSessionLoading(true)
       
       // ✅ TIMEOUT DE SEGURANÇA: Se demorar mais de 10 segundos, finalizar loading
       const timeoutId = setTimeout(() => {
         console.warn('⚠️ Timeout na inicialização da sessão (10s), finalizando loading...')
         setSessionLoading(false)
+        isInitializingRef.current = false
       }, 10000)
       
       try {
@@ -3369,7 +3390,9 @@ para permitir que super_admin atualize profiles de outros usuários.`
         if (sessionError) {
           console.warn('⚠️ Erro ao ler sessão:', sessionError)
           setCurrentUser(null)
+          hasLoadedUserRef.current = false
           setSessionLoading(false)
+          isInitializingRef.current = false
           return
         }
 
@@ -3379,12 +3402,16 @@ para permitir que super_admin atualize profiles de outros usuários.`
           if (!loadedUser) {
             console.warn('⚠️ Não foi possível carregar perfil, mas usuário está autenticado')
             setCurrentUser(null)
+            hasLoadedUserRef.current = false
             localStorage.removeItem('clinicflow_user')
             setSessionLoading(false)
+          } else {
+            hasLoadedUserRef.current = true
           }
         } else {
           console.log('ℹ️ Nenhuma sessão encontrada')
           setCurrentUser(null)
+          hasLoadedUserRef.current = false
           localStorage.removeItem('clinicflow_user')
           setSessionLoading(false)
         }
@@ -3392,10 +3419,12 @@ para permitir que super_admin atualize profiles de outros usuários.`
         clearTimeout(timeoutId) // Limpar timeout em caso de erro
         console.error('❌ Erro ao inicializar sessão:', error)
         setCurrentUser(null)
+        hasLoadedUserRef.current = false
         setSessionLoading(false)
       } finally {
         clearTimeout(timeoutId) // Garantir que timeout seja limpo
         setSessionLoading(false)
+        isInitializingRef.current = false
       }
     }
 
@@ -3403,66 +3432,92 @@ para permitir que super_admin atualize profiles de outros usuários.`
     initializeSession()
 
     // Listener para mudanças de autenticação
-    // ✅ CORREÇÃO: Evitar recarregar perfil em TOKEN_REFRESHED se já estiver carregado (evita reload no mobile)
-    let hasLoadedUser = false
+    // ✅ CORREÇÃO: Usar refs para evitar reloads desnecessários e conflitos
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔔 Auth state change:', event, session?.user?.id, 'hasLoadedUser:', hasLoadedUser, 'currentUser:', !!currentUser)
+      console.log('🔔 Auth state change:', event, session?.user?.id, 'hasLoadedUser:', hasLoadedUserRef.current, 'currentUser:', !!currentUserRef.current, 'isInitializing:', isInitializingRef.current)
       
       if (event === 'SIGNED_OUT') {
         console.log('👋 Usuário deslogado')
         setCurrentUser(null)
+        hasLoadedUserRef.current = false
+        isInitializingRef.current = false
         localStorage.removeItem('clinicflow_user')
-        hasLoadedUser = false // Reset flag ao deslogar
       } else if (event === 'SIGNED_IN') {
         // ✅ Sempre carregar em SIGNED_IN (novo login)
-        hasLoadedUser = false // Reset para forçar reload em novo login
+        // Reset flags para forçar reload em novo login
+        hasLoadedUserRef.current = false
+        isInitializingRef.current = false
+        
         if (session?.user) {
+          // ✅ Evitar conflito: se initializeSession estiver rodando, aguardar
+          if (isInitializingRef.current) {
+            console.log('ℹ️ onAuthStateChange - Inicialização em andamento, aguardando...')
+            return
+          }
+          
           console.log('✅ Novo login detectado, carregando perfil...', { userId: session.user.id })
+          isInitializingRef.current = true
           setSessionLoading(true)
           try {
             const loadedUser = await loadUserProfile(session.user)
             if (!loadedUser) {
               console.error('❌ onAuthStateChange - Não foi possível carregar perfil do banco de dados!')
               setCurrentUser(null)
+              hasLoadedUserRef.current = false
               localStorage.removeItem('clinicflow_user')
             } else {
               console.log('✅ onAuthStateChange - Usuário carregado com sucesso:', loadedUser)
-              hasLoadedUser = true
+              hasLoadedUserRef.current = true
             }
           } catch (error) {
             console.error('❌ onAuthStateChange - Erro ao carregar perfil:', error)
             setCurrentUser(null)
+            hasLoadedUserRef.current = false
             localStorage.removeItem('clinicflow_user')
           } finally {
             setSessionLoading(false)
+            isInitializingRef.current = false
           }
         }
       } else if (event === 'INITIAL_SESSION') {
-        // ✅ Apenas na primeira vez (INITIAL_SESSION) - carregar se não tiver usuário
-        // Usar ref para verificar estado atual sem problemas de closure
-        if (session?.user && !currentUserRef.current && !hasLoadedUser) {
-          console.log('✅ Sessão inicial detectada, carregando perfil...', { userId: session.user.id })
-          setSessionLoading(true)
-          try {
-            const loadedUser = await loadUserProfile(session.user)
-            if (!loadedUser) {
-              console.error('❌ onAuthStateChange - Não foi possível carregar perfil do banco de dados!')
-              setCurrentUser(null)
-              localStorage.removeItem('clinicflow_user')
-            } else {
-              console.log('✅ onAuthStateChange - Usuário carregado com sucesso:', loadedUser)
-              hasLoadedUser = true
+        // ✅ CORREÇÃO CRÍTICA: Ignorar INITIAL_SESSION se já tiver usuário ou se initializeSession estiver rodando
+        // O initializeSession já cuida do carregamento inicial, não precisamos duplicar aqui
+        if (hasLoadedUserRef.current || currentUserRef.current || isInitializingRef.current) {
+          console.log('ℹ️ onAuthStateChange - Usuário já carregado ou inicialização em andamento, ignorando INITIAL_SESSION')
+          return
+        }
+        
+        // ✅ Apenas processar INITIAL_SESSION se realmente não tiver usuário e não estiver inicializando
+        if (session?.user) {
+          console.log('✅ INITIAL_SESSION detectada, mas initializeSession já deve ter carregado. Verificando...')
+          // Aguardar um pouco para ver se initializeSession termina
+          setTimeout(() => {
+            if (!hasLoadedUserRef.current && !currentUserRef.current && !isInitializingRef.current) {
+              console.log('⚠️ INITIAL_SESSION - initializeSession não carregou, carregando agora...')
+              isInitializingRef.current = true
+              setSessionLoading(true)
+              loadUserProfile(session.user)
+                .then((loadedUser) => {
+                  if (loadedUser) {
+                    hasLoadedUserRef.current = true
+                  } else {
+                    setCurrentUser(null)
+                    hasLoadedUserRef.current = false
+                    localStorage.removeItem('clinicflow_user')
+                  }
+                })
+                .catch((error) => {
+                  console.error('❌ INITIAL_SESSION - Erro ao carregar perfil:', error)
+                  setCurrentUser(null)
+                  hasLoadedUserRef.current = false
+                  localStorage.removeItem('clinicflow_user')
+                })
+                .finally(() => {
+                  setSessionLoading(false)
+                  isInitializingRef.current = false
+                })
             }
-          } catch (error) {
-            console.error('❌ onAuthStateChange - Erro ao carregar perfil:', error)
-            setCurrentUser(null)
-            localStorage.removeItem('clinicflow_user')
-          } finally {
-            setSessionLoading(false)
-          }
-        } else if (currentUserRef.current || hasLoadedUser) {
-          // ✅ Já tem usuário carregado, não recarregar
-          console.log('ℹ️ onAuthStateChange - Usuário já carregado, ignorando INITIAL_SESSION')
+          }, 500) // Aguardar 500ms para initializeSession terminar
         }
       } else if (event === 'TOKEN_REFRESHED') {
         // ✅ CORREÇÃO CRÍTICA: NUNCA recarregar perfil em TOKEN_REFRESHED
@@ -3470,6 +3525,7 @@ para permitir que super_admin atualize profiles de outros usuários.`
         // O token refresh é apenas para renovar a autenticação, não para recarregar dados
         console.log('ℹ️ onAuthStateChange - Token refreshed, mantendo usuário atual (sem reload)')
         // Não fazer nada - apenas manter o usuário atual
+        // Não resetar flags, não recarregar perfil, não fazer nada!
       }
     })
 

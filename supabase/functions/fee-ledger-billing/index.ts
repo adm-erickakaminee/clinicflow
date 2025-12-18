@@ -2,12 +2,37 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.3'
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const supabase = createClient(supabaseUrl, serviceRole)
+/**
+ * Valida variáveis de ambiente obrigatórias
+ * Retorna erro 500 com mensagem clara se alguma estiver faltando
+ */
+function validateEnvVars(): { supabaseUrl: string; serviceRole: string } {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+  const missing: string[] = []
+  if (!supabaseUrl) missing.push('SUPABASE_URL')
+  if (!serviceRole) missing.push('SUPABASE_SERVICE_ROLE_KEY')
+
+  if (missing.length > 0) {
+    const errorMessage = `❌ Variáveis de ambiente não configuradas: ${missing.join(', ')}\n\n` +
+      `Configure no Supabase Dashboard:\n` +
+      `1. Vá em Settings → Edge Functions → Secrets\n` +
+      `2. Adicione as variáveis: ${missing.join(', ')}\n` +
+      `3. Marque para Production, Preview e Development\n\n` +
+      `Consulte: DOCS/arquivo/URGENTE_CONFIGURAR_VARIAVEIS.md`
+    throw new Error(errorMessage)
+  }
+
+  return { supabaseUrl, serviceRole }
+}
 
 async function handler(): Promise<Response> {
   try {
+    // Validar variáveis de ambiente
+    const { supabaseUrl, serviceRole } = validateEnvVars()
+    const supabase = createClient(supabaseUrl, serviceRole)
+
     // Busca todas as transações com fee pendente
     const { data: rows, error } = await supabase
       .from('financial_transactions')

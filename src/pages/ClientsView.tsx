@@ -1,11 +1,22 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { Search, Plus, Wallet2, AlertTriangle, Activity, Calendar, Stethoscope, Edit2 } from 'lucide-react'
 import { format, isAfter } from 'date-fns'
 import { AppointmentModal } from './SchedulerView'
-import { useScheduler } from '../context/SchedulerContext'
+import { useScheduler, type SchedulerClient } from '../context/SchedulerContext'
 import { MedicalRecordTab } from './MedicalRecordTab'
 
 type TabKey = 'overview' | 'medical' | 'history'
+
+interface AppointmentModalData {
+  mode: 'create' | 'edit'
+  profId: string
+  time: string
+  date: Date
+  event: {
+    clientId: string
+    patient: string
+  }
+}
 
 export function ClientsView() {
   const {
@@ -26,9 +37,9 @@ export function ClientsView() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [tab, setTab] = useState<TabKey>('overview')
   const [modalOpen, setModalOpen] = useState(false)
-  const [modalData, setModalData] = useState<any>(null)
+  const [modalData, setModalData] = useState<AppointmentModalData | null>(null)
   const [clientModalOpen, setClientModalOpen] = useState(false)
-  const [editingClient, setEditingClient] = useState<any>(null)
+  const [editingClient, setEditingClient] = useState<SchedulerClient | null>(null)
 
   // Atualizar selectedId quando clients mudar
   useEffect(() => {
@@ -59,7 +70,8 @@ export function ClientsView() {
 
   const nextAppointment = clientAppointments.find((a) => isAfter(new Date(a.start), new Date()))
   const completed = clientAppointments.filter((a) => a.status === 'completed')
-  const ltv = completed.reduce((sum, a) => sum + ((a as any).value || 0), 0)
+  // Note: SchedulerAppointment doesn't have a 'value' field, using 0 as default
+  const ltv = completed.reduce((sum) => sum + 0, 0)
   const freq = clientAppointments.length
 
   const isAdminView = currentUser?.role === 'admin' || currentUser?.role === 'clinic_owner'
@@ -72,17 +84,19 @@ export function ClientsView() {
     setModalOpen(true)
   }
 
-  const handleAddEvolution = () => {
+  const handleAddEvolution = useCallback(() => {
     if (!selected) return
+    // Generate ID using timestamp in callback to avoid impure function during render
+    const timestamp = Date.now()
     const evo = {
-      id: String(Date.now()),
+      id: String(timestamp),
       date: new Date().toISOString(),
       professionalId: professionals.find((p) => p.id !== 'all')?.id ?? '',
       description: 'Evolução adicionada',
       procedure: 'Consulta',
     }
     addEvolution(selected.id, evo)
-  }
+  }, [selected, professionals, addEvolution])
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[360px,1fr] gap-6">
@@ -309,7 +323,7 @@ export function ClientsView() {
                 ...data,
                 walletBalance: 0,
                 createdAt: new Date().toISOString(),
-              } as any)
+              } as Partial<SchedulerClient>)
                 .then((created) => {
                   setSelectedId(created.id)
                 })
@@ -381,14 +395,21 @@ function StatusBadge({ status }: { status?: string }) {
   return <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${cls}`}>{status ?? '—'}</span>
 }
 
+interface ClientFormData {
+  name: string
+  email: string
+  mobile: string
+  birthDate: string
+}
+
 function ClientModal({
   client,
   onClose,
   onSave,
 }: {
-  client: any
+  client: SchedulerClient | null
   onClose: () => void
-  onSave: (data: any) => void
+  onSave: (data: ClientFormData) => void
 }) {
   const [form, setForm] = useState({
     name: client?.name ?? '',

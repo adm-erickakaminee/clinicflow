@@ -3,12 +3,33 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.3'
 import { z } from 'https://esm.sh/zod@3.22.4'
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const asaasApiKey = Deno.env.get('ASAAS_API_KEY')! // Configurar no Supabase Dashboard
-const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') || 'https://api.asaas.com/v3'
+/**
+ * Valida variáveis de ambiente obrigatórias
+ * Retorna erro 500 com mensagem clara se alguma estiver faltando
+ */
+function validateEnvVars(): { supabaseUrl: string; supabaseKey: string; asaasApiKey: string; asaasBaseUrl: string } {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const asaasApiKey = Deno.env.get('ASAAS_API_KEY')
+  const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') || 'https://api.asaas.com/v3'
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+  const missing: string[] = []
+  if (!supabaseUrl) missing.push('SUPABASE_URL')
+  if (!supabaseKey) missing.push('SUPABASE_SERVICE_ROLE_KEY')
+  if (!asaasApiKey) missing.push('ASAAS_API_KEY')
+
+  if (missing.length > 0) {
+    const errorMessage = `❌ Variáveis de ambiente não configuradas: ${missing.join(', ')}\n\n` +
+      `Configure no Supabase Dashboard:\n` +
+      `1. Vá em Settings → Edge Functions → Secrets\n` +
+      `2. Adicione as variáveis: ${missing.join(', ')}\n` +
+      `3. Marque para Production, Preview e Development\n\n` +
+      `Consulte: DOCS/arquivo/URGENTE_CONFIGURAR_VARIAVEIS.md`
+    throw new Error(errorMessage)
+  }
+
+  return { supabaseUrl, supabaseKey, asaasApiKey, asaasBaseUrl }
+}
 
 const payloadSchema = z.object({
   type: z.enum(['clinic', 'professional']),
@@ -32,6 +53,7 @@ type Payload = z.infer<typeof payloadSchema>
 interface AsaasSubaccountResponse {
   id: string
   walletId: string
+  customerId: string // ID do cliente no Asaas (campo "customer" ou "customerId" ou "id")
   status: 'pending' | 'approved' | 'rejected'
 }
 
@@ -141,12 +163,17 @@ async function createAsaasSubaccount(payload: Payload): Promise<AsaasSubaccountR
   return {
     id: data.id,
     walletId: data.walletId || data.wallet?.id || '',
+    customerId: data.customer || data.customerId || data.id, // ID do cliente no Asaas
     status: data.status || 'pending',
   }
 }
 
 async function handler(req: Request): Promise<Response> {
   try {
+    // Validar variáveis de ambiente
+    const { supabaseUrl, supabaseKey, asaasApiKey, asaasBaseUrl } = validateEnvVars()
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
     const payload: Payload = await req.json()
     
     // Validar payload
@@ -183,6 +210,7 @@ async function handler(req: Request): Promise<Response> {
         .from('profiles')
         .update({
           asaas_wallet_id: asaasResult.walletId,
+          asaas_customer_id: asaasResult.customerId, // ✅ Armazenar customer_id
           kyc_status: asaasResult.status === 'approved' ? 'approved' : 'in_review',
           updated_at: new Date().toISOString(),
         })
@@ -194,6 +222,7 @@ async function handler(req: Request): Promise<Response> {
         .from('organizations')
         .update({
           asaas_wallet_id: asaasResult.walletId,
+          asaas_customer_id: asaasResult.customerId, // ✅ Armazenar customer_id
           kyc_status: asaasResult.status === 'approved' ? 'approved' : 'in_review',
           updated_at: new Date().toISOString(),
         })

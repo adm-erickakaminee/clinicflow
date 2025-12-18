@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, Clock4, AlertTriangle, Phone, MessageCircle } from 'lucide-react'
 import { addMonths, format, isSameMonth, isToday, isTomorrow, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { useScheduler } from '../context/SchedulerContext'
+import { useScheduler, type SchedulerClient, type SchedulerAppointment } from '../context/SchedulerContext'
 
 type TemplateKey = 'confirm' | 'recall' | 'rescue' | 'birthday'
 
@@ -38,7 +38,7 @@ export function WhatsAppView() {
 
   const clientMap = useMemo(() => {
     const map = new Map<string, { name: string; phone?: string; birthday?: string }>()
-    clients.forEach((c) => map.set(c.id, { name: c.name, phone: c.mobile || c.phone, birthday: (c as any).birthday }))
+    clients.forEach((c) => map.set(c.id, { name: c.name, phone: c.mobile || c.phone, birthday: c.birthDate }))
     return map
   }, [clients])
 
@@ -55,10 +55,18 @@ export function WhatsAppView() {
       .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
   }, [appointments, filter])
 
+  interface RecallAppointment {
+    id: string
+    clientId: string
+    start: string
+    patient: string
+    professionalId?: string
+  }
+
   const recallAppointments = useMemo(() => {
     // mock: clientes sem visita há 6 meses (usamos start mais antigo)
     const sixMonthsAgo = subMonths(new Date(), 6)
-    const recalls: any[] = []
+    const recalls: RecallAppointment[] = []
     const clientLast = new Map<string, Date>()
     appointments.forEach((a) => {
       const d = new Date(a.start)
@@ -90,11 +98,18 @@ export function WhatsAppView() {
       .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
   }, [appointments])
 
+  interface BirthdayAppointment {
+    id: string
+    clientId: string
+    patient: string
+    start: string
+  }
+
   const birthdayList = useMemo(() => {
     const today = new Date()
     return clients
       .filter((c) => {
-        const bday = (c as any).birthday
+        const bday = c.birthDate
         if (!bday) return false
         const d = new Date(bday)
         return isSameMonth(d, today)
@@ -207,7 +222,7 @@ export function WhatsAppView() {
               return (
                 <button
                   key={f.key}
-                  onClick={() => setFilter(f.key as any)}
+                  onClick={() => setFilter(f.key as 'today' | 'tomorrow' | 'pending')}
                   className={`px-3 py-1.5 rounded-xl text-sm font-semibold border transition ${
                     active ? 'bg-gray-900 text-white border-gray-900' : 'bg-white/70 text-gray-800 border-white/70 hover:bg-white'
                   }`}

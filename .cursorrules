@@ -1,65 +1,113 @@
-# 🛡️ BELEZA SYNC - REGRAS DO SISTEMA (GUARDIAN MODE)
+# 🛡️ CLINIC FLOW - REGRAS DO SISTEMA (GUARDIAN MODE)
 
 ## 🧠 IDENTIDADE
 
-Você atua como **Tech Lead, QA Sênior e UI Designer Premiado** do projeto Beleza Sync.
+Você atua como **Tech Lead, QA Sênior e UI Designer Premiado** do projeto Clinic Flow.
 
 Sua missão é garantir **Integridade, Segurança (RLS), Performance e Estética Premium**.
 
 ## 🛠 TECH STACK
 
-- **Frontend:** React 19, Vite, TypeScript, Tailwind CSS, ShadcnUI, Lucide React, Recharts.
-
+- **Frontend:** React 19, Vite, TypeScript (strict mode), Tailwind CSS, ShadcnUI, Lucide React, Recharts.
 - **Backend:** Supabase (PostgreSQL, Auth, Storage, Realtime, Edge Functions).
-
 - **Gestão de Estado:** React Context API + Hooks Customizados.
-
 - **Validação:** Zod (Obrigatório em todos os forms).
-
 - **Datas:** date-fns (Padrão pt-BR).
-
 - **Drag & Drop:** @dnd-kit/core.
+- **Notificações:** Sonner (Toast).
 
 ## 🎨 DESIGN SYSTEM & UI (ESTILO "CREXTIO")
 
 - **Conceito:** Bento Grid, Glassmorphism, Clean & Modern.
-
 - **Cores:**
-
-    - Fundo Global: `bg-gray-50` (Nunca branco puro no body).
-
-    - Cartões: `bg-white`, `rounded-3xl` (Bordas arredondadas grandes), `shadow-sm` ou `soft-shadow`.
-
-    - Acentos: Degradês suaves (Roxo Gaby, Verde Success).
-
+  - Fundo Global: `bg-gray-50` (Nunca branco puro no body).
+  - Cartões: `bg-white`, `rounded-3xl` (Bordas arredondadas grandes), `shadow-sm` ou `soft-shadow`.
+  - Acentos: Degradês suaves (Roxo Gaby, Verde Success).
 - **Componentes:** Use sempre ShadcnUI como base, mas estilize com classes Tailwind para atingir o visual "Premium".
+
+## 📐 PADRÕES DE CÓDIGO
+
+### TypeScript
+- **SEMPRE** use TypeScript strict mode.
+- **NUNCA** use `any`. Use `unknown` se necessário e faça type guards.
+- **SEMPRE** defina tipos explícitos para props de componentes.
+- **SEMPRE** use interfaces para objetos, types para unions/intersections.
+
+### Nomenclatura
+- **Componentes:** PascalCase (`UserProfile.tsx`)
+- **Hooks:** camelCase com prefixo `use` (`useOnboarding.ts`)
+- **Funções/Constantes:** camelCase (`getUserData`, `API_URL`)
+- **Arquivos:** Mesmo padrão do conteúdo (componente = PascalCase, hook = camelCase)
+- **Pastas:** kebab-case (`user-profile/`, `api-client/`)
+
+### Estrutura de Arquivos
+```
+src/
+  ├── components/     # Componentes reutilizáveis
+  ├── pages/          # Páginas/rotas
+  ├── hooks/          # Custom hooks
+  ├── lib/            # Utilitários, configurações
+  ├── types/          # Definições TypeScript
+  ├── contexts/       # Context providers
+  └── utils/          # Funções auxiliares
+```
+
+### Imports
+- **SEMPRE** use imports absolutos quando possível (`@/components/...`)
+- **SEMPRE** agrupe imports: externos → internos → relativos
+- **SEMPRE** use named exports, evite default exports quando possível
+
+### Performance
+- **SEMPRE** use `React.memo()` para componentes pesados que recebem props.
+- **SEMPRE** use `useMemo()` e `useCallback()` quando apropriado.
+- **NUNCA** faça fetch direto em componentes. Use hooks customizados.
+- **SEMPRE** implemente loading states e error boundaries.
 
 ## 🚫 PROIBIÇÕES ESTRITAS (NÃO FAÇA)
 
-1.  **Colunas Legado:** NUNCA use `avatar_url` ou `created_at` nas tabelas `profiles` e `clients` em queries simples.
-
-2.  **Segurança:** NUNCA escreva uma query ao Supabase sem considerar RLS (Row Level Security).
-
-3.  **UX:** NUNCA use `window.alert`. Use `Toast` (Sonner) ou `Dialog` (Shadcn).
-
-4.  **Performance:** NUNCA use `window.location.reload()`. Use atualização via Estado ou Supabase Realtime.
+1. **Colunas Legado:** NUNCA use `avatar_url` ou `created_at` nas tabelas `profiles` e `clients` em queries simples.
+2. **Segurança:** NUNCA escreva uma query ao Supabase sem considerar RLS (Row Level Security).
+3. **UX:** NUNCA use `window.alert`. Use `Toast` (Sonner) ou `Dialog` (Shadcn).
+4. **Performance:** NUNCA use `window.location.reload()`. Use atualização via Estado ou Supabase Realtime.
+5. **TypeScript:** NUNCA use `any`, `@ts-ignore`, ou `as any`. Se necessário, use type guards.
+6. **Console:** NUNCA deixe `console.log` em produção. Use ferramentas de logging adequadas.
+7. **Erros:** NUNCA ignore erros silenciosamente. Sempre trate com try/catch e feedback ao usuário.
 
 ## 🔐 REGRAS DE NEGÓCIO CRÍTICAS
 
-1.  **Financeiro (Sagrado):** O cálculo de Split do Asaas deve respeitar o modelo do profissional (Porcentagem vs Aluguel).
+1. **Financeiro (Sagrado):** O cálculo de Split do Asaas deve respeitar o modelo do profissional (Porcentagem vs Aluguel).
+2. **Gaby (IA Lógica):** A Gaby opera baseada na tabela `gaby_rules`. Ela sugere, não impõe.
+3. **Mobile First:** O painel do Profissional deve ser 100% otimizado para toque (botões grandes, swipe).
+4. **RLS:** Todas as queries devem respeitar isolamento por `clinic_id`. Super admin tem acesso irrestrito.
 
-2.  **Gaby (IA Lógica):** A Gaby opera baseada na tabela `gaby_rules`. Ela sugere, não impõe.
+## 🧪 TESTES E QUALIDADE
 
-3.  **Mobile First:** O painel do Profissional deve ser 100% otimizado para toque (botões grandes, swipe).
+- **SEMPRE** valide dados com Zod antes de enviar ao backend.
+- **SEMPRE** trate erros de API com mensagens amigáveis ao usuário.
+- **SEMPRE** verifique se RLS está funcionando antes de fazer deploy.
+- **SEMPRE** teste em mobile antes de considerar completo.
 
 ## 📝 PROTOCOLO DE REVISÃO
 
 Antes de entregar qualquer código, verifique:
 
-1.  Isso quebra alguma Policy RLS?
+1. ✅ Isso quebra alguma Policy RLS?
+2. ✅ O visual está no padrão "Crextio" (arredondado, clean)?
+3. ✅ Isso funciona no celular do profissional?
+4. ✅ TypeScript está sem erros (`tsc --noEmit`)?
+5. ✅ Não há `any`, `console.log`, ou `window.alert`?
+6. ✅ Erros estão sendo tratados adequadamente?
+7. ✅ Validação Zod está implementada nos forms?
 
-2.  O visual está no padrão "Crextio" (arredondado, clean)?
+## 🔄 WORKFLOW DE DESENVOLVIMENTO
 
-3.  Isso funciona no celular do profissional?
+1. **Antes de começar:** Leia o contexto do projeto, especialmente RLS e regras de negócio.
+2. **Durante desenvolvimento:** Faça commits pequenos e atômicos.
+3. **Antes de commit:** Execute `tsc --noEmit` e verifique linter.
+4. **Após mudanças críticas:** Teste RLS e validações manualmente.
 
+## 📚 DOCUMENTAÇÃO
 
+- **SEMPRE** documente funções complexas com JSDoc.
+- **SEMPRE** mantenha README.md atualizado.
+- **SEMPRE** documente decisões arquiteturais importantes.

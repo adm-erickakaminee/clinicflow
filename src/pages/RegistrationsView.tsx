@@ -631,15 +631,8 @@ function ProfessionalModal({
   const [rentalBaseCents, setRentalBaseCents] = useState<number>(
     (professional as any).rentalBaseCents || (professional as any).rental_base_cents || 0
   )
-  const [payoutModel, setPayoutModel] = useState<'PERCENTUAL' | 'FIXO_MENSAL' | 'HIBRIDO' | 'NENHUM'>(
-    (professional as any).payout_model || 'PERCENTUAL'
-  )
-  const [payoutPercentage, setPayoutPercentage] = useState<number>(
-    (professional as any).payout_percentage || (professional as any).payoutPercentage || 50
-  )
-  const [fixedMonthlyPayoutCents, setFixedMonthlyPayoutCents] = useState<number>(
-    (professional as any).fixed_monthly_payout_cents || (professional as any).fixedMonthlyPayoutCents || 0
-  )
+  // ✅ REMOVIDO: Variáveis de payout (remuneração do profissional) - não são mais necessárias
+  // Apenas usamos commissionModel, commissionRate e rentalBaseCents (o que o profissional PAGA para a clínica)
   const [selectedClinicId, setSelectedClinicId] = useState<string>((professional as any).clinicId || '')
   const [clinics, setClinics] = useState<Array<{ id: string; name: string }>>([])
   const [loadingClinics, setLoadingClinics] = useState(false)
@@ -951,120 +944,6 @@ function ProfessionalModal({
             </div>
           </div>
 
-          {/* Regras de Remuneração do Profissional (Payout) */}
-          <div className="space-y-3 pt-3 border-t border-white/60">
-            <div>
-              <label className="text-xs font-semibold text-gray-700">Regras de Remuneração do Profissional</label>
-              <p className="text-xs text-gray-500 mt-1">Configure como a clínica remunera o profissional</p>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 cursor-pointer hover:bg-white/50 p-2 rounded-lg transition">
-                <input
-                  type="radio"
-                  name="payoutModel"
-                  value="PERCENTUAL"
-                  checked={payoutModel === 'PERCENTUAL'}
-                  onChange={(e) => setPayoutModel(e.target.value as 'PERCENTUAL')}
-                  className="rounded border-white/60 text-gray-900 focus:ring-gray-900/15"
-                />
-                <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-900">Porcentagem</span>
-                  <p className="text-xs text-gray-500">A clínica paga X% do valor de cada serviço ao profissional</p>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer hover:bg-white/50 p-2 rounded-lg transition">
-                <input
-                  type="radio"
-                  name="payoutModel"
-                  value="FIXO_MENSAL"
-                  checked={payoutModel === 'FIXO_MENSAL'}
-                  onChange={(e) => setPayoutModel(e.target.value as 'FIXO_MENSAL')}
-                  className="rounded border-white/60 text-gray-900 focus:ring-gray-900/15"
-                />
-                <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-900">Fixo Mensal</span>
-                  <p className="text-xs text-gray-500">A clínica paga um valor fixo mensal ao profissional</p>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer hover:bg-white/50 p-2 rounded-lg transition">
-                <input
-                  type="radio"
-                  name="payoutModel"
-                  value="HIBRIDO"
-                  checked={payoutModel === 'HIBRIDO'}
-                  onChange={(e) => setPayoutModel(e.target.value as 'HIBRIDO')}
-                  className="rounded border-white/60 text-gray-900 focus:ring-gray-900/15"
-                />
-                <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-900">Híbrido</span>
-                  <p className="text-xs text-gray-500">A clínica paga valor fixo mensal + X% sobre cada serviço</p>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer hover:bg-white/50 p-2 rounded-lg transition">
-                <input
-                  type="radio"
-                  name="payoutModel"
-                  value="NENHUM"
-                  checked={payoutModel === 'NENHUM'}
-                  onChange={(e) => setPayoutModel(e.target.value as 'NENHUM')}
-                  className="rounded border-white/60 text-gray-900 focus:ring-gray-900/15"
-                />
-                <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-900">Nenhum</span>
-                  <p className="text-xs text-gray-500">Profissional não recebe remuneração da clínica</p>
-                </div>
-              </label>
-            </div>
-
-            {/* Campo: Percentual de Payout (para 'PERCENTUAL' e 'HIBRIDO') */}
-            {(payoutModel === 'PERCENTUAL' || payoutModel === 'HIBRIDO') && (
-              <div className="space-y-1 pl-6 pt-2 border-t border-white/40">
-                <label className="text-xs font-semibold text-gray-700">Percentual de Remuneração (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={payoutPercentage}
-                  onChange={(e) => setPayoutPercentage(Number(e.target.value))}
-                  className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
-                  placeholder="50"
-                />
-                <p className="text-xs text-gray-500">
-                  Percentual que a clínica paga ao profissional sobre cada serviço realizado (0-100%)
-                </p>
-              </div>
-            )}
-
-            {/* Campo: Valor Fixo Mensal de Payout (para 'FIXO_MENSAL' e 'HIBRIDO') */}
-            {(payoutModel === 'FIXO_MENSAL' || payoutModel === 'HIBRIDO') && (
-              <div className="space-y-1 pl-6 pt-2 border-t border-white/40">
-                <label className="text-xs font-semibold text-gray-700">Valor Fixo Mensal (R$)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={(fixedMonthlyPayoutCents / 100).toFixed(2)}
-                  onChange={(e) => {
-                    const valueInReais = parseFloat(e.target.value) || 0
-                    setFixedMonthlyPayoutCents(Math.round(valueInReais * 100))
-                  }}
-                  className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
-                  placeholder="0.00"
-                />
-                <p className="text-xs text-gray-500">
-                  {payoutModel === 'HIBRIDO'
-                    ? 'Valor fixo mensal que a clínica paga ao profissional (além da porcentagem sobre serviços)'
-                    : 'Valor fixo mensal que a clínica paga ao profissional'}
-                </p>
-              </div>
-            )}
-          </div>
-          
           {/* Seção de Criação de Login (Apenas para novos profissionais) */}
           {!draft.id && (
             <div className="space-y-3 pt-3 border-t border-white/60">
@@ -1430,11 +1309,8 @@ function ProfessionalModal({
                 commissionModel,
                 commissionRate: commissionModel === 'rental' ? 0 : commissionRate, // Se rental, não usa percentual
                 rentalBaseCents: (commissionModel === 'rental' || commissionModel === 'hybrid') ? rentalBaseCents : 0,
+                rentalDueDay: (commissionModel === 'rental' || commissionModel === 'hybrid') ? 5 : undefined, // Dia de vencimento padrão
                 workSchedule: workSchedule || undefined,
-                // ✅ Campos de Payout (Remuneração do Profissional)
-                payout_model: payoutModel,
-                payout_percentage: (payoutModel === 'PERCENTUAL' || payoutModel === 'HIBRIDO') ? payoutPercentage : null,
-                fixed_monthly_payout_cents: (payoutModel === 'FIXO_MENSAL' || payoutModel === 'HIBRIDO') ? fixedMonthlyPayoutCents : 0,
                 // ✅ Campos KYC (Know Your Customer)
                 cpf: cpf || null,
                 bank_account_data: bankAccountData || null,

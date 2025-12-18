@@ -2,8 +2,26 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { z } from 'https://esm.sh/zod@3.22.4'
 
-const asaasApiKey = Deno.env.get('ASAAS_API_KEY')!
-const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') || 'https://api.asaas.com/v3'
+/**
+ * Valida variáveis de ambiente obrigatórias
+ * Retorna erro 500 com mensagem clara se alguma estiver faltando
+ */
+function validateEnvVars(): { asaasApiKey: string; asaasBaseUrl: string } {
+  const asaasApiKey = Deno.env.get('ASAAS_API_KEY')
+  const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') || 'https://api.asaas.com/v3'
+
+  if (!asaasApiKey) {
+    const errorMessage = `❌ Variável de ambiente não configurada: ASAAS_API_KEY\n\n` +
+      `Configure no Supabase Dashboard:\n` +
+      `1. Vá em Settings → Edge Functions → Secrets\n` +
+      `2. Adicione a variável: ASAAS_API_KEY\n` +
+      `3. Marque para Production, Preview e Development\n\n` +
+      `Consulte: DOCS/arquivo/URGENTE_CONFIGURAR_VARIAVEIS.md`
+    throw new Error(errorMessage)
+  }
+
+  return { asaasApiKey, asaasBaseUrl }
+}
 
 const payloadSchema = z.object({
   customer: z.string(), // ID do customer no Asaas ou clinic_id
@@ -60,20 +78,8 @@ async function handler(req: Request): Promise<Response> {
       )
     }
 
-    // Verificar se a API key está configurada
-    if (!asaasApiKey) {
-      console.error('ASAAS_API_KEY não configurada')
-      return new Response(
-        JSON.stringify({ error: 'Configuração do servidor incompleta' }),
-        {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-    }
+    // Validar variáveis de ambiente
+    const { asaasApiKey, asaasBaseUrl } = validateEnvVars()
 
     // Ler e validar o body da requisição
     let payload: any
