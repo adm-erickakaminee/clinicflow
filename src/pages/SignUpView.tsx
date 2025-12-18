@@ -84,8 +84,21 @@ export function SignUpView() {
   }
 
   const validateStep1 = (): boolean => {
-    if (!formData.email || !formData.email.includes('@')) {
-      toast.error('Email inválido')
+    // Validação mais rigorosa de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!formData.email || !emailRegex.test(formData.email)) {
+      toast.error('Email inválido. Use um formato válido como: seuemail@exemplo.com')
+      return false
+    }
+    
+    // Verificar se não é um domínio conhecido como bloqueado pelo Supabase
+    const blockedDomains = ['email.com', 'test.com', 'example.com', 'mail.com']
+    const emailDomain = formData.email.split('@')[1]?.toLowerCase()
+    if (emailDomain && blockedDomains.includes(emailDomain)) {
+      toast.error(
+        'Este domínio de email pode ser bloqueado. ' +
+        'Use um email real como Gmail, Outlook ou outro provedor válido.'
+      )
       return false
     }
     if (!formData.password || formData.password.length < 6) {
@@ -192,20 +205,47 @@ export function SignUpView() {
     setLoading(true)
     try {
       // 1. Criar usuário no Supabase Auth
+      // ✅ Validação adicional antes de enviar para Supabase
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email)) {
+        throw new Error('Email inválido. Use um formato válido como: seuemail@exemplo.com')
+      }
+
+      // Normalizar email (lowercase, trim)
+      const normalizedEmail = formData.email.toLowerCase().trim()
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
+        email: normalizedEmail,
         password: formData.password,
         options: {
           data: {
             full_name: formData.fullName,
           },
+          emailRedirectTo: `${window.location.origin}/login`,
         },
       })
 
-      if (authError) throw authError
-      if (!authData.user) throw new Error('Erro ao criar usuário')
+      if (authError) {
+        // Tratamento específico para erros de email
+        if (authError.message?.includes('invalid') || authError.code === 'email_address_invalid') {
+          throw new Error(
+            'Email inválido ou bloqueado pelo Supabase. ' +
+            'Use um email real de um provedor válido (Gmail, Outlook, etc.). ' +
+            'Emails de teste como "teste@email.com" podem ser bloqueados.'
+          )
+        }
+        if (authError.message?.includes('already registered') || authError.code === 'user_already_registered') {
+          throw new Error('Este email já está cadastrado. Use outro email ou faça login.')
+        }
+        throw authError
+      }
+      
+      if (!authData.user) {
+        throw new Error('Erro ao criar usuário. Tente novamente.')
+      }
 
       // 2. Criar organização com endereço completo (formato JSON para compatibilidade)
+      // ✅ USAR FUNÇÃO RPC que bypassa RLS (resolve erro de política RLS)
       const addressData = {
         postalCode: formData.postalCode.replace(/\D/g, ''),
         address: formData.address,
@@ -216,21 +256,195 @@ export function SignUpView() {
         state: formData.state.toUpperCase(),
       }
       
-      const { data: orgData, error: orgError } = await supabase
-        .from('organizations')
-        .insert({
-          name: formData.clinicName,
-          email: formData.email,
-          phone: formData.phone,
-          address: JSON.stringify(addressData), // ✅ Endereço completo em JSON
-          cnpj: formData.cnpj || null,
-          status: 'pending_setup',
+      // ✅ CRÍTICO: Criar organização usando função RPC (bypassa RLS)
+      // A função RPC DEVE existir no banco de dados para funcionar
+      let orgId: string | null = null
+      
+      console.log('📤 Tentando criar organização via função RPC...', {
+        clinicName: formData.clinicName,
+        email: normalizedEmail,
+        hasAddress: !!addressData,
+        addressData: addressData,
+      })
+      
+      // ✅ Verificar se usuário está autenticado antes de chamar RPC
+      const { data: { user: currentUser }, error: authCheckError } = await supabase.auth.getUser()
+      if (authCheckError) {
+        console.error('❌ Erro ao verificar autenticação:', authCheckError)
+        throw new Error(`Erro de autenticação: ${authCheckError.message}`)
+      }
+      if (!currentUser) {
+        throw new Error('Usuário não autenticado. Faça login antes de criar organização.')
+      }
+      console.log('✅ Usuário autenticado:', currentUser.id, currentUser.email)
+      
+      try {
+        const rpcPayload = {
+          p_name: formData.clinicName,
+          p_email: normalizedEmail,
+          p_phone: formData.phone,
+          p_address: addressData, // JSONB
+          p_cnpj: formData.cnpj || null,
+          p_status: 'pending_setup',
+        }
+        
+        console.log('📋 Payload para função RPC:', JSON.stringify(rpcPayload, null, 2))
+        console.log('🔍 Tipo de p_address:', typeof rpcPayload.p_address, Array.isArray(rpcPayload.p_address))
+        
+        // ✅ Chamar função RPC
+        console.log('📞 Chamando supabase.rpc("create_organization_during_signup", ...)')
+        const rpcResponse = await supabase.rpc(
+          'create_organization_during_signup',
+          rpcPayload
+        )
+        
+        console.log('📥 Resposta da função RPC:', {
+          hasData: !!rpcResponse.data,
+          hasError: !!rpcResponse.error,
+          data: rpcResponse.data,
+          error: rpcResponse.error,
         })
-        .select()
+        
+        const { data: rpcData, error: rpcError } = rpcResponse
+        
+        // ✅ Verificar erro da função RPC
+        if (rpcError) {
+          console.error('❌ Erro na função RPC:', {
+            code: rpcError.code,
+            message: rpcError.message,
+            details: rpcError.details,
+            hint: rpcError.hint,
+            fullError: rpcError,
+          })
+          
+          // Log completo do erro para debug
+          console.error('🔍 Debug completo do erro RPC:', JSON.stringify(rpcError, null, 2))
+          
+          // ✅ Verificar se é erro de função não encontrada
+          const errorMessageLower = (rpcError.message || '').toLowerCase()
+          const errorCode = rpcError.code || ''
+          
+          console.log('🔍 Análise do erro:', {
+            code: errorCode,
+            message: errorMessageLower,
+            isFunctionNotFound: errorCode === '42883' || 
+                               errorMessageLower.includes('function') && 
+                               (errorMessageLower.includes('does not exist') ||
+                                errorMessageLower.includes('not found') ||
+                                errorMessageLower.includes('não existe')),
+          })
+          
+          // Detectar se a função não existe (vários códigos possíveis)
+          const functionNotFound = 
+            rpcError.code === '42883' || // function does not exist
+            rpcError.code === 'P0001' || // função não encontrada
+            rpcError.message?.toLowerCase().includes('function') && 
+            (rpcError.message?.toLowerCase().includes('does not exist') ||
+             rpcError.message?.toLowerCase().includes('not found') ||
+             rpcError.message?.toLowerCase().includes('não existe'))
+          
+          if (functionNotFound) {
+            const errorMsg = 
+              '🚨 FUNÇÃO RPC NÃO ENCONTRADA NO BANCO DE DADOS\n\n' +
+              'A função create_organization_during_signup não existe.\n\n' +
+              '📋 AÇÃO NECESSÁRIA:\n' +
+              '1. Acesse: Supabase Dashboard → SQL Editor\n' +
+              '2. Execute o arquivo: Clinic/supabase/migrations/fix_organizations_insert_during_signup.sql\n' +
+              '3. Verifique se a função foi criada executando:\n' +
+              '   SELECT proname FROM pg_proc WHERE proname = \'create_organization_during_signup\';\n\n' +
+              '📖 Documentação completa: DOCS/EXECUTAR_MIGRATION_RLS_CADASTRO.md'
+            
+            console.error(errorMsg)
+            throw new Error(errorMsg)
+          }
+          
+          // Outros erros da função RPC
+          throw new Error(
+            `Erro na função RPC create_organization_during_signup: ${rpcError.message || 'Erro desconhecido'}. ` +
+            `Código: ${rpcError.code || 'N/A'}. ` +
+            'Verifique se a função existe e está configurada corretamente no Supabase.'
+          )
+        }
+        
+        // ✅ Verificar se retornou dados
+        if (!rpcData) {
+          throw new Error(
+            'Função RPC retornou null ou undefined. ' +
+            'Verifique se a função create_organization_during_signup está retornando o ID corretamente.'
+          )
+        }
+        
+        // ✅ Validar que é um UUID válido
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        if (!uuidRegex.test(String(rpcData))) {
+          throw new Error(
+            `Função RPC retornou valor inválido: ${rpcData}. ` +
+            'Esperado: UUID válido. Verifique se a função está retornando organizations.id corretamente.'
+          )
+        }
+        
+        orgId = String(rpcData)
+        console.log('✅ Organização criada via função RPC:', orgId)
+        
+      } catch (rpcErr: any) {
+        // ✅ NÃO tentar fallback - sempre falhará por RLS
+        // A função RPC é OBRIGATÓRIA para funcionar
+        console.error('❌ Erro ao criar organização via RPC:', rpcErr)
+        
+        // Re-throw com mensagem clara
+        if (rpcErr.message?.includes('FUNÇÃO RPC NÃO ENCONTRADA')) {
+          throw rpcErr
+        }
+        
+        // Outros erros também devem ser reportados claramente
+        throw new Error(
+          `Falha ao criar organização: ${rpcErr.message || 'Erro desconhecido'}. ` +
+          'A função RPC create_organization_during_signup é obrigatória. ' +
+          'Execute a migration fix_organizations_insert_during_signup.sql no Supabase SQL Editor.'
+        )
+      }
+      
+      // Buscar dados completos da organização criada
+      // ⚠️ Pode falhar por RLS se a política de SELECT não estiver configurada
+      console.log('📥 Buscando dados completos da organização criada:', orgId)
+      const { data: orgData, error: orgFetchError } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', orgId)
         .single()
 
-      if (orgError) throw orgError
-      if (!orgData) throw new Error('Erro ao criar organização')
+      if (orgFetchError) {
+        // Se for erro de RLS, a política de SELECT também precisa ser criada
+        if (orgFetchError.code === '42501' || orgFetchError.message?.includes('row-level security')) {
+          throw new Error(
+            'Erro de permissão (RLS) ao buscar organização criada. ' +
+            'A política de SELECT também precisa ser criada. ' +
+            'Execute a migration fix_organizations_insert_during_signup.sql no Supabase SQL Editor. ' +
+            'Esta migration cria tanto a função RPC quanto as políticas de SELECT necessárias.'
+          )
+        }
+        
+        throw new Error(
+          `Erro ao buscar organização criada: ${orgFetchError.message || 'Erro desconhecido'}. ` +
+          `Código: ${orgFetchError.code || 'N/A'}. ` +
+          'A organização pode ter sido criada, mas não é possível buscá-la devido a políticas RLS.'
+        )
+      }
+      
+      if (!orgData) {
+        throw new Error(
+          'Organização não encontrada após criação. ' +
+          'A organização pode ter sido criada, mas não é possível buscá-la devido a políticas RLS. ' +
+          'Execute a migration fix_organizations_insert_during_signup.sql no Supabase SQL Editor.'
+        )
+      }
+      
+      console.log('✅ Organização encontrada:', {
+        id: orgData.id,
+        name: orgData.name,
+        email: orgData.email,
+        status: orgData.status,
+      })
 
       // 3. Criar perfil do usuário usando função segura que bypassa RLS
       // Nota: O email está em auth.users, não em profiles
@@ -240,7 +454,7 @@ export function SignUpView() {
         {
           p_id: authData.user.id,
           p_full_name: formData.fullName,
-          p_clinic_id: orgData.id,
+          p_clinic_id: orgData.id, // ✅ Usar orgData.id (já validado acima)
           p_role: 'admin', // Admin é o role padrão para o dono da clínica
           p_phone: formData.phone || null,
           p_avatar_url: null,
@@ -334,7 +548,96 @@ export function SignUpView() {
         // Não falhar o cadastro se houver erro
       }
 
-      // 4. Tokenizar cartão de crédito (SEGURANÇA)
+      // 4. Criar conta no ASAAS (OBRIGATÓRIO antes de criar assinatura)
+      // ✅ Esta etapa é crítica: a função create-subscription exige asaas_customer_id
+      let asaasCustomerId: string | null = null
+      let asaasWalletId: string | null = null
+
+      try {
+        // Validar que temos todos os dados necessários para criar conta ASAAS
+        const cnpjCleaned = formData.cnpj.replace(/\D/g, '')
+        if (!cnpjCleaned || (cnpjCleaned.length !== 11 && cnpjCleaned.length !== 14)) {
+          throw new Error('CPF/CNPJ inválido para criar conta ASAAS')
+        }
+
+        // Preparar dados para criar subconta ASAAS
+        const asaasSubaccountPayload = {
+          type: 'clinic' as const,
+          clinic_id: orgData.id,
+          cnpj: cnpjCleaned,
+          // Dados bancários são opcionais e podem ser preenchidos depois
+        }
+
+        console.log('📤 Criando conta ASAAS para clínica:', {
+          clinic_id: orgData.id,
+          clinic_name: formData.clinicName,
+          cnpj: cnpjCleaned,
+        })
+
+        const { data: asaasSubaccountData, error: asaasSubaccountError } = await supabase.functions.invoke(
+          'create-asaas-subaccount',
+          {
+            body: asaasSubaccountPayload,
+          }
+        )
+
+        if (asaasSubaccountError) {
+          // Erro crítico: sem conta ASAAS, não podemos criar assinatura
+          throw new Error(
+            `Erro ao criar conta ASAAS: ${asaasSubaccountError.message || 'Erro desconhecido'}. ` +
+            'A conta ASAAS é obrigatória para processar pagamentos. Tente novamente ou entre em contato com o suporte.'
+          )
+        }
+
+        if (!asaasSubaccountData || !asaasSubaccountData.wallet_id) {
+          throw new Error(
+            'Conta ASAAS criada mas wallet_id não foi retornado. ' +
+            'Verifique se a função create-asaas-subaccount está funcionando corretamente.'
+          )
+        }
+
+        // Buscar organização atualizada para obter o customer_id
+        const { data: updatedOrg, error: fetchError } = await supabase
+          .from('organizations')
+          .select('asaas_customer_id, asaas_wallet_id')
+          .eq('id', orgData.id)
+          .maybeSingle()
+
+        if (fetchError) {
+          console.warn('Aviso: Erro ao buscar organização atualizada:', fetchError)
+        }
+
+        // Usar customer_id e wallet_id retornados ou da organização atualizada
+        asaasCustomerId = updatedOrg?.asaas_customer_id || asaasSubaccountData.customer_id || null
+        asaasWalletId = updatedOrg?.asaas_wallet_id || asaasSubaccountData.wallet_id || null
+
+        if (!asaasCustomerId) {
+          throw new Error(
+            'Conta ASAAS criada mas customer_id não foi encontrado. ' +
+            'Verifique se a função create-asaas-subaccount atualizou corretamente a organização.'
+          )
+        }
+
+        console.log('✅ Conta ASAAS criada com sucesso:', {
+          customer_id: asaasCustomerId,
+          wallet_id: asaasWalletId,
+          status: asaasSubaccountData.status,
+        })
+
+        // Atualizar orgData com os IDs do ASAAS para uso posterior
+        orgData.asaas_customer_id = asaasCustomerId
+        orgData.asaas_wallet_id = asaasWalletId
+      } catch (asaasError: any) {
+        // Erro crítico: sem conta ASAAS, não podemos continuar
+        console.error('❌ Erro crítico ao criar conta ASAAS:', asaasError)
+        throw new Error(
+          `Falha ao criar conta ASAAS: ${asaasError.message || 'Erro desconhecido'}. ` +
+          'A conta ASAAS é obrigatória para processar pagamentos. ' +
+          'Verifique se todos os dados estão corretos e tente novamente.'
+        )
+      }
+
+      // 5. Tokenizar cartão de crédito (SEGURANÇA)
       let creditCardToken: string | null = null
 
       try {
@@ -362,7 +665,7 @@ export function SignUpView() {
         if (!cardData.holderName || !cardData.number || !cardData.expiry || !cardData.cvv) {
           throw new Error('Dados do cartão incompletos')
         }
-        if (!formData.fullName || !formData.email || !formData.phone) {
+        if (!formData.fullName || !normalizedEmail || !formData.phone) {
           throw new Error('Dados pessoais incompletos')
         }
 
@@ -380,7 +683,7 @@ export function SignUpView() {
           },
           creditCardHolderInfo: {
             name: String(formData.fullName).trim(),
-            email: String(formData.email).trim(),
+            email: normalizedEmail, // ✅ Usar email normalizado
             phone: String(formData.phone).replace(/\D/g, '').trim(),
             cpfCnpj: cpfCnpjCleaned, // ✅ OBRIGATÓRIO - sempre presente após validação
             postalCode: String(postalCode), // ✅ OBRIGATÓRIO
@@ -425,20 +728,60 @@ export function SignUpView() {
         // Nesse caso, a assinatura será criada via PIX
       }
 
-      // 5. Criar assinatura com trial de 7 dias (usando token se disponível)
+      // 6. Criar assinatura com trial de 7 dias (usando token se disponível)
+      // ✅ Validar que temos customer_id do ASAAS antes de criar assinatura
+      if (!asaasCustomerId) {
+        throw new Error(
+          'Erro crítico: customer_id do ASAAS não encontrado. ' +
+          'Não é possível criar assinatura sem conta ASAAS válida.'
+        )
+      }
+
+      console.log('📤 Criando assinatura com trial de 7 dias:', {
+        clinic_id: orgData.id,
+        asaas_customer_id: asaasCustomerId,
+        has_credit_card_token: !!creditCardToken,
+      })
+
       const { data: subscriptionData, error: subscriptionError } = await supabase.functions.invoke(
         'create-subscription',
         {
           body: {
             clinic_id: orgData.id,
             trial_days: 7,
-            credit_card_token: creditCardToken, // Token tokenizado (seguro)
+            credit_card_token: creditCardToken || undefined, // Token tokenizado (seguro) ou undefined para PIX
           },
         }
       )
 
-      if (subscriptionError) throw subscriptionError
-      if (subscriptionData?.error) throw new Error(subscriptionData.error)
+      if (subscriptionError) {
+        console.error('❌ Erro ao criar assinatura:', subscriptionError)
+        throw new Error(
+          `Erro ao criar assinatura: ${subscriptionError.message || 'Erro desconhecido'}. ` +
+          'Verifique se a conta ASAAS foi criada corretamente e tente novamente.'
+        )
+      }
+
+      if (subscriptionData?.error) {
+        console.error('❌ Erro retornado pela função create-subscription:', subscriptionData.error)
+        throw new Error(
+          `Erro ao criar assinatura: ${subscriptionData.error}. ` +
+          'Verifique se a conta ASAAS foi criada corretamente e tente novamente.'
+        )
+      }
+
+      if (!subscriptionData?.subscription_id) {
+        throw new Error(
+          'Assinatura criada mas subscription_id não foi retornado. ' +
+          'Verifique se a função create-subscription está funcionando corretamente.'
+        )
+      }
+
+      console.log('✅ Assinatura criada com sucesso:', {
+        subscription_id: subscriptionData.subscription_id,
+        trial_days: subscriptionData.trial_days,
+        next_due_date: subscriptionData.next_due_date,
+      })
 
       toast.success('Cadastro realizado com sucesso! Verifique seu email para confirmar.')
       
@@ -451,13 +794,49 @@ export function SignUpView() {
         })
       }, 2000)
     } catch (err: any) {
-      console.error('Erro no cadastro:', err)
+      console.error('❌ Erro no cadastro:', {
+        message: err.message,
+        code: err.code,
+        stack: err.stack,
+        name: err.name,
+      })
       
       // Mensagem de erro mais detalhada para ajudar no debug
       let errorMessage = err.message || 'Erro ao realizar cadastro. Tente novamente.'
       
-      // Se o erro for relacionado a email no profile, dar mensagem específica
-      if (err.message?.includes('email') || err.code === '42703') {
+      // Categorizar erros por tipo para mensagens mais específicas
+      if (err.message?.includes('Email inválido') || err.code === 'email_address_invalid' || err.message?.includes('invalid email')) {
+        // Erros relacionados a email inválido
+        errorMessage = 
+          'Email inválido ou bloqueado. ' +
+          'O Supabase pode bloquear emails de teste ou domínios específicos. ' +
+          'Use um email real de um provedor válido (Gmail, Outlook, Yahoo, etc.). ' +
+          'Se o problema persistir, verifique as configurações de email no Supabase Dashboard.'
+      } else if (err.message?.includes('already registered') || err.code === 'user_already_registered') {
+        // Email já cadastrado
+        errorMessage = 
+          'Este email já está cadastrado. ' +
+          'Use outro email ou faça login com este email.'
+      } else if (err.message?.includes('ASAAS') || err.message?.includes('Asaas') || err.message?.includes('asaas')) {
+        // Erros relacionados ao ASAAS
+        if (err.message?.includes('customer_id') || err.message?.includes('conta ASAAS')) {
+          errorMessage = 
+            'Erro ao criar conta no ASAAS. ' +
+            'Verifique se todos os dados estão corretos (CNPJ, endereço completo) e tente novamente. ' +
+            'Se o problema persistir, entre em contato com o suporte.'
+        } else if (err.message?.includes('assinatura') || err.message?.includes('subscription')) {
+          errorMessage = 
+            'Erro ao criar assinatura. ' +
+            'A conta ASAAS foi criada, mas houve um problema ao processar a assinatura. ' +
+            'Tente novamente ou entre em contato com o suporte.'
+        } else {
+          errorMessage = 
+            'Erro na integração com ASAAS. ' +
+            'Verifique se a API Key do ASAAS está configurada corretamente. ' +
+            'Se o problema persistir, entre em contato com o suporte.'
+        }
+      } else if (err.message?.includes('email') || err.code === '42703') {
+        // Erros relacionados a email no profile
         errorMessage = 'Erro de configuração do banco de dados. Entre em contato com o suporte.'
         console.error('Erro relacionado a email no profile:', {
           message: err.message,
@@ -465,11 +844,34 @@ export function SignUpView() {
           details: err.details,
           hint: err.hint,
         })
-      }
-      
-      // Se o erro for de rate limiting, informar ao usuário
-      if (err.message?.includes('segundos') || err.message?.includes('segurança')) {
+      } else if (err.message?.includes('organização') || err.message?.includes('organization') || err.code === '42501' || err.message?.includes('row-level security')) {
+        // Erros relacionados à criação de organização ou RLS
+        if (err.message?.includes('FUNÇÃO_RPC_NAO_EXISTE') || err.message?.includes('migration')) {
+          errorMessage = err.message // Usar mensagem específica sobre migration
+        } else if (err.code === '42501' || err.message?.includes('row-level security')) {
+          errorMessage = 
+            'Erro de permissão (RLS): Não é possível criar organização durante o cadastro. ' +
+            'Execute a migration fix_organizations_insert_during_signup.sql no Supabase SQL Editor. ' +
+            'Esta migration cria a função necessária para permitir criação de organizações durante o cadastro.'
+        } else {
+          errorMessage = 
+            'Erro ao criar organização. ' +
+            'Verifique se você tem permissão para criar uma nova clínica. ' +
+            'Se o problema persistir, entre em contato com o suporte.'
+        }
+      } else if (err.message?.includes('perfil') || err.message?.includes('profile')) {
+        // Erros relacionados à criação de perfil
+        errorMessage = 
+          'Erro ao criar perfil de usuário. ' +
+          'Verifique se a função insert_profile_safe() existe no banco de dados. ' +
+          'Se o problema persistir, entre em contato com o suporte.'
+      } else if (err.message?.includes('segundos') || err.message?.includes('segurança')) {
+        // Erros de rate limiting
         errorMessage = 'Aguarde alguns segundos antes de tentar novamente. Isso é uma medida de segurança.'
+      } else if (err.message?.includes('tokenizar') || err.message?.includes('cartão')) {
+        // Erros na tokenização do cartão (não crítico, pode continuar com PIX)
+        console.warn('⚠️ Erro ao tokenizar cartão (não crítico):', err.message)
+        // Não alterar errorMessage aqui, pois o erro pode ter sido em outra etapa
       }
       
       toast.error(errorMessage)
