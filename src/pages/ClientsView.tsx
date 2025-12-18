@@ -12,9 +12,15 @@ interface AppointmentModalData {
   profId: string
   time: string
   date: Date
-  event: {
+  event?: {
+    id: string
+    professionalId: string
+    clinicId: number
     clientId: string
     patient: string
+    start: string
+    end: string
+    type: 'appointment'
   }
 }
 
@@ -80,7 +86,38 @@ export function ClientsView() {
   const handleNewAppointment = () => {
     if (!selected) return
     const profId = professionals.find((p) => p.id !== 'all')?.id ?? ''
-    setModalData({ mode: 'create', profId, time: '09:00', date: new Date(), event: { clientId: selected.id, patient: selected.name } })
+    const patientName = selected.name || ''
+    
+    // Obter clinicId do contexto e converter UUID (string) para number
+    // BaseEvent requer clinicId como number, mas currentUser.clinicId é string (UUID)
+    // Usar a mesma lógica de conversão do SchedulerContext
+    const clinicIdNumber = currentUser?.clinicId
+      ? parseInt(((currentUser.clinicId as string) || '1').toString().slice(0, 8).replace(/-/g, ''), 16) || 1
+      : 1
+    
+    // Criar objeto event com todas as propriedades obrigatórias do BaseEvent
+    const now = new Date()
+    const startDate = new Date(now)
+    startDate.setHours(9, 0, 0, 0)
+    const endDate = new Date(startDate)
+    endDate.setMinutes(endDate.getMinutes() + 30)
+    
+    setModalData({ 
+      mode: 'create', 
+      profId: profId || '', 
+      time: '09:00', 
+      date: new Date(), 
+      event: {
+        id: '', // ID temporário - será gerado ao salvar
+        professionalId: profId || '',
+        clinicId: clinicIdNumber,
+        clientId: selected.id,
+        patient: patientName,
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+        type: 'appointment',
+      }
+    })
     setModalOpen(true)
   }
 
