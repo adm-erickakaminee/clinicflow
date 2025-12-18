@@ -1,88 +1,88 @@
-import { useMemo, useRef, useState, useEffect } from 'react'
-import { User, Plus } from 'lucide-react'
-import { SchedulerClient, useScheduler } from '../../context/SchedulerContext'
+import { useMemo, useRef, useState, useEffect } from "react";
+import { User, Plus } from "lucide-react";
+import { SchedulerClient, useScheduler } from "../../context/SchedulerContext";
 
 type Props = {
-  value?: string
-  onSelect: (clientId: string, name: string) => void
-}
+  value?: string;
+  onSelect: (clientId: string, name: string) => void;
+};
 
 export function ClientSelector({ onSelect }: Props) {
-  const { clients, addClient, currentUser } = useScheduler()
-  const [query, setQuery] = useState('')
-  const [addingNew, setAddingNew] = useState(false)
-  const [newClient, setNewClient] = useState({ name: '', lastName: '', phone: '' })
-  const [open, setOpen] = useState(false)
-  const [isCreating, setIsCreating] = useState(false)
-  const blurTimeout = useRef<number | null>(null)
+  const { clients, addClient, currentUser } = useScheduler();
+  const [query, setQuery] = useState("");
+  const [addingNew, setAddingNew] = useState(false);
+  const [newClient, setNewClient] = useState({ name: "", lastName: "", phone: "" });
+  const [open, setOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const blurTimeout = useRef<number | null>(null);
 
   // Debug: log dos clientes carregados
   useEffect(() => {
-    console.log('🔍 ClientSelector - Clientes carregados:', clients.length, clients)
-  }, [clients])
+    console.log("🔍 ClientSelector - Clientes carregados:", clients.length, clients);
+  }, [clients]);
 
   const filtered = useMemo(() => {
-    const q = query.toLowerCase()
+    const q = query.toLowerCase();
     const result = clients
       .filter((c) => {
-        const name = c.name || ''
-        return name.toLowerCase().includes(q)
+        const name = c.name || "";
+        return name.toLowerCase().includes(q);
       })
       .sort((a, b) => {
-        const nameA = a.name || ''
-        const nameB = b.name || ''
-        return nameA.localeCompare(nameB, 'pt', { sensitivity: 'base' })
-      })
-    console.log('🔍 ClientSelector - Clientes filtrados:', result.length, 'query:', query)
-    return result
-  }, [clients, query])
+        const nameA = a.name || "";
+        const nameB = b.name || "";
+        return nameA.localeCompare(nameB, "pt", { sensitivity: "base" });
+      });
+    console.log("🔍 ClientSelector - Clientes filtrados:", result.length, "query:", query);
+    return result;
+  }, [clients, query]);
 
   const grouped = useMemo(() => {
-    const groups: Record<string, SchedulerClient[]> = {}
+    const groups: Record<string, SchedulerClient[]> = {};
     filtered.forEach((c) => {
-      const name = c.name || ''
-      if (name.length === 0) return // Pular clientes sem nome
-      const letter = name.charAt(0).toUpperCase()
-      if (!groups[letter]) groups[letter] = []
-      groups[letter].push(c)
-    })
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
-  }, [filtered])
+      const name = c.name || "";
+      if (name.length === 0) return; // Pular clientes sem nome
+      const letter = name.charAt(0).toUpperCase();
+      if (!groups[letter]) groups[letter] = [];
+      groups[letter].push(c);
+    });
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [filtered]);
 
-  const hasCreateOption = query.trim().length > 0 && filtered.length === 0
+  const hasCreateOption = query.trim().length > 0 && filtered.length === 0;
 
   const handleCreate = async () => {
     if (!currentUser?.clinicId) {
-      alert('Erro: Clínica não definida. Não é possível criar cliente.')
-      return
+      alert("Erro: Clínica não definida. Não é possível criar cliente.");
+      return;
     }
-    
+
     if (!newClient.name && !query) {
-      alert('Por favor, informe o nome do cliente.')
-      return
+      alert("Por favor, informe o nome do cliente.");
+      return;
     }
-    
-    setIsCreating(true)
+
+    setIsCreating(true);
     try {
       const created = await addClient({
         name: newClient.name || query,
         lastName: newClient.lastName,
         phone: newClient.phone,
-        mobile: newClient.phone || '',
+        mobile: newClient.phone || "",
         walletBalance: 0,
-      })
-      onSelect(created.id, created.name)
-      setAddingNew(false)
-      setQuery(created.name)
-      setOpen(false)
-      setNewClient({ name: '', lastName: '', phone: '' })
+      });
+      onSelect(created.id, created.name);
+      setAddingNew(false);
+      setQuery(created.name);
+      setOpen(false);
+      setNewClient({ name: "", lastName: "", phone: "" });
     } catch (error: any) {
-      console.error('Erro ao criar cliente:', error)
-      alert(`Erro ao criar cliente: ${error?.message || 'Erro desconhecido'}`)
+      console.error("Erro ao criar cliente:", error);
+      alert(`Erro ao criar cliente: ${error?.message || "Erro desconhecido"}`);
     } finally {
-      setIsCreating(false)
+      setIsCreating(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-2 relative">
@@ -92,11 +92,11 @@ export function ClientSelector({ onSelect }: Props) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => {
-            setAddingNew(false)
-            setOpen(true)
+            setAddingNew(false);
+            setOpen(true);
           }}
           onBlur={() => {
-            blurTimeout.current = window.setTimeout(() => setOpen(false), 100)
+            blurTimeout.current = window.setTimeout(() => setOpen(false), 100);
           }}
           type="text"
           placeholder="Buscar cliente"
@@ -110,11 +110,13 @@ export function ClientSelector({ onSelect }: Props) {
           className="absolute left-0 right-0 top-[76px] bg-white/95 backdrop-blur-xl border border-white/60 shadow-xl rounded-xl p-2 space-y-1 max-h-48 overflow-y-auto text-sm z-30"
           onMouseDown={(e) => {
             // evita o blur do input fechar antes do clique
-            e.preventDefault()
+            e.preventDefault();
           }}
         >
           {grouped.length === 0 && clients.length > 0 && query.length === 0 && (
-            <p className="text-xs text-gray-500 px-2 py-1">Digite para buscar clientes ({clients.length} cadastrados)</p>
+            <p className="text-xs text-gray-500 px-2 py-1">
+              Digite para buscar clientes ({clients.length} cadastrados)
+            </p>
           )}
           {grouped.map(([letter, list]) => (
             <div key={letter} className="space-y-1">
@@ -125,14 +127,16 @@ export function ClientSelector({ onSelect }: Props) {
                   type="button"
                   className="w-full text-left px-2 py-1 rounded-md hover:bg-white flex items-center gap-2"
                   onClick={() => {
-                    const clientName = c.name || 'Cliente sem nome'
-                    onSelect(c.id, clientName)
-                    setQuery(clientName)
-                    setOpen(false)
+                    const clientName = c.name || "Cliente sem nome";
+                    onSelect(c.id, clientName);
+                    setQuery(clientName);
+                    setOpen(false);
                   }}
                 >
                   <User className="h-4 w-4 text-gray-500" />
-                  <span className="font-semibold text-gray-900">{c.name || 'Cliente sem nome'}</span>
+                  <span className="font-semibold text-gray-900">
+                    {c.name || "Cliente sem nome"}
+                  </span>
                 </button>
               ))}
             </div>
@@ -143,9 +147,9 @@ export function ClientSelector({ onSelect }: Props) {
               type="button"
               className="w-full text-left px-2 py-2 rounded-md hover:bg-white font-semibold text-gray-900 flex items-center gap-2"
               onClick={() => {
-                setAddingNew(true)
-                setNewClient((prev) => ({ ...prev, name: query }))
-                setOpen(false)
+                setAddingNew(true);
+                setNewClient((prev) => ({ ...prev, name: query }));
+                setOpen(false);
               }}
             >
               <Plus className="h-4 w-4" />
@@ -156,7 +160,9 @@ export function ClientSelector({ onSelect }: Props) {
           {!grouped.length && !hasCreateOption && (
             <div className="px-2 py-2">
               {clients.length === 0 ? (
-                <p className="text-xs text-gray-500">Nenhum cliente cadastrado. Digite um nome para criar um novo cliente.</p>
+                <p className="text-xs text-gray-500">
+                  Nenhum cliente cadastrado. Digite um nome para criar um novo cliente.
+                </p>
               ) : (
                 <p className="text-xs text-gray-500">Nenhum cliente encontrado com "{query}".</p>
               )}
@@ -200,22 +206,21 @@ export function ClientSelector({ onSelect }: Props) {
               onClick={handleCreate}
               disabled={isCreating}
             >
-              {isCreating ? 'Salvando...' : 'Salvar Cliente Rápido'}
+              {isCreating ? "Salvando..." : "Salvar Cliente Rápido"}
             </button>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function maskPhone(value: string) {
-  const digits = value.replace(/\D/g, '').slice(0, 11)
-  const part1 = digits.slice(0, 2)
-  const part2 = digits.slice(2, 7)
-  const part3 = digits.slice(7, 11)
-  if (digits.length <= 2) return `(${part1}`
-  if (digits.length <= 7) return `(${part1}) ${part2}`
-  return `(${part1}) ${part2}-${part3}`
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  const part1 = digits.slice(0, 2);
+  const part2 = digits.slice(2, 7);
+  const part3 = digits.slice(7, 11);
+  if (digits.length <= 2) return `(${part1}`;
+  if (digits.length <= 7) return `(${part1}) ${part2}`;
+  return `(${part1}) ${part2}-${part3}`;
 }
-

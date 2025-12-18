@@ -1,84 +1,86 @@
-import { useState, useEffect } from 'react'
-import { startOfDay, endOfDay, format } from 'date-fns'
-import { supabase } from '../lib/supabase'
-import { useScheduler } from '../context/SchedulerContext'
-import { useToast } from '../components/ui/Toast'
-import type { AppointmentWithRelations } from '../lib/types'
-import { ServiceFlow } from '../components/Professional/ServiceFlow'
-import { Loader2, Calendar } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { startOfDay, endOfDay, format } from "date-fns";
+import { supabase } from "../lib/supabase";
+import { useScheduler } from "../context/SchedulerContext";
+import { useToast } from "../components/ui/Toast";
+import type { AppointmentWithRelations } from "../lib/types";
+import { ServiceFlow } from "../components/Professional/ServiceFlow";
+import { Loader2, Calendar } from "lucide-react";
 
 export function AdminPersonalAgendaView() {
-  const { currentUser } = useScheduler()
-  const toast = useToast()
-  const [loading, setLoading] = useState(true)
-  const [agenda, setAgenda] = useState<AppointmentWithRelations[]>([])
-  const [selected, setSelected] = useState<AppointmentWithRelations | null>(null)
-  const [soloMode, setSoloMode] = useState(false)
-  const [gabyConfig, setGabyConfig] = useState<any>(null)
+  const { currentUser } = useScheduler();
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
+  const [agenda, setAgenda] = useState<AppointmentWithRelations[]>([]);
+  const [selected, setSelected] = useState<AppointmentWithRelations | null>(null);
+  const [soloMode, setSoloMode] = useState(false);
+  const [gabyConfig, setGabyConfig] = useState<any>(null);
 
-  const userId = currentUser?.id
-  const clinicId = currentUser?.clinicId
+  const userId = currentUser?.id;
+  const clinicId = currentUser?.clinicId;
 
   useEffect(() => {
     if (!userId || !clinicId) {
-      setLoading(false)
-      return
+      setLoading(false);
+      return;
     }
 
     // Carregar configurações da clínica
     const loadSettings = async () => {
       try {
         const { data: settings } = await supabase
-          .from('organization_settings')
-          .select('solo_mode, gaby_config')
-          .eq('clinic_id', clinicId)
-          .maybeSingle()
+          .from("organization_settings")
+          .select("solo_mode, gaby_config")
+          .eq("clinic_id", clinicId)
+          .maybeSingle();
 
-        setSoloMode(Boolean(settings?.solo_mode))
-        setGabyConfig(settings?.gaby_config || null)
+        setSoloMode(Boolean(settings?.solo_mode));
+        setGabyConfig(settings?.gaby_config || null);
       } catch (err) {
-        console.error('Erro ao carregar configurações:', err)
+        console.error("Erro ao carregar configurações:", err);
       }
-    }
+    };
 
-    loadSettings()
-  }, [clinicId])
+    loadSettings();
+  }, [clinicId]);
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId) return;
 
     const loadAgenda = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
-        const start = startOfDay(new Date()).toISOString()
-        const end = endOfDay(new Date()).toISOString()
+        const start = startOfDay(new Date()).toISOString();
+        const end = endOfDay(new Date()).toISOString();
 
         // Buscar agenda do Admin (filtrada por seu professional_id ou user_id)
         const { data, error } = await supabase
-          .from('appointments')
-          .select(`
+          .from("appointments")
+          .select(
+            `
             *,
             client:clients (*),
             service:services (*),
             professional:profiles (*)
-          `)
-          .eq('professional_id', userId) // Admin como profissional
-          .gte('start_time', start)
-          .lte('end_time', end)
-          .order('start_time', { ascending: true })
+          `
+          )
+          .eq("professional_id", userId) // Admin como profissional
+          .gte("start_time", start)
+          .lte("end_time", end)
+          .order("start_time", { ascending: true });
 
-        if (error) throw error
-        setAgenda((data || []) as AppointmentWithRelations[])
+        if (error) throw error;
+        setAgenda((data || []) as AppointmentWithRelations[]);
       } catch (err) {
-        console.error('Erro ao carregar agenda:', err)
-        toast.error('Falha ao carregar agenda pessoal')
+        console.error("Erro ao carregar agenda:", err);
+        toast.error("Falha ao carregar agenda pessoal");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadAgenda()
-  }, [userId, toast])
+    loadAgenda();
+  }, [userId, toast]);
 
   if (loading) {
     return (
@@ -88,7 +90,7 @@ export function AdminPersonalAgendaView() {
           <p className="mt-2 text-sm text-gray-600">Carregando agenda...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -108,7 +110,7 @@ export function AdminPersonalAgendaView() {
           </button>
           <ServiceFlow
             appointment={selected}
-            organizationId={clinicId || ''}
+            organizationId={clinicId || ""}
             soloMode={soloMode}
             gabyConfig={gabyConfig}
           />
@@ -132,22 +134,22 @@ export function AdminPersonalAgendaView() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-lg font-semibold text-gray-900">
-                        {apt.client?.full_name || 'Cliente'}
+                        {apt.client?.full_name || "Cliente"}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {apt.service?.name || 'Serviço'} •{' '}
-                        {format(new Date(apt.start_time), 'HH:mm')} -{' '}
-                        {format(new Date(apt.end_time), 'HH:mm')}
+                        {apt.service?.name || "Serviço"} •{" "}
+                        {format(new Date(apt.start_time), "HH:mm")} -{" "}
+                        {format(new Date(apt.end_time), "HH:mm")}
                       </p>
                     </div>
                     <div>
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          apt.status === 'confirmed'
-                            ? 'bg-green-100 text-green-800'
-                            : apt.status === 'completed'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-gray-100 text-gray-800'
+                          apt.status === "confirmed"
+                            ? "bg-green-100 text-green-800"
+                            : apt.status === "completed"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-800"
                         }`}
                       >
                         {apt.status}
@@ -161,6 +163,5 @@ export function AdminPersonalAgendaView() {
         </div>
       )}
     </div>
-  )
+  );
 }
-

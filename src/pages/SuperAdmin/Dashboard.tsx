@@ -1,132 +1,132 @@
-import { useEffect, useMemo, useState } from 'react'
-import { supabase } from '../../lib/supabase'
-import { Button } from '../../components/ui/Button'
-import { useToast } from '../../components/ui/Toast'
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "../../lib/supabase";
+import { Button } from "../../components/ui/Button";
+import { useToast } from "../../components/ui/Toast";
 
 interface OrgRow {
-  id: string
-  name: string
-  status?: 'active' | 'suspended' | 'delinquent' | null
-  created_at?: string
+  id: string;
+  name: string;
+  status?: "active" | "suspended" | "delinquent" | null;
+  created_at?: string;
 }
 
 interface PendingFee {
-  id: string
-  clinic_id: string // ✅ Mudado de organization_id para clinic_id
-  amount_cents: number
-  platform_fee_cents: number
+  id: string;
+  clinic_id: string; // ✅ Mudado de organization_id para clinic_id
+  amount_cents: number;
+  platform_fee_cents: number;
 }
 
 export function SuperAdminDashboard() {
-  const toast = useToast()
-  const [userId, setUserId] = useState<string | null>(null)
-  const [orgs, setOrgs] = useState<OrgRow[]>([])
-  const [pendingFees, setPendingFees] = useState<PendingFee[]>([])
-  const [mrr, setMrr] = useState<number>(0)
-  const [churn, setChurn] = useState<number>(0)
-  const [twoFaCode, setTwoFaCode] = useState('')
-  const [loading, setLoading] = useState(true)
+  const toast = useToast();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [orgs, setOrgs] = useState<OrgRow[]>([]);
+  const [pendingFees, setPendingFees] = useState<PendingFee[]>([]);
+  const [mrr, setMrr] = useState<number>(0);
+  const [churn, setChurn] = useState<number>(0);
+  const [twoFaCode, setTwoFaCode] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      setUserId(data.user?.id || null)
-    })
-  }, [])
+      setUserId(data.user?.id || null);
+    });
+  }, []);
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
         const { data: orgsData } = await supabase
-          .from('organizations')
-          .select('id, name, status, created_at')
-        setOrgs((orgsData as OrgRow[]) || [])
+          .from("organizations")
+          .select("id, name, status, created_at");
+        setOrgs((orgsData as OrgRow[]) || []);
 
         const { data: fees } = await supabase
-          .from('financial_transactions')
-          .select('id, clinic_id, amount_cents, platform_fee_cents') // ✅ Mudado de organization_id para clinic_id
-          .eq('is_fee_ledger_pending', true)
-        setPendingFees((fees as PendingFee[]) || [])
+          .from("financial_transactions")
+          .select("id, clinic_id, amount_cents, platform_fee_cents") // ✅ Mudado de organization_id para clinic_id
+          .eq("is_fee_ledger_pending", true);
+        setPendingFees((fees as PendingFee[]) || []);
 
         const { data: mrrData } = await supabase
-          .from('financial_transactions')
-          .select('amount_cents')
-          .eq('status', 'completed')
-          .gte('created_at', new Date(new Date().setDate(new Date().getDate() - 30)).toISOString())
-        const mrrSum = (mrrData || []).reduce((acc, r: any) => acc + (r.amount_cents || 0), 0)
-        setMrr(mrrSum)
+          .from("financial_transactions")
+          .select("amount_cents")
+          .eq("status", "completed")
+          .gte("created_at", new Date(new Date().setDate(new Date().getDate() - 30)).toISOString());
+        const mrrSum = (mrrData || []).reduce((acc, r: any) => acc + (r.amount_cents || 0), 0);
+        setMrr(mrrSum);
 
         // churn simples: suspensas / total
-        const suspended = (orgsData || []).filter((o: any) => o.status === 'suspended').length
-        const total = orgsData?.length || 1
-        setChurn((suspended / total) * 100)
+        const suspended = (orgsData || []).filter((o: any) => o.status === "suspended").length;
+        const total = orgsData?.length || 1;
+        setChurn((suspended / total) * 100);
       } catch (err) {
-        console.warn(err)
-        toast.error('Falha ao carregar dados do Super Admin')
+        console.warn(err);
+        toast.error("Falha ao carregar dados do Super Admin");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    load()
-  }, [toast])
+    };
+    load();
+  }, [toast]);
 
   const feeTotal = useMemo(
     () => pendingFees.reduce((acc, f) => acc + (f.platform_fee_cents || 0), 0),
     [pendingFees]
-  )
+  );
 
   const impersonateUser = async (targetUserId: string, targetOrgId: string) => {
     if (!twoFaCode || twoFaCode.length < 4) {
-      toast.error('2FA obrigatório para impersonate')
-      return
+      toast.error("2FA obrigatório para impersonate");
+      return;
     }
     try {
       // Registrar auditoria
       if (userId) {
-        await supabase.from('audit_logs').insert({
+        await supabase.from("audit_logs").insert({
           super_admin_id: userId,
           target_user_id: targetUserId,
           target_organization_id: targetOrgId,
-          action: 'impersonate',
-        })
+          action: "impersonate",
+        });
       }
       // Chamada para função edge (deverá emitir token temporário)
-      const { error } = await supabase.functions.invoke('impersonate-login', {
+      const { error } = await supabase.functions.invoke("impersonate-login", {
         body: {
           super_admin_id: userId,
           target_user_id: targetUserId,
           target_organization_id: targetOrgId,
           two_fa_code: twoFaCode,
         },
-      })
-      if (error) throw error
-      toast.success('Impersonate iniciado (token temporário emitido)')
+      });
+      if (error) throw error;
+      toast.success("Impersonate iniciado (token temporário emitido)");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erro ao impersonar'
-      toast.error(msg)
+      const msg = err instanceof Error ? err.message : "Erro ao impersonar";
+      toast.error(msg);
     }
-  }
+  };
 
   const blockOrganization = async (orgId: string) => {
     try {
       const { error } = await supabase
-        .from('organizations')
-        .update({ status: 'suspended' })
-        .eq('id', orgId)
-      if (error) throw error
-      setOrgs((prev) => prev.map((o) => (o.id === orgId ? { ...o, status: 'suspended' } : o)))
-      toast.success('Organização suspensa')
+        .from("organizations")
+        .update({ status: "suspended" })
+        .eq("id", orgId);
+      if (error) throw error;
+      setOrgs((prev) => prev.map((o) => (o.id === orgId ? { ...o, status: "suspended" } : o)));
+      toast.success("Organização suspensa");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao suspender')
+      toast.error(err instanceof Error ? err.message : "Erro ao suspender");
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
         <p className="text-slate-400 text-sm">Carregando...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -174,7 +174,7 @@ export function SuperAdminDashboard() {
             >
               <div>
                 <p className="text-sm font-semibold">{org.name}</p>
-                <p className="text-xs text-slate-400">Status: {org.status || 'active'}</p>
+                <p className="text-xs text-slate-400">Status: {org.status || "active"}</p>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -185,11 +185,7 @@ export function SuperAdminDashboard() {
                 >
                   Impersonate
                 </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => blockOrganization(org.id)}
-                >
+                <Button variant="destructive" size="sm" onClick={() => blockOrganization(org.id)}>
                   Suspender
                 </Button>
               </div>
@@ -207,7 +203,5 @@ export function SuperAdminDashboard() {
         </div>
       </section>
     </div>
-  )
+  );
 }
-
-

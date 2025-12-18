@@ -1,111 +1,117 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
-import { useToast } from '../../components/ui/Toast'
-import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Users, Building2, Loader2 } from 'lucide-react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { useState, useEffect } from "react";
+import { supabase } from "../../lib/supabase";
+import { useToast } from "../../components/ui/Toast";
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  Users,
+  Building2,
+  Loader2,
+} from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface PlatformMetrics {
-  ttv: number // Total Transacted Value (últimos 30 dias)
-  mrr: number // Monthly Recurring Revenue
-  churnRate: number // Taxa de churn
-  activeClinics: number
-  pendingSetupClinics: number
-  totalClinics: number
+  ttv: number; // Total Transacted Value (últimos 30 dias)
+  mrr: number; // Monthly Recurring Revenue
+  churnRate: number; // Taxa de churn
+  activeClinics: number;
+  pendingSetupClinics: number;
+  totalClinics: number;
 }
 
 interface TopDebtClinic {
-  clinic_id: string
-  clinic_name: string
-  total_debt_cents: number
-  transaction_count: number
+  clinic_id: string;
+  clinic_name: string;
+  total_debt_cents: number;
+  transaction_count: number;
 }
 
 interface ClinicGrowth {
-  date: string
-  new_clinics: number
-  activated_clinics: number
+  date: string;
+  new_clinics: number;
+  activated_clinics: number;
 }
 
 export function PlatformDashboardView() {
-  const toast = useToast()
-  const [loading, setLoading] = useState(true)
-  const [metrics, setMetrics] = useState<PlatformMetrics | null>(null)
-  const [topDebtClinics, setTopDebtClinics] = useState<TopDebtClinic[]>([])
-  const [clinicGrowth, setClinicGrowth] = useState<ClinicGrowth[]>([])
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
+  const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
+  const [topDebtClinics, setTopDebtClinics] = useState<TopDebtClinic[]>([]);
+  const [clinicGrowth, setClinicGrowth] = useState<ClinicGrowth[]>([]);
 
   useEffect(() => {
-    loadAllData()
-  }, [])
+    loadAllData();
+  }, []);
 
   const loadAllData = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      await Promise.all([
-        loadMetrics(),
-        loadTopDebtClinics(),
-        loadClinicGrowth(),
-      ])
+      await Promise.all([loadMetrics(), loadTopDebtClinics(), loadClinicGrowth()]);
     } catch (err) {
-      console.error('Erro ao carregar dados:', err)
-      toast.error('Erro ao carregar dados do dashboard')
+      console.error("Erro ao carregar dados:", err);
+      toast.error("Erro ao carregar dados do dashboard");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const loadMetrics = async () => {
     try {
       // TTV - Total Transacted Value (últimos 30 dias)
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const { data: ttvData, error: ttvError } = await supabase
-        .from('financial_transactions')
-        .select('amount_cents')
-        .eq('status', 'completed')
-        .gte('created_at', thirtyDaysAgo.toISOString())
+        .from("financial_transactions")
+        .select("amount_cents")
+        .eq("status", "completed")
+        .gte("created_at", thirtyDaysAgo.toISOString());
 
-      if (ttvError) throw ttvError
-      const ttv = (ttvData || []).reduce((sum, tx) => sum + (tx.amount_cents || 0), 0)
+      if (ttvError) throw ttvError;
+      const ttv = (ttvData || []).reduce((sum, tx) => sum + (tx.amount_cents || 0), 0);
 
       // MRR - Monthly Recurring Revenue (assinaturas ativas)
       const { data: activeOrgs, error: mrrError } = await supabase
-        .from('organizations')
-        .select('subscription_plan_id')
-        .eq('status', 'active')
+        .from("organizations")
+        .select("subscription_plan_id")
+        .eq("status", "active");
 
-      if (mrrError) throw mrrError
+      if (mrrError) throw mrrError;
 
       // Buscar planos das organizações ativas
-      const planIds = (activeOrgs || []).map((o) => o.subscription_plan_id).filter(Boolean)
-      let mrr = 0
+      const planIds = (activeOrgs || []).map((o) => o.subscription_plan_id).filter(Boolean);
+      let mrr = 0;
 
       if (planIds.length > 0) {
         const { data: plans, error: plansError } = await supabase
-          .from('subscription_plans')
-          .select('base_price_cents')
-          .in('id', planIds)
+          .from("subscription_plans")
+          .select("base_price_cents")
+          .in("id", planIds);
 
         if (!plansError && plans) {
-          mrr = plans.reduce((sum, p) => sum + (p.base_price_cents || 0), 0)
+          mrr = plans.reduce((sum, p) => sum + (p.base_price_cents || 0), 0);
         }
       }
 
       // Estatísticas de Clínicas
       const { data: allOrgs, error: orgsError } = await supabase
-        .from('organizations')
-        .select('status')
+        .from("organizations")
+        .select("status");
 
-      if (orgsError) throw orgsError
+      if (orgsError) throw orgsError;
 
-      const activeClinics = (allOrgs || []).filter((o) => o.status === 'active').length
-      const pendingSetupClinics = (allOrgs || []).filter((o) => o.status === 'pending_setup').length
-      const suspendedClinics = (allOrgs || []).filter((o) => o.status === 'suspended').length
-      const totalClinics = allOrgs?.length || 0
+      const activeClinics = (allOrgs || []).filter((o) => o.status === "active").length;
+      const pendingSetupClinics = (allOrgs || []).filter(
+        (o) => o.status === "pending_setup"
+      ).length;
+      const suspendedClinics = (allOrgs || []).filter((o) => o.status === "suspended").length;
+      const totalClinics = allOrgs?.length || 0;
 
       // Churn Rate (suspensas / total)
-      const churnRate = totalClinics > 0 ? (suspendedClinics / totalClinics) * 100 : 0
+      const churnRate = totalClinics > 0 ? (suspendedClinics / totalClinics) * 100 : 0;
 
       setMetrics({
         ttv,
@@ -114,89 +120,89 @@ export function PlatformDashboardView() {
         activeClinics,
         pendingSetupClinics,
         totalClinics,
-      })
+      });
     } catch (err) {
-      console.error('Erro ao carregar métricas:', err)
+      console.error("Erro ao carregar métricas:", err);
     }
-  }
+  };
 
   const loadTopDebtClinics = async () => {
     try {
       const { data, error } = await supabase
-        .from('financial_transactions')
-        .select('clinic_id, platform_fee_cents')
-        .eq('is_fee_ledger_pending', true)
+        .from("financial_transactions")
+        .select("clinic_id, platform_fee_cents")
+        .eq("is_fee_ledger_pending", true);
 
-      if (error) throw error
+      if (error) throw error;
 
       // Agrupar por clínica
-      const debtMap = new Map<string, { total: number; count: number }>()
+      const debtMap = new Map<string, { total: number; count: number }>();
       for (const tx of data || []) {
-        if (!tx.clinic_id) continue
-        const existing = debtMap.get(tx.clinic_id) || { total: 0, count: 0 }
+        if (!tx.clinic_id) continue;
+        const existing = debtMap.get(tx.clinic_id) || { total: 0, count: 0 };
         debtMap.set(tx.clinic_id, {
           total: existing.total + (tx.platform_fee_cents || 0),
           count: existing.count + 1,
-        })
+        });
       }
 
       // Buscar nomes das clínicas
-      const clinicIds = Array.from(debtMap.keys())
+      const clinicIds = Array.from(debtMap.keys());
       if (clinicIds.length === 0) {
-        setTopDebtClinics([])
-        return
+        setTopDebtClinics([]);
+        return;
       }
 
       const { data: clinics, error: clinicsError } = await supabase
-        .from('organizations')
-        .select('id, name')
-        .in('id', clinicIds)
+        .from("organizations")
+        .select("id, name")
+        .in("id", clinicIds);
 
-      if (clinicsError) throw clinicsError
+      if (clinicsError) throw clinicsError;
 
       // Montar lista ordenada por dívida
       const topDebt: TopDebtClinic[] = Array.from(debtMap.entries())
         .map(([clinic_id, data]) => {
-          const clinic = clinics?.find((c) => c.id === clinic_id)
+          const clinic = clinics?.find((c) => c.id === clinic_id);
           return {
             clinic_id,
-            clinic_name: clinic?.name || 'Clínica Desconhecida',
+            clinic_name: clinic?.name || "Clínica Desconhecida",
             total_debt_cents: data.total,
             transaction_count: data.count,
-          }
+          };
         })
         .sort((a, b) => b.total_debt_cents - a.total_debt_cents)
-        .slice(0, 10)
+        .slice(0, 10);
 
-      setTopDebtClinics(topDebt)
+      setTopDebtClinics(topDebt);
     } catch (err) {
-      console.error('Erro ao carregar top dívidas:', err)
+      console.error("Erro ao carregar top dívidas:", err);
     }
-  }
+  };
 
   const loadClinicGrowth = async () => {
     try {
       // Últimos 30 dias de crescimento
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const { data: newClinics, error: newError } = await supabase
-        .from('organizations')
-        .select('created_at, status')
-        .gte('created_at', thirtyDaysAgo.toISOString())
+        .from("organizations")
+        .select("created_at, status")
+        .gte("created_at", thirtyDaysAgo.toISOString());
 
-      if (newError) throw newError
+      if (newError) throw newError;
 
       // Agrupar por dia
-      const growthMap = new Map<string, { new: number; activated: number }>()
+      const growthMap = new Map<string, { new: number; activated: number }>();
 
       for (const clinic of newClinics || []) {
-        const date = format(new Date(clinic.created_at), 'yyyy-MM-dd')
-        const existing = growthMap.get(date) || { new: 0, activated: 0 }
+        const date = format(new Date(clinic.created_at), "yyyy-MM-dd");
+        const existing = growthMap.get(date) || { new: 0, activated: 0 };
         growthMap.set(date, {
           new: existing.new + 1,
-          activated: existing.activated + (clinic.status === 'active' ? 1 : 0),
-        })
+          activated: existing.activated + (clinic.status === "active" ? 1 : 0),
+        });
       }
 
       const growth: ClinicGrowth[] = Array.from(growthMap.entries())
@@ -205,27 +211,27 @@ export function PlatformDashboardView() {
           new_clinics: data.new,
           activated_clinics: data.activated,
         }))
-        .sort((a, b) => a.date.localeCompare(b.date))
+        .sort((a, b) => a.date.localeCompare(b.date));
 
-      setClinicGrowth(growth)
+      setClinicGrowth(growth);
     } catch (err) {
-      console.error('Erro ao carregar crescimento:', err)
+      console.error("Erro ao carregar crescimento:", err);
     }
-  }
+  };
 
   const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(cents / 100)
-  }
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(cents / 100);
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
       </div>
-    )
+    );
   }
 
   return (
@@ -286,7 +292,9 @@ export function PlatformDashboardView() {
       <div className="rounded-3xl bg-white/60 border border-white/40 shadow-xl p-6">
         <div className="flex items-center gap-3 mb-6">
           <AlertTriangle className="h-6 w-6 text-red-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Top 10 Clínicas com Maior Dívida (Fee Ledger)</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Top 10 Clínicas com Maior Dívida (Fee Ledger)
+          </h3>
         </div>
 
         {topDebtClinics.length > 0 ? (
@@ -325,7 +333,9 @@ export function PlatformDashboardView() {
       <div className="rounded-3xl bg-white/60 border border-white/40 shadow-xl p-6">
         <div className="flex items-center gap-3 mb-6">
           <TrendingUp className="h-6 w-6 text-blue-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Crescimento de Clínicas (Últimos 30 dias)</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Crescimento de Clínicas (Últimos 30 dias)
+          </h3>
         </div>
 
         {clinicGrowth.length > 0 ? (
@@ -358,5 +368,5 @@ export function PlatformDashboardView() {
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -1,13 +1,13 @@
-import { format, addDays, subDays } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Calendar, RefreshCw } from 'lucide-react'
-import { Button } from '../ui/Button'
+import { format, addDays, subDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { ChevronLeft, ChevronRight, Calendar, RefreshCw } from "lucide-react";
+import { Button } from "../ui/Button";
 
 interface CalendarHeaderProps {
-  selectedDate: Date
-  onDateChange: (date: Date) => void
-  onRefresh: () => void
-  isLoading?: boolean
+  selectedDate: Date;
+  onDateChange: (date: Date) => void;
+  onRefresh: () => void;
+  isLoading?: boolean;
 }
 
 export function CalendarHeader({
@@ -16,9 +16,9 @@ export function CalendarHeader({
   onRefresh,
   isLoading,
 }: CalendarHeaderProps) {
-  const goToPreviousDay = () => onDateChange(subDays(selectedDate, 1))
-  const goToNextDay = () => onDateChange(addDays(selectedDate, 1))
-  const goToToday = () => onDateChange(new Date())
+  const goToPreviousDay = () => onDateChange(subDays(selectedDate, 1));
+  const goToNextDay = () => onDateChange(addDays(selectedDate, 1));
+  const goToToday = () => onDateChange(new Date());
 
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-slate-800/50 border-b border-slate-700">
@@ -46,7 +46,7 @@ export function CalendarHeader({
               {format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
             </h2>
             <p className="text-xs text-slate-500">
-              {format(selectedDate, 'yyyy', { locale: ptBR })}
+              {format(selectedDate, "yyyy", { locale: ptBR })}
             </p>
           </div>
         </div>
@@ -65,7 +65,7 @@ export function CalendarHeader({
           isLoading={isLoading}
           className="gap-2"
         >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           Atualizar
         </Button>
 
@@ -76,6 +76,5 @@ export function CalendarHeader({
         </div>
       </div>
     </div>
-  )
+  );
 }
-

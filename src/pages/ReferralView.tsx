@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
-import { useScheduler } from '../context/SchedulerContext'
-import { useToast } from '../components/ui/Toast'
+import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
+import { useScheduler } from "../context/SchedulerContext";
+import { useToast } from "../components/ui/Toast";
 import {
   Users,
   DollarSign,
@@ -11,115 +11,113 @@ import {
   Copy,
   CheckCircle2,
   Building2,
-} from 'lucide-react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+} from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface ReferralRule {
-  id: string
-  platform_referral_percentage: number
-  platform_wallet_id: string
+  id: string;
+  platform_referral_percentage: number;
+  platform_wallet_id: string;
 }
 
 interface Referral {
-  id: string
-  referring_clinic_id: string
-  referred_clinic_id: string
-  created_at: string
+  id: string;
+  referring_clinic_id: string;
+  referred_clinic_id: string;
+  created_at: string;
   referred_clinic?: {
-    id: string
-    name: string
-    created_at: string
-  }
+    id: string;
+    name: string;
+    created_at: string;
+  };
 }
 
 interface ReferredClinicStats {
-  clinic_id: string
-  clinic_name: string
-  total_revenue_cents: number
-  referral_count: number
-  last_transaction_date: string | null
+  clinic_id: string;
+  clinic_name: string;
+  total_revenue_cents: number;
+  referral_count: number;
+  last_transaction_date: string | null;
 }
 
 interface ReferralMetrics {
-  totalReferredClinics: number
-  totalRevenueFromReferred: number
-  totalReferralEarnings: number
-  activeReferrals: number
-  goalCount: number
+  totalReferredClinics: number;
+  totalRevenueFromReferred: number;
+  totalReferralEarnings: number;
+  activeReferrals: number;
+  goalCount: number;
 }
 
 export function ReferralView() {
-  const { currentUser } = useScheduler()
-  const toast = useToast()
-  const [loading, setLoading] = useState(true)
-  const [referralRule, setReferralRule] = useState<ReferralRule | null>(null)
-  const [referrals, setReferrals] = useState<Referral[]>([])
+  const { currentUser } = useScheduler();
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
+  const [referralRule, setReferralRule] = useState<ReferralRule | null>(null);
+  const [referrals, setReferrals] = useState<Referral[]>([]);
   const [metrics, setMetrics] = useState<ReferralMetrics>({
     totalReferredClinics: 0,
     totalRevenueFromReferred: 0,
     totalReferralEarnings: 0,
     activeReferrals: 0,
     goalCount: 0,
-  })
-  const [referralLink, setReferralLink] = useState('')
-  const [linkCopied, setLinkCopied] = useState(false)
-  const [referredClinicsStats, setReferredClinicsStats] = useState<ReferredClinicStats[]>([])
+  });
+  const [referralLink, setReferralLink] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [referredClinicsStats, setReferredClinicsStats] = useState<ReferredClinicStats[]>([]);
 
-  const clinicId = currentUser?.clinicId
+  const clinicId = currentUser?.clinicId;
 
   useEffect(() => {
     if (clinicId) {
-      loadAllData()
-      generateReferralLink()
+      loadAllData();
+      generateReferralLink();
     }
-  }, [clinicId])
+  }, [clinicId]);
 
   const loadAllData = async () => {
-    if (!clinicId) return
+    if (!clinicId) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
       // Carregar regras primeiro
-      await loadReferralRule()
-      
+      await loadReferralRule();
+
       // Carregar referrals
-      await loadReferrals()
-      
+      await loadReferrals();
+
       // Carregar métricas e stats (loadMetrics busca dados do banco diretamente)
-      await Promise.all([loadMetrics(), loadReferredClinicsStats()])
+      await Promise.all([loadMetrics(), loadReferredClinicsStats()]);
     } catch (err) {
-      console.warn('Erro ao carregar dados de indicação:', err)
+      console.warn("Erro ao carregar dados de indicação:", err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const loadReferralRule = async () => {
     try {
-      const { data, error } = await supabase
-        .from('referral_rules')
-        .select('*')
-        .maybeSingle()
+      const { data, error } = await supabase.from("referral_rules").select("*").maybeSingle();
 
       if (error) {
-        console.warn('Erro ao carregar regras de indicação:', error)
-        return
+        console.warn("Erro ao carregar regras de indicação:", error);
+        return;
       }
 
-      setReferralRule(data)
+      setReferralRule(data);
     } catch (err) {
-      console.warn('Aviso ao carregar regras:', err)
+      console.warn("Aviso ao carregar regras:", err);
     }
-  }
+  };
 
   const loadReferrals = async () => {
-    if (!clinicId) return
+    if (!clinicId) return;
 
     try {
       const { data, error } = await supabase
-        .from('referrals')
-        .select(`
+        .from("referrals")
+        .select(
+          `
           id,
           referring_clinic_id,
           referred_clinic_id,
@@ -129,67 +127,68 @@ export function ReferralView() {
             name,
             created_at
           )
-        `)
-        .eq('referring_clinic_id', clinicId)
-        .order('created_at', { ascending: false })
+        `
+        )
+        .eq("referring_clinic_id", clinicId)
+        .order("created_at", { ascending: false });
 
       if (error) {
-        console.warn('Erro ao carregar indicações:', error)
-        return
+        console.warn("Erro ao carregar indicações:", error);
+        return;
       }
 
-      setReferrals((data || []) as unknown as Referral[])
+      setReferrals((data || []) as unknown as Referral[]);
     } catch (err) {
-      console.warn('Aviso ao carregar indicações:', err)
+      console.warn("Aviso ao carregar indicações:", err);
     }
-  }
+  };
 
   const loadMetrics = async () => {
-    if (!clinicId) return
+    if (!clinicId) return;
 
     try {
       // 1. Buscar referrals novamente para garantir dados atualizados
       const { data: referralData } = await supabase
-        .from('referrals')
-        .select('referred_clinic_id')
-        .eq('referring_clinic_id', clinicId)
+        .from("referrals")
+        .select("referred_clinic_id")
+        .eq("referring_clinic_id", clinicId);
 
-      const currentReferralsCount = (referralData || []).length
-      const referredClinicIds = (referralData || []).map((r) => r.referred_clinic_id)
+      const currentReferralsCount = (referralData || []).length;
+      const referredClinicIds = (referralData || []).map((r) => r.referred_clinic_id);
 
       // 3. Faturamento total das clínicas indicadas (últimos 30 dias)
-      let totalRevenueFromReferred = 0
+      let totalRevenueFromReferred = 0;
       if (referredClinicIds.length > 0) {
-        const thirtyDaysAgo = new Date()
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
         const { data: transactions } = await supabase
-          .from('financial_transactions')
-          .select('amount_cents')
-          .in('organization_id', referredClinicIds)
-          .eq('status', 'completed')
-          .gte('created_at', thirtyDaysAgo.toISOString())
+          .from("financial_transactions")
+          .select("amount_cents")
+          .in("organization_id", referredClinicIds)
+          .eq("status", "completed")
+          .gte("created_at", thirtyDaysAgo.toISOString());
 
         totalRevenueFromReferred = (transactions || []).reduce(
           (sum, t) => sum + (t.amount_cents || 0),
           0
-        )
+        );
       }
 
       // 4. Rendimento de Indicação (estimado - baseado na regra de 2.33%)
       // NOTA: O cálculo real seria feito no backend ao processar o split do Asaas
       // Aqui fazemos uma estimativa baseada no faturamento das indicadas
-      const referralPercentage = referralRule?.platform_referral_percentage || 233 // 2.33%
+      const referralPercentage = referralRule?.platform_referral_percentage || 233; // 2.33%
       const estimatedReferralEarnings = Math.round(
         (totalRevenueFromReferred * referralPercentage) / 10000
-      )
+      );
 
       // 5. Meta de clínicas indicadas
       const { data: settings } = await supabase
-        .from('organization_settings')
-        .select('referral_goal_count')
-        .eq('clinic_id', clinicId)
-        .maybeSingle()
+        .from("organization_settings")
+        .select("referral_goal_count")
+        .eq("clinic_id", clinicId)
+        .maybeSingle();
 
       setMetrics({
         totalReferredClinics: currentReferralsCount,
@@ -197,95 +196,95 @@ export function ReferralView() {
         totalReferralEarnings: estimatedReferralEarnings,
         activeReferrals: currentReferralsCount,
         goalCount: settings?.referral_goal_count || 0,
-      })
+      });
     } catch (err) {
-      console.warn('Aviso ao carregar métricas:', err)
+      console.warn("Aviso ao carregar métricas:", err);
     }
-  }
+  };
 
   const loadReferredClinicsStats = async () => {
-    if (!clinicId) return
+    if (!clinicId) return;
 
     try {
       const { data: referralData } = await supabase
-        .from('referrals')
-        .select('referred_clinic_id')
-        .eq('referring_clinic_id', clinicId)
+        .from("referrals")
+        .select("referred_clinic_id")
+        .eq("referring_clinic_id", clinicId);
 
-      const referredClinicIds = (referralData || []).map((r) => r.referred_clinic_id)
+      const referredClinicIds = (referralData || []).map((r) => r.referred_clinic_id);
 
       if (referredClinicIds.length === 0) {
-        setReferredClinicsStats([])
-        return
+        setReferredClinicsStats([]);
+        return;
       }
 
       // Buscar informações das clínicas indicadas
       const { data: clinics } = await supabase
-        .from('organizations')
-        .select('id, name, created_at')
-        .in('id', referredClinicIds)
+        .from("organizations")
+        .select("id, name, created_at")
+        .in("id", referredClinicIds);
 
       // Para cada clínica, calcular faturamento total
       const statsPromises = (clinics || []).map(async (clinic) => {
         const { data: transactions } = await supabase
-          .from('financial_transactions')
-          .select('amount_cents, created_at')
-          .eq('clinic_id', clinic.id)
-          .eq('status', 'completed')
-          .order('created_at', { ascending: false })
-          .limit(1)
+          .from("financial_transactions")
+          .select("amount_cents, created_at")
+          .eq("clinic_id", clinic.id)
+          .eq("status", "completed")
+          .order("created_at", { ascending: false })
+          .limit(1);
 
         const totalRevenue = (transactions || []).reduce(
           (sum, t) => sum + (t.amount_cents || 0),
           0
-        )
+        );
 
-        const lastTransaction = transactions?.[0]?.created_at || null
+        const lastTransaction = transactions?.[0]?.created_at || null;
 
         return {
           clinic_id: clinic.id,
-          clinic_name: clinic.name || 'Clínica',
+          clinic_name: clinic.name || "Clínica",
           total_revenue_cents: totalRevenue,
           referral_count: 1,
           last_transaction_date: lastTransaction,
-        }
-      })
+        };
+      });
 
-      const stats = await Promise.all(statsPromises)
-      setReferredClinicsStats(stats)
+      const stats = await Promise.all(statsPromises);
+      setReferredClinicsStats(stats);
     } catch (err) {
-      console.warn('Aviso ao carregar estatísticas das clínicas:', err)
+      console.warn("Aviso ao carregar estatísticas das clínicas:", err);
     }
-  }
+  };
 
   const generateReferralLink = () => {
-    if (!clinicId) return
+    if (!clinicId) return;
 
-    const baseUrl = window.location.origin
-    const link = `${baseUrl}/signup?ref=${clinicId}`
-    setReferralLink(link)
-  }
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/signup?ref=${clinicId}`;
+    setReferralLink(link);
+  };
 
   const copyReferralLink = async () => {
     try {
-      await navigator.clipboard.writeText(referralLink)
-      setLinkCopied(true)
-      toast.success('Link copiado para a área de transferência!')
-      setTimeout(() => setLinkCopied(false), 2000)
+      await navigator.clipboard.writeText(referralLink);
+      setLinkCopied(true);
+      toast.success("Link copiado para a área de transferência!");
+      setTimeout(() => setLinkCopied(false), 2000);
     } catch (err) {
-      toast.error('Erro ao copiar link')
+      toast.error("Erro ao copiar link");
     }
-  }
+  };
 
   const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(cents / 100)
-  }
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(cents / 100);
+  };
 
-  const referralPercentage = referralRule?.platform_referral_percentage || 233
-  const referralPercentageFormatted = (referralPercentage / 100).toFixed(2)
+  const referralPercentage = referralRule?.platform_referral_percentage || 233;
+  const referralPercentageFormatted = (referralPercentage / 100).toFixed(2);
 
   if (loading) {
     return (
@@ -297,7 +296,7 @@ export function ReferralView() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -319,9 +318,10 @@ export function ReferralView() {
               sobre todas as transações dessa clínica indicada.
               <br />
               <br />
-              <strong className="text-emerald-600">Importante:</strong> Este repasse{' '}
+              <strong className="text-emerald-600">Importante:</strong> Este repasse{" "}
               <strong>não sai do faturamento da clínica indicada</strong>. O valor é descontado da
-              taxa da plataforma, garantindo que a clínica indicada não tenha nenhum custo adicional.
+              taxa da plataforma, garantindo que a clínica indicada não tenha nenhum custo
+              adicional.
             </p>
           </div>
 
@@ -378,9 +378,7 @@ export function ReferralView() {
             <div className="mt-4">
               <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
                 <span>Meta: {metrics.goalCount}</span>
-                <span>
-                  {Math.round((metrics.totalReferredClinics / metrics.goalCount) * 100)}%
-                </span>
+                <span>{Math.round((metrics.totalReferredClinics / metrics.goalCount) * 100)}%</span>
               </div>
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div
@@ -443,9 +441,7 @@ export function ReferralView() {
               </p>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Projeção com crescimento de 10% (estimativa)
-          </p>
+          <p className="text-xs text-gray-500 mt-2">Projeção com crescimento de 10% (estimativa)</p>
         </div>
       </div>
 
@@ -469,7 +465,7 @@ export function ReferralView() {
             {referrals.map((referral) => {
               const clinicStats = referredClinicsStats.find(
                 (s) => s.clinic_id === referral.referred_clinic_id
-              )
+              );
 
               return (
                 <div
@@ -483,10 +479,13 @@ export function ReferralView() {
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-gray-900">
-                          {referral.referred_clinic?.name || 'Clínica Indicada'}
+                          {referral.referred_clinic?.name || "Clínica Indicada"}
                         </p>
                         <p className="text-xs text-gray-500">
-                          Indicada em {format(new Date(referral.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                          Indicada em{" "}
+                          {format(new Date(referral.created_at), "dd 'de' MMMM 'de' yyyy", {
+                            locale: ptBR,
+                          })}
                         </p>
                       </div>
                     </div>
@@ -498,11 +497,11 @@ export function ReferralView() {
                     </div>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }

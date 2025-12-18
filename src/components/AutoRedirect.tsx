@@ -1,49 +1,53 @@
-import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useScheduler } from '../context/SchedulerContext'
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useScheduler } from "../context/SchedulerContext";
 
 /**
  * Componente que redireciona automaticamente usuários logados
  * para o painel correto baseado no seu role
  */
 export function AutoRedirect() {
-  const navigate = useNavigate()
-  const { currentUser, sessionLoading } = useScheduler()
+  const navigate = useNavigate();
+  const { currentUser, sessionLoading } = useScheduler();
 
   useEffect(() => {
     if (sessionLoading) {
-      return // Aguardar carregamento
+      return; // Aguardar carregamento
     }
 
     if (!currentUser) {
-      navigate('/login', { replace: true })
-      return
+      navigate("/login", { replace: true });
+      return;
     }
 
     // Função helper para determinar a rota baseada no role
     const getRouteByRole = (role: string | undefined): string => {
       switch (role) {
-        case 'super_admin':
-          return '/sa/dashboard'
-        case 'admin':
-        case 'clinic_owner':
-          return '/admin/dashboard'
-        case 'receptionist':
-        case 'recepcionista':
-          return '/reception/dashboard'
-        case 'professional':
-          return '/app/schedule'
-        case 'client':
-          return '/client/dashboard'
+        case "super_admin":
+          return "/sa/dashboard";
+        case "admin":
+        case "clinic_owner":
+          return "/admin/dashboard";
+        case "receptionist":
+        case "recepcionista":
+          return "/reception/dashboard";
+        case "professional":
+          return "/app/schedule";
+        case "client":
+          return "/client/dashboard";
         default:
-          return '/unauthorized'
+          return "/unauthorized";
       }
-    }
+    };
 
-    const route = (getRouteByRole(currentUser.role) || '/unauthorized').trim().replace(/\s+/g, '')
-    console.log('🔄 AutoRedirect - Redirecionando para:', { role: currentUser.role, route, routeLength: route.length })
-    navigate(route, { replace: true })
-  }, [currentUser, sessionLoading, navigate])
+    const route = (getRouteByRole(currentUser.role) || "/unauthorized").trim().replace(/\s+/g, "");
+    console.log("🔄 AutoRedirect - Redirecionando para:", {
+      role: currentUser.role,
+      route,
+      routeLength: route.length,
+    });
+    navigate(route, { replace: true });
+  }, [currentUser, sessionLoading, navigate]);
 
   // Mostrar loading enquanto redireciona
   return (
@@ -53,5 +57,5 @@ export function AutoRedirect() {
         Redirecionando...
       </div>
     </div>
-  )
+  );
 }

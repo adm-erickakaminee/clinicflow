@@ -1,58 +1,59 @@
-import { useState, useEffect } from 'react'
-import { format } from 'date-fns'
-import { supabase } from '../lib/supabase'
-import { useScheduler } from '../context/SchedulerContext'
-import { useToast } from '../components/ui/Toast'
-import { CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { supabase } from "../lib/supabase";
+import { useScheduler } from "../context/SchedulerContext";
+import { useToast } from "../components/ui/Toast";
+import { CheckCircle, XCircle, AlertCircle, Loader2 } from "lucide-react";
 
 interface Transaction {
-  id: string
-  amount_cents: number
-  clinic_share_cents: number
-  platform_fee_cents: number
-  professional_share_cents: number
-  payment_method: string | null
-  status: string
-  created_at: string
-  appointment_id: string | null
-  professional_id: string | null
+  id: string;
+  amount_cents: number;
+  clinic_share_cents: number;
+  platform_fee_cents: number;
+  professional_share_cents: number;
+  payment_method: string | null;
+  status: string;
+  created_at: string;
+  appointment_id: string | null;
+  professional_id: string | null;
   professional?: {
-    full_name: string | null
-  }
+    full_name: string | null;
+  };
   appointment?: {
-    client_id: string | null
+    client_id: string | null;
     client?: {
-      full_name: string | null
-    }
-  }
+      full_name: string | null;
+    };
+  };
 }
 
 export function PostExecutionAuditView() {
-  const { currentUser } = useScheduler()
-  const toast = useToast()
-  const [loading, setLoading] = useState(true)
-  const [auditing, setAuditing] = useState<string | null>(null)
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const { currentUser } = useScheduler();
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
+  const [auditing, setAuditing] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-  const clinicId = currentUser?.clinicId
+  const clinicId = currentUser?.clinicId;
 
   useEffect(() => {
     if (!clinicId) {
-      setLoading(false)
-      return
+      setLoading(false);
+      return;
     }
 
-    loadPendingAudits()
-  }, [clinicId])
+    loadPendingAudits();
+  }, [clinicId]);
 
   const loadPendingAudits = async () => {
-    if (!clinicId) return
+    if (!clinicId) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('financial_transactions')
-        .select(`
+        .from("financial_transactions")
+        .select(
+          `
           id,
           amount_cents,
           clinic_share_cents,
@@ -68,51 +69,52 @@ export function PostExecutionAuditView() {
             client_id,
             client:clients!appointments_client_id_fkey(full_name)
           )
-        `)
-        .eq('clinic_id', clinicId)
-        .eq('is_admin_audited', false)
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false })
-        .limit(50)
+        `
+        )
+        .eq("clinic_id", clinicId)
+        .eq("is_admin_audited", false)
+        .eq("status", "completed")
+        .order("created_at", { ascending: false })
+        .limit(50);
 
-      if (error) throw error
-      setTransactions((data as unknown as Transaction[]) || [])
+      if (error) throw error;
+      setTransactions((data as unknown as Transaction[]) || []);
     } catch (err) {
-      console.error('Erro ao carregar transações pendentes:', err)
-      toast.error('Falha ao carregar transações para auditoria')
+      console.error("Erro ao carregar transações pendentes:", err);
+      toast.error("Falha ao carregar transações para auditoria");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleAudit = async (transactionId: string, approved: boolean) => {
-    if (!clinicId) return
+    if (!clinicId) return;
 
-    setAuditing(transactionId)
+    setAuditing(transactionId);
     try {
       const { error } = await supabase
-        .from('financial_transactions')
+        .from("financial_transactions")
         .update({ is_admin_audited: approved })
-        .eq('id', transactionId)
+        .eq("id", transactionId);
 
-      if (error) throw error
+      if (error) throw error;
 
-      toast.success(approved ? 'Transação auditada e aprovada' : 'Transação marcada para revisão')
-      await loadPendingAudits()
+      toast.success(approved ? "Transação auditada e aprovada" : "Transação marcada para revisão");
+      await loadPendingAudits();
     } catch (err) {
-      console.error('Erro ao auditar transação:', err)
-      toast.error('Falha ao processar auditoria')
+      console.error("Erro ao auditar transação:", err);
+      toast.error("Falha ao processar auditoria");
     } finally {
-      setAuditing(null)
+      setAuditing(null);
     }
-  }
+  };
 
   const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(cents / 100)
-  }
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(cents / 100);
+  };
 
   if (loading) {
     return (
@@ -122,7 +124,7 @@ export function PostExecutionAuditView() {
           <p className="mt-2 text-sm text-gray-600">Carregando transações...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -189,19 +191,19 @@ export function PostExecutionAuditView() {
                   <div className="mt-4 space-y-2">
                     {tx.professional && (
                       <p className="text-sm text-gray-700">
-                        <span className="font-semibold">Profissional:</span>{' '}
-                        {tx.professional.full_name || 'N/A'}
+                        <span className="font-semibold">Profissional:</span>{" "}
+                        {tx.professional.full_name || "N/A"}
                       </p>
                     )}
                     {tx.appointment?.client && (
                       <p className="text-sm text-gray-700">
-                        <span className="font-semibold">Cliente:</span>{' '}
-                        {tx.appointment.client.full_name || 'N/A'}
+                        <span className="font-semibold">Cliente:</span>{" "}
+                        {tx.appointment.client.full_name || "N/A"}
                       </p>
                     )}
                     {tx.payment_method && (
                       <p className="text-sm text-gray-700">
-                        <span className="font-semibold">Método de Pagamento:</span>{' '}
+                        <span className="font-semibold">Método de Pagamento:</span>{" "}
                         {tx.payment_method}
                       </p>
                     )}
@@ -250,6 +252,5 @@ export function PostExecutionAuditView() {
         </div>
       )}
     </div>
-  )
+  );
 }
-

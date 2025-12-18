@@ -1,96 +1,104 @@
-import { useMemo, useState } from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
-import { TrendingUp, User } from 'lucide-react'
-import { format, isToday, addMinutes } from 'date-fns'
-import { AppointmentModal } from './SchedulerView'
-import { useScheduler } from '../context/SchedulerContext'
+import { useMemo, useState } from "react";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { TrendingUp, User } from "lucide-react";
+import { format, isToday, addMinutes } from "date-fns";
+import { AppointmentModal } from "./SchedulerView";
+import { useScheduler } from "../context/SchedulerContext";
 
 const COLORS = {
-  confirmed: '#22c55e',
-  pending: '#f59e0b',
-  cancelled: '#ef4444',
-}
+  confirmed: "#22c55e",
+  pending: "#f59e0b",
+  cancelled: "#ef4444",
+};
 
 export function DashboardHome() {
-  const { appointments = [], blocks = [], professionals = [] } = useScheduler()
-  const [modalOpen, setModalOpen] = useState(false)
-  const [modalData, setModalData] = useState<any>(null)
+  const { appointments = [], blocks = [], professionals = [] } = useScheduler();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalData, setModalData] = useState<any>(null);
 
   const todayAppointments = useMemo(
     () => appointments.filter((a) => isToday(new Date(a.start))),
     [appointments]
-  )
+  );
 
   const donutData = useMemo(() => {
-    const confirmed = todayAppointments.filter((a) => a.status === 'confirmado' || a.status === 'confirmed').length
-    const pending = todayAppointments.filter((a) => a.status === 'pendente' || a.status === 'pending').length
-    const cancelled = todayAppointments.filter((a) => a.status === 'cancelado' || a.status === 'cancelled').length
+    const confirmed = todayAppointments.filter(
+      (a) => a.status === "confirmado" || a.status === "confirmed"
+    ).length;
+    const pending = todayAppointments.filter(
+      (a) => a.status === "pendente" || a.status === "pending"
+    ).length;
+    const cancelled = todayAppointments.filter(
+      (a) => a.status === "cancelado" || a.status === "cancelled"
+    ).length;
     return [
-      { name: 'Confirmados', value: confirmed, color: COLORS.confirmed },
-      { name: 'Pendentes', value: pending, color: COLORS.pending },
-      { name: 'Cancelados', value: cancelled, color: COLORS.cancelled },
-    ]
-  }, [todayAppointments])
+      { name: "Confirmados", value: confirmed, color: COLORS.confirmed },
+      { name: "Pendentes", value: pending, color: COLORS.pending },
+      { name: "Cancelados", value: cancelled, color: COLORS.cancelled },
+    ];
+  }, [todayAppointments]);
 
   const nextFree = useMemo(() => {
-    const now = new Date()
-    const slots: { profId: string; time: string }[] = []
+    const now = new Date();
+    const slots: { profId: string; time: string }[] = [];
     professionals
-      .filter((p) => p.id !== 'all')
+      .filter((p) => p.id !== "all")
       .forEach((p) => {
         // varre de agora até +6h em blocos de 30min
-        let cursor = new Date(now)
+        let cursor = new Date(now);
         for (let i = 0; i < 12; i++) {
-          const startIso = cursor.toISOString()
-          const endIso = addMinutes(cursor, 30).toISOString()
+          const startIso = cursor.toISOString();
+          const endIso = addMinutes(cursor, 30).toISOString();
           const hasApt = appointments.some(
             (a) =>
               a.professionalId === p.id &&
               ((new Date(a.start) <= new Date(startIso) && new Date(a.end) > new Date(startIso)) ||
                 (new Date(a.start) < new Date(endIso) && new Date(a.end) >= new Date(endIso)))
-          )
+          );
           const hasBlock = blocks.some(
             (b) =>
               b.professionalId === p.id &&
               ((new Date(b.start) <= new Date(startIso) && new Date(b.end) > new Date(startIso)) ||
                 (new Date(b.start) < new Date(endIso) && new Date(b.end) >= new Date(endIso)))
-          )
+          );
           if (!hasApt && !hasBlock) {
-            slots.push({ profId: p.id, time: format(cursor, 'HH:mm') })
-            break
+            slots.push({ profId: p.id, time: format(cursor, "HH:mm") });
+            break;
           }
-          cursor = addMinutes(cursor, 30)
+          cursor = addMinutes(cursor, 30);
         }
-      })
-    return slots
-  }, [appointments, blocks, professionals])
+      });
+    return slots;
+  }, [appointments, blocks, professionals]);
 
   const caixaHoje = useMemo(() => {
-    const valid = todayAppointments.filter((a) => a.status !== 'cancelado' && a.status !== 'cancelled')
-    const total = valid.reduce((sum, a) => sum + ((a as any).value || 0), 0)
+    const valid = todayAppointments.filter(
+      (a) => a.status !== "cancelado" && a.status !== "cancelled"
+    );
+    const total = valid.reduce((sum, a) => sum + ((a as any).value || 0), 0);
     // comparativo simples com "ontem" simulado
-    const ontem = total * 0.85
-    const delta = total - ontem
-    return { total, delta }
-  }, [todayAppointments])
+    const ontem = total * 0.85;
+    const delta = total - ontem;
+    return { total, delta };
+  }, [todayAppointments]);
 
   const pendentesUrgentes = useMemo(
     () =>
       todayAppointments
-        .filter((a) => a.status === 'pendente' || a.status === 'pending')
+        .filter((a) => a.status === "pendente" || a.status === "pending")
         .slice(0, 3),
     [todayAppointments]
-  )
+  );
 
   const openAppointment = (profId: string, time: string) => {
     setModalData({
-      mode: 'create',
+      mode: "create",
       profId,
       time,
       date: new Date(),
-    })
-    setModalOpen(true)
-  }
+    });
+    setModalOpen(true);
+  };
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
@@ -138,17 +146,22 @@ export function DashboardHome() {
       <div className="rounded-3xl bg-white/60 border border-white/40 shadow-xl p-4 flex flex-col gap-3">
         <p className="text-sm font-semibold text-gray-900">Pendentes / Lembretes</p>
         {pendentesUrgentes.map((p) => (
-          <div key={p.id} className="rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm flex items-center justify-between">
+          <div
+            key={p.id}
+            className="rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm flex items-center justify-between"
+          >
             <div>
-              <p className="font-semibold text-gray-900">{p.patient ?? p.title ?? 'Paciente'}</p>
-              <p className="text-xs text-gray-500">{format(new Date(p.start), 'HH:mm')}</p>
+              <p className="font-semibold text-gray-900">{p.patient ?? p.title ?? "Paciente"}</p>
+              <p className="text-xs text-gray-500">{format(new Date(p.start), "HH:mm")}</p>
             </div>
             <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
               Pendente
             </span>
           </div>
         ))}
-        {pendentesUrgentes.length === 0 && <p className="text-sm text-gray-600">Sem pendências no momento.</p>}
+        {pendentesUrgentes.length === 0 && (
+          <p className="text-sm text-gray-600">Sem pendências no momento.</p>
+        )}
       </div>
 
       {/* Próximos livres */}
@@ -156,9 +169,12 @@ export function DashboardHome() {
         <p className="text-sm font-semibold text-gray-900">Próximos livres</p>
         <div className="space-y-2">
           {nextFree.map((slot) => {
-            const prof = professionals.find((p) => p.id === slot.profId)
+            const prof = professionals.find((p) => p.id === slot.profId);
             return (
-              <div key={slot.profId} className="rounded-xl bg-white/70 border border-white/60 px-3 py-2 flex items-center justify-between text-sm">
+              <div
+                key={slot.profId}
+                className="rounded-xl bg-white/70 border border-white/60 px-3 py-2 flex items-center justify-between text-sm"
+              >
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
                     <User className="h-4 w-4 text-gray-700" />
@@ -175,9 +191,11 @@ export function DashboardHome() {
                   Preencher
                 </button>
               </div>
-            )
+            );
           })}
-          {nextFree.length === 0 && <p className="text-sm text-gray-600">Nenhum horário livre nas próximas horas.</p>}
+          {nextFree.length === 0 && (
+            <p className="text-sm text-gray-600">Nenhum horário livre nas próximas horas.</p>
+          )}
         </div>
       </div>
 
@@ -185,12 +203,11 @@ export function DashboardHome() {
         <AppointmentModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
-          professionals={professionals.filter((p) => p.id !== 'all')}
+          professionals={professionals.filter((p) => p.id !== "all")}
           initialData={modalData}
           onSave={() => setModalOpen(false)}
         />
       )}
     </div>
-  )
+  );
 }
-

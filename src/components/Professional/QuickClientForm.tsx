@@ -1,39 +1,39 @@
-import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
-import { useToast } from '../ui/Toast'
+import { useState } from "react";
+import { Plus, X } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { useToast } from "../ui/Toast";
 
 interface QuickClientFormProps {
-  clinicId: string
-  professionalId?: string
-  onSuccess?: () => void
+  clinicId: string;
+  professionalId?: string;
+  onSuccess?: () => void;
 }
 
 export function QuickClientForm({ clinicId, onSuccess }: QuickClientFormProps) {
-  const toast = useToast()
-  const [isOpen, setIsOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const toast = useToast();
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: '',
-    phone: '',
-    email: '',
-  })
+    full_name: "",
+    phone: "",
+    email: "",
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!formData.full_name.trim() || !formData.phone.trim()) {
-      toast.error('Nome e telefone são obrigatórios')
-      return
+      toast.error("Nome e telefone são obrigatórios");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
       // Para cadastro rápido pelo profissional, vamos criar diretamente em clients
       // O sistema pode criar o auth.user depois quando o cliente fizer login pela primeira vez
       // Por enquanto, gerar um UUID temporário para o cliente
       const { error: clientError } = await supabase
-        .from('clients')
+        .from("clients")
         .insert({
           clinic_id: clinicId,
           full_name: formData.full_name,
@@ -41,50 +41,50 @@ export function QuickClientForm({ clinicId, onSuccess }: QuickClientFormProps) {
           email: formData.email || null,
         })
         .select()
-        .single()
+        .single();
 
       if (clientError) {
         // Se já existir cliente com mesmo telefone/clínica, atualizar
-        if (clientError.code === '23505') {
+        if (clientError.code === "23505") {
           // Unique constraint violation - tentar atualizar
           const { data: existingClient } = await supabase
-            .from('clients')
-            .select('id')
-            .eq('clinic_id', clinicId)
-            .eq('phone', formData.phone)
-            .maybeSingle()
+            .from("clients")
+            .select("id")
+            .eq("clinic_id", clinicId)
+            .eq("phone", formData.phone)
+            .maybeSingle();
 
           if (existingClient) {
             const { error: updateError } = await supabase
-              .from('clients')
+              .from("clients")
               .update({
                 full_name: formData.full_name,
                 email: formData.email || null,
               })
-              .eq('id', existingClient.id)
+              .eq("id", existingClient.id);
 
-            if (updateError) throw updateError
-            toast.success('Cliente atualizado com sucesso!')
+            if (updateError) throw updateError;
+            toast.success("Cliente atualizado com sucesso!");
           } else {
-            throw clientError
+            throw clientError;
           }
         } else {
-          throw clientError
+          throw clientError;
         }
       } else {
-        toast.success('Cliente cadastrado com sucesso!')
+        toast.success("Cliente cadastrado com sucesso!");
       }
 
-      setFormData({ full_name: '', phone: '', email: '' })
-      setIsOpen(false)
-      onSuccess?.()
+      setFormData({ full_name: "", phone: "", email: "" });
+      setIsOpen(false);
+      onSuccess?.();
     } catch (err: any) {
-      console.error('Erro ao cadastrar cliente:', err)
-      toast.error(err.message || 'Erro ao cadastrar cliente')
+      console.error("Erro ao cadastrar cliente:", err);
+      toast.error(err.message || "Erro ao cadastrar cliente");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (!isOpen) {
     return (
@@ -95,7 +95,7 @@ export function QuickClientForm({ clinicId, onSuccess }: QuickClientFormProps) {
         <Plus className="h-4 w-4" />
         Cadastrar Cliente Rápido
       </button>
-    )
+    );
   }
 
   return (
@@ -104,8 +104,8 @@ export function QuickClientForm({ clinicId, onSuccess }: QuickClientFormProps) {
         <h4 className="font-semibold text-gray-900">Cadastro Rápido de Cliente</h4>
         <button
           onClick={() => {
-            setIsOpen(false)
-            setFormData({ full_name: '', phone: '', email: '' })
+            setIsOpen(false);
+            setFormData({ full_name: "", phone: "", email: "" });
           }}
           className="text-gray-400 hover:text-gray-600"
         >
@@ -115,9 +115,7 @@ export function QuickClientForm({ clinicId, onSuccess }: QuickClientFormProps) {
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1 block">
-            Nome Completo *
-          </label>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">Nome Completo *</label>
           <input
             type="text"
             value={formData.full_name}
@@ -129,9 +127,7 @@ export function QuickClientForm({ clinicId, onSuccess }: QuickClientFormProps) {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1 block">
-            Telefone *
-          </label>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">Telefone *</label>
           <input
             type="tel"
             value={formData.phone}
@@ -143,9 +139,7 @@ export function QuickClientForm({ clinicId, onSuccess }: QuickClientFormProps) {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1 block">
-            Email (opcional)
-          </label>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">Email (opcional)</label>
           <input
             type="email"
             value={formData.email}
@@ -159,8 +153,8 @@ export function QuickClientForm({ clinicId, onSuccess }: QuickClientFormProps) {
           <button
             type="button"
             onClick={() => {
-              setIsOpen(false)
-              setFormData({ full_name: '', phone: '', email: '' })
+              setIsOpen(false);
+              setFormData({ full_name: "", phone: "", email: "" });
             }}
             className="flex-1 px-4 py-2 rounded-lg bg-gray-200 text-gray-800 text-sm font-semibold hover:bg-gray-300 transition"
           >
@@ -171,11 +165,10 @@ export function QuickClientForm({ clinicId, onSuccess }: QuickClientFormProps) {
             disabled={loading}
             className="flex-1 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Cadastrando...' : 'Cadastrar'}
+            {loading ? "Cadastrando..." : "Cadastrar"}
           </button>
         </div>
       </form>
     </div>
-  )
+  );
 }
-

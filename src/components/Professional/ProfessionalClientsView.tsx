@@ -1,82 +1,84 @@
-import { useState, useEffect } from 'react'
-import { User, Search, Phone, Mail } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
-import { useToast } from '../ui/Toast'
-import { QuickClientForm } from './QuickClientForm'
-import type { Client } from '../../lib/types'
+import { useState, useEffect } from "react";
+import { User, Search, Phone, Mail } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { useToast } from "../ui/Toast";
+import { QuickClientForm } from "./QuickClientForm";
+import type { Client } from "../../lib/types";
 
 interface ProfessionalClientsViewProps {
-  professionalId: string
-  clinicId: string
+  professionalId: string;
+  clinicId: string;
 }
 
-export function ProfessionalClientsView({ professionalId, clinicId }: ProfessionalClientsViewProps) {
-  const toast = useToast()
-  const [clients, setClients] = useState<Client[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
+export function ProfessionalClientsView({
+  professionalId,
+  clinicId,
+}: ProfessionalClientsViewProps) {
+  const toast = useToast();
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadClients = async () => {
     if (!professionalId || !clinicId) {
-      setLoading(false)
-      return
+      setLoading(false);
+      return;
     }
 
     try {
       // Buscar apenas clientes que têm agendamentos com este profissional
       // Conforme RLS: profissionais veem apenas clientes com quem têm agendamentos
       const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('clinic_id', clinicId)
-        .order('full_name', { ascending: true })
+        .from("clients")
+        .select("*")
+        .eq("clinic_id", clinicId)
+        .order("full_name", { ascending: true });
 
       if (error) {
-        console.error('Erro ao carregar clientes:', error)
-        toast.error('Erro ao carregar clientes')
-        return
+        console.error("Erro ao carregar clientes:", error);
+        toast.error("Erro ao carregar clientes");
+        return;
       }
 
       // Filtrar apenas clientes que têm agendamentos com este profissional
       const { data: appointments } = await supabase
-        .from('appointments')
-        .select('client_id')
-        .eq('professional_id', professionalId)
-        .eq('clinic_id', clinicId)
+        .from("appointments")
+        .select("client_id")
+        .eq("professional_id", professionalId)
+        .eq("clinic_id", clinicId);
 
-      const clientIdsWithAppointments = new Set(
-        (appointments || []).map(apt => apt.client_id)
-      )
+      const clientIdsWithAppointments = new Set((appointments || []).map((apt) => apt.client_id));
 
-      const filteredClients = (data || []).filter(client => 
+      const filteredClients = (data || []).filter((client) =>
         clientIdsWithAppointments.has(client.id)
-      )
+      );
 
-      setClients(filteredClients)
+      setClients(filteredClients);
     } catch (err) {
-      console.error('Erro ao carregar clientes:', err)
-      toast.error('Erro ao carregar clientes')
+      console.error("Erro ao carregar clientes:", err);
+      toast.error("Erro ao carregar clientes");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadClients()
-  }, [professionalId, clinicId, toast])
+    loadClients();
+  }, [professionalId, clinicId, toast]);
 
-  const filteredClients = clients.filter(client =>
-    client.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.phone?.includes(searchQuery) ||
-    client.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredClients = clients.filter(
+    (client) =>
+      client.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.phone?.includes(searchQuery) ||
+      client.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) {
     return (
       <div className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl rounded-3xl p-6">
         <p className="text-sm text-gray-600">Carregando clientes...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -87,7 +89,7 @@ export function ProfessionalClientsView({ professionalId, clinicId }: Profession
           <h3 className="text-lg font-semibold text-gray-900">Meus Clientes</h3>
         </div>
         <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold">
-          {clients.length} {clients.length === 1 ? 'cliente' : 'clientes'}
+          {clients.length} {clients.length === 1 ? "cliente" : "clientes"}
         </span>
       </div>
 
@@ -115,7 +117,7 @@ export function ProfessionalClientsView({ professionalId, clinicId }: Profession
         <div className="text-center py-8">
           <User className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-sm text-gray-500">
-            {searchQuery ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado ainda'}
+            {searchQuery ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado ainda"}
           </p>
         </div>
       ) : (
@@ -131,14 +133,14 @@ export function ProfessionalClientsView({ professionalId, clinicId }: Profession
                     <User className="h-4 w-4 text-gray-400" />
                     <p className="font-semibold text-gray-900">{client.full_name}</p>
                   </div>
-                  
+
                   {client.phone && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Phone className="h-3 w-3" />
                       <span>{client.phone}</span>
                     </div>
                   )}
-                  
+
                   {client.email && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Mail className="h-3 w-3" />
@@ -152,6 +154,5 @@ export function ProfessionalClientsView({ professionalId, clinicId }: Profession
         </div>
       )}
     </div>
-  )
+  );
 }
-

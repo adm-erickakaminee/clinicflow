@@ -1,43 +1,43 @@
-import { useState } from 'react'
-import { supabase } from '../../lib/supabase'
-import { Button } from '../../components/ui/Button'
-import { useToast } from '../../components/ui/Toast'
+import { useState } from "react";
+import { supabase } from "../../lib/supabase";
+import { Button } from "../../components/ui/Button";
+import { useToast } from "../../components/ui/Toast";
 
 export function LoginOtp() {
-  const toast = useToast()
-  const [phone, setPhone] = useState('')
-  const [otpSent, setOtpSent] = useState(false)
-  const [token, setToken] = useState('')
-  const [loading, setLoading] = useState(false)
+  const toast = useToast();
+  const [phone, setPhone] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [token, setToken] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const sendOtp = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({ phone })
-      if (error) throw error
-      setOtpSent(true)
-      toast.success('Código enviado via SMS/WhatsApp')
+      const { error } = await supabase.auth.signInWithOtp({ phone });
+      if (error) throw error;
+      setOtpSent(true);
+      toast.success("Código enviado via SMS/WhatsApp");
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao enviar OTP'
-      toast.error(message)
+      const message = err instanceof Error ? err.message : "Erro ao enviar OTP";
+      toast.error(message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const verifyOtp = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' })
-      if (error) throw error
-      toast.success('Login realizado')
+      const { error } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
+      if (error) throw error;
+      toast.success("Login realizado");
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao validar OTP'
-      toast.error(message)
+      const message = err instanceof Error ? err.message : "Erro ao validar OTP";
+      toast.error(message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4">
@@ -78,7 +78,5 @@ export function LoginOtp() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-
-

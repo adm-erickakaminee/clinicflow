@@ -41,13 +41,42 @@ END $$;
 
 -- 2. Alternativa: Criar função RPC que bypassa RLS (mais segura)
 -- Esta função permite criar organização durante cadastro usando SECURITY DEFINER
+
+-- ✅ REMOVER TODAS AS VERSÕES ANTIGAS DA FUNÇÃO (resolve erro de função não única)
+-- Remove todas as versões possíveis da função antes de criar a nova
+DO $$
+DECLARE
+  r record;
+BEGIN
+  -- Remover todas as versões conhecidas
+  DROP FUNCTION IF EXISTS public.create_organization_during_signup(text, text, text, jsonb, text, text, uuid) CASCADE;
+  DROP FUNCTION IF EXISTS public.create_organization_during_signup(text, text, text, jsonb, text, text) CASCADE;
+  DROP FUNCTION IF EXISTS public.create_organization_during_signup(text, text, text, jsonb) CASCADE;
+  
+  -- Remover qualquer outra versão que possa existir
+  FOR r IN 
+    SELECT oid::regprocedure::text as func_signature
+    FROM pg_proc
+    WHERE proname = 'create_organization_during_signup'
+    AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+  LOOP
+    EXECUTE format('DROP FUNCTION IF EXISTS %s CASCADE', r.func_signature);
+  END LOOP;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Continuar mesmo se houver erro (pode não haver função para remover)
+    RAISE NOTICE 'Aviso ao remover funções antigas: %', SQLERRM;
+END $$;
+
+-- Agora criar a nova versão da função
 CREATE OR REPLACE FUNCTION public.create_organization_during_signup(
   p_name text,
   p_email text,
   p_phone text,
   p_address jsonb, -- Recebe como jsonb do cliente
   p_cnpj text DEFAULT NULL,
-  p_status text DEFAULT 'pending_setup'
+  p_status text DEFAULT 'pending_setup',
+  p_user_id uuid DEFAULT NULL -- ✅ NOVO: user_id opcional (resolve problema de sessão não estabelecida)
 )
 RETURNS uuid
 LANGUAGE plpgsql
@@ -57,11 +86,18 @@ AS $$
 DECLARE
   v_org_id uuid;
   v_address_text text;
+  v_user_id uuid;
 BEGIN
-  -- Verificar se usuário está autenticado
-  IF auth.uid() IS NULL THEN
-    RAISE EXCEPTION 'Usuário não autenticado';
+  -- ✅ Verificar autenticação: usar p_user_id se fornecido, senão usar auth.uid()
+  -- Isso resolve o problema de sessão não estabelecida após signUp
+  v_user_id := COALESCE(p_user_id, auth.uid());
+  
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Usuário não autenticado. Forneça p_user_id ou garanta que auth.uid() está disponível.';
   END IF;
+  
+  -- ✅ Log para debug (remover em produção se necessário)
+  RAISE NOTICE 'Criando organização para usuário: %', v_user_id;
   
   -- Converter jsonb para text (a coluna address é do tipo text que armazena JSON como string)
   -- Se p_address for jsonb, converter para string JSON

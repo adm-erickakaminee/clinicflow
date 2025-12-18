@@ -1,141 +1,141 @@
-import { useState, useEffect } from 'react'
-import { useScheduler } from '../context/SchedulerContext'
-import { supabase } from '../lib/supabase'
-import { useToast } from '../components/ui/Toast'
-import { CreditCard, AlertCircle, Loader2 } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { useScheduler } from "../context/SchedulerContext";
+import { supabase } from "../lib/supabase";
+import { useToast } from "../components/ui/Toast";
+import { CreditCard, AlertCircle, Loader2 } from "lucide-react";
 
 interface SubscriptionPlan {
-  id: string
-  name: string
-  base_price_cents: number
-  additional_user_price_cents: number
-  included_users_count: number
-  transaction_fee_percent: number
+  id: string;
+  name: string;
+  base_price_cents: number;
+  additional_user_price_cents: number;
+  included_users_count: number;
+  transaction_fee_percent: number;
 }
 
 interface Organization {
-  id: string
-  name: string
-  status: 'pending_setup' | 'active' | 'suspended' | 'cancelled'
-  subscription_plan_id: string | null
+  id: string;
+  name: string;
+  status: "pending_setup" | "active" | "suspended" | "cancelled";
+  subscription_plan_id: string | null;
 }
 
 export function SubscriptionCheckout() {
-  const { currentUser } = useScheduler()
-  const toast = useToast()
-  const [loading, setLoading] = useState(true)
-  const [processing, setProcessing] = useState(false)
-  const [organization, setOrganization] = useState<Organization | null>(null)
-  const [plan, setPlan] = useState<SubscriptionPlan | null>(null)
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
+  const { currentUser } = useScheduler();
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [plan, setPlan] = useState<SubscriptionPlan | null>(null);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentUser?.clinicId) {
-      loadData()
+      loadData();
     }
-  }, [currentUser])
+  }, [currentUser]);
 
   const loadData = async () => {
-    if (!currentUser?.clinicId) return
+    if (!currentUser?.clinicId) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
       // Buscar organização
       const { data: org, error: orgError } = await supabase
-        .from('organizations')
-        .select('id, name, status, subscription_plan_id')
-        .eq('id', currentUser.clinicId)
-        .maybeSingle()
+        .from("organizations")
+        .select("id, name, status, subscription_plan_id")
+        .eq("id", currentUser.clinicId)
+        .maybeSingle();
 
-      if (orgError) throw orgError
-      if (!org) throw new Error('Organização não encontrada')
+      if (orgError) throw orgError;
+      if (!org) throw new Error("Organização não encontrada");
 
-      setOrganization(org as Organization)
+      setOrganization(org as Organization);
 
       // Buscar plano
-      const planId = org.subscription_plan_id || (await getDefaultPlanId())
+      const planId = org.subscription_plan_id || (await getDefaultPlanId());
       const { data: planData, error: planError } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('id', planId)
-        .maybeSingle()
+        .from("subscription_plans")
+        .select("*")
+        .eq("id", planId)
+        .maybeSingle();
 
-      if (planError) throw planError
+      if (planError) throw planError;
       if (planData) {
-        setPlan(planData as SubscriptionPlan)
+        setPlan(planData as SubscriptionPlan);
       }
     } catch (err: any) {
-      console.error('Erro ao carregar dados:', err)
-      toast.error(err.message || 'Erro ao carregar informações da assinatura')
+      console.error("Erro ao carregar dados:", err);
+      toast.error(err.message || "Erro ao carregar informações da assinatura");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const getDefaultPlanId = async (): Promise<string> => {
     const { data, error } = await supabase
-      .from('subscription_plans')
-      .select('id')
-      .eq('is_active', true)
-      .order('created_at', { ascending: true })
+      .from("subscription_plans")
+      .select("id")
+      .eq("is_active", true)
+      .order("created_at", { ascending: true })
       .limit(1)
-      .maybeSingle()
+      .maybeSingle();
 
     if (error || !data) {
-      throw new Error('Nenhum plano ativo encontrado')
+      throw new Error("Nenhum plano ativo encontrado");
     }
 
-    return data.id
-  }
+    return data.id;
+  };
 
   const handleCreateSubscription = async () => {
-    if (!currentUser?.clinicId || !plan) return
+    if (!currentUser?.clinicId || !plan) return;
 
-    setProcessing(true)
+    setProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-subscription', {
+      const { data, error } = await supabase.functions.invoke("create-subscription", {
         body: {
           clinic_id: currentUser.clinicId,
           plan_id: plan.id,
         },
-      })
+      });
 
-      if (error) throw error
-      if (data?.error) throw new Error(data.error)
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       if (data?.payment_url) {
-        setPaymentUrl(data.payment_url)
+        setPaymentUrl(data.payment_url);
         // Abrir link de pagamento em nova aba
-        window.open(data.payment_url, '_blank')
-        toast.success('Redirecionando para pagamento...')
+        window.open(data.payment_url, "_blank");
+        toast.success("Redirecionando para pagamento...");
       } else {
-        toast.success('Assinatura criada! Aguarde confirmação do pagamento.')
+        toast.success("Assinatura criada! Aguarde confirmação do pagamento.");
         // Recarregar após alguns segundos
         setTimeout(() => {
-          window.location.reload()
-        }, 3000)
+          window.location.reload();
+        }, 3000);
       }
     } catch (err: any) {
-      console.error('Erro ao criar assinatura:', err)
-      toast.error(err.message || 'Erro ao criar assinatura')
+      console.error("Erro ao criar assinatura:", err);
+      toast.error(err.message || "Erro ao criar assinatura");
     } finally {
-      setProcessing(false)
+      setProcessing(false);
     }
-  }
+  };
 
   const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(cents / 100)
-  }
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(cents / 100);
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
       </div>
-    )
+    );
   }
 
   if (!organization || !plan) {
@@ -146,25 +146,29 @@ export function SubscriptionCheckout() {
           <p className="text-gray-700">Erro ao carregar informações</p>
         </div>
       </div>
-    )
+    );
   }
 
-  const isPending = organization.status === 'pending_setup'
-  const isSuspended = organization.status === 'suspended'
+  const isPending = organization.status === "pending_setup";
+  const isSuspended = organization.status === "suspended";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ffb3a7] via-[#ffc78f] to-[#ffe7a3] flex items-center justify-center p-4">
       <div className="bg-white/60 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl p-8 lg:p-10 max-w-2xl w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {isPending ? 'Configuração Pendente' : isSuspended ? 'Assinatura Suspensa' : 'Ative sua Assinatura'}
+            {isPending
+              ? "Configuração Pendente"
+              : isSuspended
+                ? "Assinatura Suspensa"
+                : "Ative sua Assinatura"}
           </h1>
           <p className="text-gray-600">
             {isPending
-              ? 'A organização ainda está em processo de configuração. Aguarde a finalização ou entre em contato com o suporte.'
+              ? "A organização ainda está em processo de configuração. Aguarde a finalização ou entre em contato com o suporte."
               : isSuspended
-              ? 'Sua assinatura foi suspensa devido a problemas no pagamento. Renove para continuar usando o sistema.'
-              : 'Complete o pagamento para liberar o acesso completo ao sistema.'}
+                ? "Sua assinatura foi suspensa devido a problemas no pagamento. Renove para continuar usando o sistema."
+                : "Complete o pagamento para liberar o acesso completo ao sistema."}
           </p>
         </div>
 
@@ -176,7 +180,9 @@ export function SubscriptionCheckout() {
               <p className="text-sm text-gray-600">Plano Mensal</p>
             </div>
             <div className="text-right">
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(plan.base_price_cents)}</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {formatCurrency(plan.base_price_cents)}
+              </p>
               <p className="text-sm text-gray-600">/mês</p>
             </div>
           </div>
@@ -184,15 +190,21 @@ export function SubscriptionCheckout() {
           <div className="space-y-3 border-t border-gray-200 pt-4">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Usuários incluídos</span>
-              <span className="font-semibold text-gray-900">{plan.included_users_count} usuários</span>
+              <span className="font-semibold text-gray-900">
+                {plan.included_users_count} usuários
+              </span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Taxa de transação</span>
-              <span className="font-semibold text-gray-900">{(plan.transaction_fee_percent * 100).toFixed(2)}%</span>
+              <span className="font-semibold text-gray-900">
+                {(plan.transaction_fee_percent * 100).toFixed(2)}%
+              </span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Usuário adicional</span>
-              <span className="font-semibold text-gray-900">{formatCurrency(plan.additional_user_price_cents)}/mês</span>
+              <span className="font-semibold text-gray-900">
+                {formatCurrency(plan.additional_user_price_cents)}/mês
+              </span>
             </div>
           </div>
         </div>
@@ -224,7 +236,11 @@ export function SubscriptionCheckout() {
           ) : (
             <>
               <CreditCard className="h-5 w-5" />
-              {isPending ? 'Aguardando configuração' : isSuspended ? 'Renovar Assinatura' : 'Pagar e Ativar'}
+              {isPending
+                ? "Aguardando configuração"
+                : isSuspended
+                  ? "Renovar Assinatura"
+                  : "Pagar e Ativar"}
             </>
           )}
         </button>
@@ -243,9 +259,10 @@ export function SubscriptionCheckout() {
         )}
 
         <p className="text-xs text-gray-500 text-center mt-6">
-          Ao continuar, você concorda com os termos de serviço. O acesso será liberado após confirmação do pagamento.
+          Ao continuar, você concorda com os termos de serviço. O acesso será liberado após
+          confirmação do pagamento.
         </p>
       </div>
     </div>
-  )
+  );
 }

@@ -1,9 +1,9 @@
-import { DragOverlay as DndDragOverlay } from '@dnd-kit/core'
-import type { CalendarEvent } from '../../lib/types'
-import { AppointmentCard } from './AppointmentCard'
+import { DragOverlay as DndDragOverlay } from "@dnd-kit/core";
+import type { CalendarEvent } from "../../lib/types";
+import { AppointmentCard } from "./AppointmentCard";
 
 interface DragOverlayProps {
-  activeEvent: CalendarEvent | null
+  activeEvent: CalendarEvent | null;
 }
 
 export function DragOverlay({ activeEvent }: DragOverlayProps) {
@@ -15,6 +15,5 @@ export function DragOverlay({ activeEvent }: DragOverlayProps) {
         </div>
       )}
     </DndDragOverlay>
-  )
+  );
 }
-

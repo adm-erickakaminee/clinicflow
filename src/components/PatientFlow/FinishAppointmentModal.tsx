@@ -1,51 +1,48 @@
-import { useState } from 'react'
-import { createPortal } from 'react-dom'
-import { X } from 'lucide-react'
-import { useToast } from '../ui/Toast'
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { X } from "lucide-react";
+import { useToast } from "../ui/Toast";
 
 type Props = {
-  isOpen: boolean
-  onClose: () => void
-  appointmentId: string
-  patientName: string
-  onSave: (medicalNotes: string) => Promise<void>
-}
+  isOpen: boolean;
+  onClose: () => void;
+  appointmentId: string;
+  patientName: string;
+  onSave: (medicalNotes: string) => Promise<void>;
+};
 
 export function FinishAppointmentModal({ isOpen, onClose, patientName, onSave }: Props) {
-  const [notes, setNotes] = useState('')
-  const [saving, setSaving] = useState(false)
-  const toast = useToast()
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const toast = useToast();
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const handleSave = async () => {
     if (!notes.trim()) {
-      toast.error('Por favor, adicione observações sobre o atendimento')
-      return
+      toast.error("Por favor, adicione observações sobre o atendimento");
+      return;
     }
 
-    setSaving(true)
+    setSaving(true);
     try {
-      await onSave(notes)
-      toast.success('Atendimento finalizado com sucesso!')
-      setNotes('')
-      onClose()
+      await onSave(notes);
+      toast.success("Atendimento finalizado com sucesso!");
+      setNotes("");
+      onClose();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao finalizar atendimento')
+      toast.error(error instanceof Error ? error.message : "Erro ao finalizar atendimento");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/95 px-4">
       <div className="relative w-full max-w-lg rounded-3xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-2xl p-6 space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Resumo do Atendimento</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
-          >
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -86,13 +83,12 @@ export function FinishAppointmentModal({ isOpen, onClose, patientName, onSave }:
                 Salvando...
               </>
             ) : (
-              'Salvar e Liberar Paciente'
+              "Salvar e Liberar Paciente"
             )}
           </button>
         </div>
       </div>
     </div>,
     document.body
-  )
+  );
 }
-

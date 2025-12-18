@@ -1,181 +1,183 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Bell, LogOut, Clock, CheckCircle2, Circle } from 'lucide-react'
-import { useScheduler } from '../context/SchedulerContext'
-import UserProfileModal from '../components/UserProfileModal'
-import { supabase } from '../lib/supabase'
-import { format, differenceInMinutes } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { useToast } from '../components/ui/Toast'
-import { ClientBookingView } from '../pages/Client/ClientBookingView'
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Bell, LogOut, Clock, CheckCircle2, Circle } from "lucide-react";
+import { useScheduler } from "../context/SchedulerContext";
+import UserProfileModal from "../components/UserProfileModal";
+import { supabase } from "../lib/supabase";
+import { format, differenceInMinutes } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useToast } from "../components/ui/Toast";
+import { ClientBookingView } from "../pages/Client/ClientBookingView";
 
 // Validação de email
 const validateEmail = (email: string): boolean => {
-  if (!email) return true // Email opcional
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-}
+  if (!email) return true; // Email opcional
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
 
 // Validação de telefone
 const validatePhone = (phone: string): boolean => {
-  if (!phone) return false // Telefone obrigatório
-  return /^[\d\s()+-]{10,}$/.test(phone.replace(/\s/g, ''))
-}
+  if (!phone) return false; // Telefone obrigatório
+  return /^[\d\s()+-]{10,}$/.test(phone.replace(/\s/g, ""));
+};
 
 export function ClientPanel() {
-  const { currentUser, signOut, updateUserProfile, clients } = useScheduler()
-  const toast = useToast()
-  const [profileModal, setProfileModal] = useState(false)
-  const [cashbackBalance, setCashbackBalance] = useState<number>(0)
-  const [currentAppointment, setCurrentAppointment] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { currentUser, signOut, updateUserProfile, clients } = useScheduler();
+  const toast = useToast();
+  const [profileModal, setProfileModal] = useState(false);
+  const [cashbackBalance, setCashbackBalance] = useState<number>(0);
+  const [currentAppointment, setCurrentAppointment] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   // Obter clientId - sempre usar o ID do usuário logado (client.id = auth.uid())
-  const clientId = currentUser?.id
+  const clientId = currentUser?.id;
 
   // Buscar dados reais do banco de dados
   const loadClientData = useCallback(async () => {
     if (!clientId) {
-      setLoading(false)
-      return
+      setLoading(false);
+      return;
     }
 
     try {
       // 1. Buscar clinic_id do cliente
       const { data: clientData } = await supabase
-        .from('clients')
-        .select('clinic_id')
-        .eq('id', clientId)
-        .maybeSingle()
+        .from("clients")
+        .select("clinic_id")
+        .eq("id", clientId)
+        .maybeSingle();
 
-      const clinicId = clientData?.clinic_id || currentUser?.clinicId
+      const clinicId = clientData?.clinic_id || currentUser?.clinicId;
 
       // 2. Buscar saldo de cashback (client_wallet conforme schema - precisa clinic_id)
       if (clinicId) {
         const { data: wallet, error: walletError } = await supabase
-          .from('client_wallet')
-          .select('balance_cents')
-          .eq('client_id', clientId)
-          .eq('clinic_id', clinicId)
-          .maybeSingle()
+          .from("client_wallet")
+          .select("balance_cents")
+          .eq("client_id", clientId)
+          .eq("clinic_id", clinicId)
+          .maybeSingle();
 
-        if (walletError && walletError.code !== 'PGRST116') {
-          console.error('Erro ao buscar wallet:', walletError)
+        if (walletError && walletError.code !== "PGRST116") {
+          console.error("Erro ao buscar wallet:", walletError);
         } else if (wallet) {
-          setCashbackBalance(wallet.balance_cents || 0)
+          setCashbackBalance(wallet.balance_cents || 0);
         } else {
-          setCashbackBalance(0)
+          setCashbackBalance(0);
         }
       } else {
-        setCashbackBalance(0)
+        setCashbackBalance(0);
       }
 
       // 3. Buscar agendamento em andamento (in_progress ou medical_done)
       const { data: inProgressAppt, error: apptError } = await supabase
-        .from('appointments')
-        .select(`
+        .from("appointments")
+        .select(
+          `
           *,
           service:services(id, name, price),
           professional:profiles!appointments_professional_id_fkey(id, full_name)
-        `)
-        .eq('client_id', clientId)
-        .in('status', ['waiting', 'in_progress', 'medical_done'])
-        .order('start_time', { ascending: false })
+        `
+        )
+        .eq("client_id", clientId)
+        .in("status", ["waiting", "in_progress", "medical_done"])
+        .order("start_time", { ascending: false })
         .limit(1)
-        .maybeSingle()
+        .maybeSingle();
 
-      if (apptError && apptError.code !== 'PGRST116') {
-        console.error('Erro ao buscar agendamento em andamento:', apptError)
+      if (apptError && apptError.code !== "PGRST116") {
+        console.error("Erro ao buscar agendamento em andamento:", apptError);
       } else if (inProgressAppt) {
-        setCurrentAppointment(inProgressAppt)
+        setCurrentAppointment(inProgressAppt);
       } else {
-        setCurrentAppointment(null)
+        setCurrentAppointment(null);
       }
     } catch (err) {
-      console.error('Erro ao carregar dados do cliente:', err)
-      toast.error('Erro ao carregar seus dados. Por favor, recarregue a página.')
+      console.error("Erro ao carregar dados do cliente:", err);
+      toast.error("Erro ao carregar seus dados. Por favor, recarregue a página.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [clientId, currentUser?.clinicId, toast])
+  }, [clientId, currentUser?.clinicId, toast]);
 
   // Carregar dados iniciais
   useEffect(() => {
-    loadClientData()
-  }, [loadClientData])
+    loadClientData();
+  }, [loadClientData]);
 
   // Realtime subscription para appointments
   useEffect(() => {
-    if (!clientId) return
+    if (!clientId) return;
 
     const channel = supabase
-      .channel('client-appointments')
+      .channel("client-appointments")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'appointments',
+          event: "*",
+          schema: "public",
+          table: "appointments",
           filter: `client_id=eq.${clientId}`,
         },
         (payload) => {
-          console.log('🔔 Mudança no agendamento recebida:', payload)
-          
+          console.log("🔔 Mudança no agendamento recebida:", payload);
+
           // Recarregar dados quando houver mudanças
-          loadClientData()
+          loadClientData();
         }
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [clientId, loadClientData])
+      supabase.removeChannel(channel);
+    };
+  }, [clientId, loadClientData]);
 
   // Realtime subscription para wallet
   useEffect(() => {
-    if (!clientId) return
+    if (!clientId) return;
 
     const channel = supabase
-      .channel('client-wallet')
+      .channel("client-wallet")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'client_wallet',
+          event: "*",
+          schema: "public",
+          table: "client_wallet",
           filter: `client_id=eq.${clientId}`,
         },
         (payload) => {
-          console.log('💰 Mudança no wallet recebida:', payload)
-          
-          if (payload.eventType === 'UPDATE' && payload.new) {
-            setCashbackBalance((payload.new as any).balance_cents || 0)
-          } else if (payload.eventType === 'INSERT' && payload.new) {
-            setCashbackBalance((payload.new as any).balance_cents || 0)
+          console.log("💰 Mudança no wallet recebida:", payload);
+
+          if (payload.eventType === "UPDATE" && payload.new) {
+            setCashbackBalance((payload.new as any).balance_cents || 0);
+          } else if (payload.eventType === "INSERT" && payload.new) {
+            setCashbackBalance((payload.new as any).balance_cents || 0);
           }
         }
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [clientId])
+      supabase.removeChannel(channel);
+    };
+  }, [clientId]);
 
   const client = useMemo(() => {
-    return clients.find((c) => c.id === clientId)
-  }, [clients, clientId])
+    return clients.find((c) => c.id === clientId);
+  }, [clients, clientId]);
 
-  const userName = currentUser?.fullName || client?.name || 'Usuário'
-  const userRole = currentUser?.role || ''
-  const avatarUrl = currentUser?.avatarUrl || ''
+  const userName = currentUser?.fullName || client?.name || "Usuário";
+  const userRole = currentUser?.role || "";
+  const avatarUrl = currentUser?.avatarUrl || "";
   const initials = userName
-    .split(' ')
+    .split(" ")
     .map((p) => p[0])
-    .join('')
-    .slice(0, 2)
+    .join("")
+    .slice(0, 2);
 
-  const cashbackFormatted = (cashbackBalance / 100).toFixed(2)
-  const [showBookingModal, setShowBookingModal] = useState(false)
+  const cashbackFormatted = (cashbackBalance / 100).toFixed(2);
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-[#ffb3a7] via-[#ffc78f] to-[#ffe7a3] text-gray-900 font-sans overflow-hidden">
@@ -188,7 +190,7 @@ export function ClientPanel() {
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6 py-8 space-y-6">
-        <Header 
+        <Header
           userName={userName}
           userRole={userRole}
           avatarUrl={avatarUrl}
@@ -225,85 +227,86 @@ export function ClientPanel() {
 
             {/* Bloco 2: Informações do Cliente */}
             {clientId ? (
-              <ClientInfoCard 
-                client={client || {
-                  id: clientId,
-                  name: currentUser?.fullName || 'Cliente',
-                  email: currentUser?.email || '',
-                  phone: (currentUser as any)?.phone || '',
-                }}
+              <ClientInfoCard
+                client={
+                  client || {
+                    id: clientId,
+                    name: currentUser?.fullName || "Cliente",
+                    email: currentUser?.email || "",
+                    phone: (currentUser as any)?.phone || "",
+                  }
+                }
                 clientId={clientId}
                 onUpdate={async (updatedClient) => {
                   // Validações
                   if (!validatePhone(updatedClient.phone)) {
-                    toast.error('Telefone inválido. Use pelo menos 10 dígitos.')
-                    throw new Error('Telefone inválido')
+                    toast.error("Telefone inválido. Use pelo menos 10 dígitos.");
+                    throw new Error("Telefone inválido");
                   }
 
                   if (updatedClient.email && !validateEmail(updatedClient.email)) {
-                    toast.error('Email inválido.')
-                    throw new Error('Email inválido')
+                    toast.error("Email inválido.");
+                    throw new Error("Email inválido");
                   }
 
                   try {
                     // Buscar clinic_id do cliente
                     const { data: clientData } = await supabase
-                      .from('clients')
-                      .select('clinic_id')
-                      .eq('id', clientId)
-                      .single()
+                      .from("clients")
+                      .select("clinic_id")
+                      .eq("id", clientId)
+                      .single();
 
-                    const clinicId = clientData?.clinic_id || currentUser?.clinicId
+                    const clinicId = clientData?.clinic_id || currentUser?.clinicId;
 
                     // Atualizar no banco (tabela clients)
                     const { error: clientError } = await supabase
-                      .from('clients')
+                      .from("clients")
                       .update({
                         full_name: updatedClient.name,
                         email: updatedClient.email || null,
                         phone: updatedClient.phone,
                       })
-                      .eq('id', clientId)
+                      .eq("id", clientId);
 
                     if (clientError) {
                       // Se registro não existe, criar
-                      if (clientError.code === 'PGRST116' || clientError.code === '42P01') {
-                        const { error: insertError } = await supabase
-                          .from('clients')
-                          .insert({
-                            id: clientId,
-                            clinic_id: clinicId || currentUser?.clinicId || '',
-                            full_name: updatedClient.name,
-                            email: updatedClient.email || null,
-                            phone: updatedClient.phone,
-                          })
+                      if (clientError.code === "PGRST116" || clientError.code === "42P01") {
+                        const { error: insertError } = await supabase.from("clients").insert({
+                          id: clientId,
+                          clinic_id: clinicId || currentUser?.clinicId || "",
+                          full_name: updatedClient.name,
+                          email: updatedClient.email || null,
+                          phone: updatedClient.phone,
+                        });
 
-                        if (insertError) throw insertError
+                        if (insertError) throw insertError;
                       } else {
-                        throw clientError
+                        throw clientError;
                       }
                     }
-                    
+
                     // Também atualizar no profile
                     const { error: profileError } = await supabase
-                      .from('profiles')
+                      .from("profiles")
                       .update({
                         full_name: updatedClient.name,
                         phone: updatedClient.phone,
                       })
-                      .eq('id', clientId)
+                      .eq("id", clientId);
 
-                    if (profileError && profileError.code !== 'PGRST116') {
-                      console.warn('Erro ao atualizar profile:', profileError)
+                    if (profileError && profileError.code !== "PGRST116") {
+                      console.warn("Erro ao atualizar profile:", profileError);
                       // Não é crítico, continuar
                     }
 
-                    toast.success('Informações atualizadas com sucesso!')
+                    toast.success("Informações atualizadas com sucesso!");
                   } catch (err: any) {
-                    console.error('Erro ao atualizar cliente:', err)
-                    const message = err.message || 'Erro ao atualizar informações. Tente novamente.'
-                    toast.error(message)
-                    throw err
+                    console.error("Erro ao atualizar cliente:", err);
+                    const message =
+                      err.message || "Erro ao atualizar informações. Tente novamente.";
+                    toast.error(message);
+                    throw err;
                   }
                 }}
               />
@@ -321,25 +324,25 @@ export function ClientPanel() {
           isOpen={profileModal}
           onClose={() => setProfileModal(false)}
           user={{
-            name: currentUser?.fullName || '',
-            email: currentUser?.email || '',
-            role: currentUser?.role || '',
+            name: currentUser?.fullName || "",
+            email: currentUser?.email || "",
+            role: currentUser?.role || "",
             avatarUrl: avatarUrl,
           }}
           onSave={async (name, avatar) => {
             try {
-              await updateUserProfile({ fullName: name, avatarUrl: avatar })
-              await new Promise(resolve => setTimeout(resolve, 100))
-              setProfileModal(false)
-              toast.success('Perfil atualizado com sucesso!')
+              await updateUserProfile({ fullName: name, avatarUrl: avatar });
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              setProfileModal(false);
+              toast.success("Perfil atualizado com sucesso!");
             } catch (error) {
-              console.error('Erro ao salvar perfil:', error)
-              toast.error('Erro ao salvar perfil. Tente novamente.')
-              throw error
+              console.error("Erro ao salvar perfil:", error);
+              toast.error("Erro ao salvar perfil. Tente novamente.");
+              throw error;
             }
           }}
           onLogout={async () => {
-            await signOut()
+            await signOut();
           }}
         />
       )}
@@ -349,12 +352,12 @@ export function ClientPanel() {
         <ClientBookingView
           onClose={() => setShowBookingModal(false)}
           onSuccess={() => {
-            loadClientData() // Recarregar dados após agendamento
+            loadClientData(); // Recarregar dados após agendamento
           }}
         />
       )}
     </div>
-  )
+  );
 }
 
 function Header({
@@ -366,13 +369,13 @@ function Header({
   onProfileClick,
   onLogout,
 }: {
-  userName: string
-  userRole: string
-  avatarUrl: string
-  initials: string
-  cashbackBalance: string
-  onProfileClick: () => void
-  onLogout: () => void
+  userName: string;
+  userRole: string;
+  avatarUrl: string;
+  initials: string;
+  cashbackBalance: string;
+  onProfileClick: () => void;
+  onLogout: () => void;
 }) {
   return (
     <div className="flex items-center justify-between">
@@ -386,24 +389,28 @@ function Header({
           <p className="text-xs text-green-700 font-semibold">Cashback</p>
           <p className="text-lg font-bold text-green-700">R$ {cashbackBalance}</p>
         </div>
-        
+
         <button className="h-11 w-11 rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 shadow-lg flex items-center justify-center text-gray-700">
           <Bell className="h-5 w-5" />
         </button>
-        
+
         <div
           className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/70 border border-white/60 shadow cursor-pointer hover:bg-white/90 transition"
           onClick={onProfileClick}
         >
           <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-200 border border-white/60 shadow-inner flex items-center justify-center text-sm font-semibold text-gray-700">
-            {avatarUrl ? <img src={avatarUrl} alt={userName} className="h-full w-full object-cover" /> : initials}
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={userName} className="h-full w-full object-cover" />
+            ) : (
+              initials
+            )}
           </div>
           <div className="hidden sm:flex flex-col text-left">
             <span className="text-sm font-semibold text-gray-900">{userName}</span>
             <span className="text-xs text-gray-500">Perfil</span>
           </div>
         </div>
-        
+
         <button
           className="h-11 px-4 rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 shadow-lg text-sm font-semibold text-gray-800 flex items-center gap-2"
           onClick={onLogout}
@@ -413,55 +420,63 @@ function Header({
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 function CurrentAppointmentCard({ appointment }: { appointment: any }) {
-  const [timerSeconds, setTimerSeconds] = useState(0)
+  const [timerSeconds, setTimerSeconds] = useState(0);
 
   useEffect(() => {
     // Usar startTime conforme schema do banco (camelCase)
-    const startTime = appointment.startTime
-    if (!startTime) return
+    const startTime = appointment.startTime;
+    if (!startTime) return;
 
     const calculateTime = () => {
-      const start = new Date(startTime)
-      const now = new Date()
-      const diff = differenceInMinutes(now, start)
-      setTimerSeconds(Math.max(0, diff * 60))
-    }
+      const start = new Date(startTime);
+      const now = new Date();
+      const diff = differenceInMinutes(now, start);
+      setTimerSeconds(Math.max(0, diff * 60));
+    };
 
-    calculateTime()
-    const interval = setInterval(calculateTime, 1000)
-    return () => clearInterval(interval)
-  }, [appointment.startTime])
+    calculateTime();
+    const interval = setInterval(calculateTime, 1000);
+    return () => clearInterval(interval);
+  }, [appointment.startTime]);
 
-  const serviceName = appointment.service?.name || 'Serviço'
-  const professionalName = appointment.professional?.full_name || 'Profissional'
-  const servicePrice = (appointment.service?.price || 0) / 100 // Converter centavos para reais
-  const formattedPrice = `R$ ${servicePrice.toFixed(2)}`
+  const serviceName = appointment.service?.name || "Serviço";
+  const professionalName = appointment.professional?.full_name || "Profissional";
+  const servicePrice = (appointment.service?.price || 0) / 100; // Converter centavos para reais
+  const formattedPrice = `R$ ${servicePrice.toFixed(2)}`;
 
   // Timeline steps - usando campos do schema correto
-  const checkInTime = appointment.checkInTime || null
-  const startTime = appointment.startTime || null
-  
-  const steps = [
-    { key: 'checkin', label: 'Check-in', completed: !!checkInTime },
-    { key: 'start', label: 'Início', completed: !!startTime },
-    { key: 'notes', label: 'Observações/Anamnese', completed: appointment.status === 'medical_done' },
-    { key: 'checkout', label: 'Check-out/Pagamento', completed: appointment.status === 'completed' },
-    { key: 'review', label: 'Avaliação', completed: false }, // TODO: Implementar quando tiver tabela appointment_ratings
-  ]
+  const checkInTime = appointment.checkInTime || null;
+  const startTime = appointment.startTime || null;
 
-  const activeStepIndex = steps.findIndex((s) => !s.completed)
-  const currentStep = activeStepIndex === -1 ? steps.length - 1 : activeStepIndex
+  const steps = [
+    { key: "checkin", label: "Check-in", completed: !!checkInTime },
+    { key: "start", label: "Início", completed: !!startTime },
+    {
+      key: "notes",
+      label: "Observações/Anamnese",
+      completed: appointment.status === "medical_done",
+    },
+    {
+      key: "checkout",
+      label: "Check-out/Pagamento",
+      completed: appointment.status === "completed",
+    },
+    { key: "review", label: "Avaliação", completed: false }, // TODO: Implementar quando tiver tabela appointment_ratings
+  ];
+
+  const activeStepIndex = steps.findIndex((s) => !s.completed);
+  const currentStep = activeStepIndex === -1 ? steps.length - 1 : activeStepIndex;
 
   const formatTimer = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
-  }
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
 
   return (
     <div className="bg-gray-900 rounded-3xl p-6 text-white shadow-xl">
@@ -495,9 +510,9 @@ function CurrentAppointmentCard({ appointment }: { appointment: any }) {
       <div className="relative">
         <div className="flex items-center justify-between">
           {steps.map((step, index) => {
-            const isActive = index === currentStep
-            const isCompleted = step.completed
-            const progress = index <= currentStep ? 100 : 0
+            const isActive = index === currentStep;
+            const isCompleted = step.completed;
+            const progress = index <= currentStep ? 100 : 0;
 
             return (
               <div key={step.key} className="flex-1 flex flex-col items-center relative">
@@ -515,10 +530,10 @@ function CurrentAppointmentCard({ appointment }: { appointment: any }) {
                 <div
                   className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
                     isCompleted
-                      ? 'bg-orange-500 border-orange-500'
+                      ? "bg-orange-500 border-orange-500"
                       : isActive
-                      ? 'bg-orange-500/20 border-orange-500 ring-4 ring-orange-500/20'
-                      : 'bg-gray-800 border-gray-700'
+                        ? "bg-orange-500/20 border-orange-500 ring-4 ring-orange-500/20"
+                        : "bg-gray-800 border-gray-700"
                   }`}
                 >
                   {isCompleted ? (
@@ -531,135 +546,150 @@ function CurrentAppointmentCard({ appointment }: { appointment: any }) {
                 {/* Label */}
                 <p
                   className={`mt-2 text-xs text-center max-w-[100px] ${
-                    isActive || isCompleted ? 'text-orange-400 font-semibold' : 'text-gray-400'
+                    isActive || isCompleted ? "text-orange-400 font-semibold" : "text-gray-400"
                   }`}
                 >
                   {step.label}
                 </p>
               </div>
-            )
+            );
           })}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-function ClientInfoCard({ client, clientId: propClientId, onUpdate }: { client: any; clientId: string | undefined; onUpdate: (client: any) => Promise<void> }) {
-  const { currentUser } = useScheduler()
-  const toast = useToast()
-  const clientId = propClientId || currentUser?.id || client.id
-  const [isEditing, setIsEditing] = useState(false)
-  const [isUpdating, setIsUpdating] = useState(false)
+function ClientInfoCard({
+  client,
+  clientId: propClientId,
+  onUpdate,
+}: {
+  client: any;
+  clientId: string | undefined;
+  onUpdate: (client: any) => Promise<void>;
+}) {
+  const { currentUser } = useScheduler();
+  const toast = useToast();
+  const clientId = propClientId || currentUser?.id || client.id;
+  const [isEditing, setIsEditing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [formData, setFormData] = useState({
-    name: client.name || client.full_name || '',
-    email: client.email || '',
-    phone: client.phone || client.mobile || '',
-  })
-  const [anamnesis, setAnamnesis] = useState<any>(null)
-  const [appointmentHistory, setAppointmentHistory] = useState<any[]>([])
-  const [topServices, setTopServices] = useState<any[]>([])
-  const [loadingData, setLoadingData] = useState(true)
+    name: client.name || client.full_name || "",
+    email: client.email || "",
+    phone: client.phone || client.mobile || "",
+  });
+  const [anamnesis, setAnamnesis] = useState<any>(null);
+  const [appointmentHistory, setAppointmentHistory] = useState<any[]>([]);
+  const [topServices, setTopServices] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   // Carregar dados reais do banco
   useEffect(() => {
     const loadClientData = async () => {
       if (!clientId) {
-        setLoadingData(false)
-        return
+        setLoadingData(false);
+        return;
       }
 
-      setLoadingData(true)
+      setLoadingData(true);
       try {
         // 1. Buscar anamnese (se existir tabela client_anamnesis)
         try {
           const { data: anamnesisData } = await supabase
-            .from('client_anamnesis')
-            .select('*')
-            .eq('client_id', clientId)
-            .maybeSingle()
+            .from("client_anamnesis")
+            .select("*")
+            .eq("client_id", clientId)
+            .maybeSingle();
 
           if (anamnesisData) {
-            setAnamnesis(anamnesisData)
+            setAnamnesis(anamnesisData);
           }
         } catch (err) {
           // Tabela pode não existir ainda, ignorar
-          console.warn('Tabela client_anamnesis não disponível:', err)
+          console.warn("Tabela client_anamnesis não disponível:", err);
         }
 
         // 2. Buscar histórico de agendamentos concluídos
         const { data: historyData, error: historyError } = await supabase
-          .from('appointments')
-          .select(`
+          .from("appointments")
+          .select(
+            `
             id,
             start_time,
             status,
             cashback_earned_cents,
             service:services(id, name, price),
             professional:profiles!appointments_professional_id_fkey(id, full_name)
-          `)
-          .eq('client_id', clientId)
-          .eq('status', 'completed')
-          .order('start_time', { ascending: false })
-          .limit(20)
+          `
+          )
+          .eq("client_id", clientId)
+          .eq("status", "completed")
+          .order("start_time", { ascending: false })
+          .limit(20);
 
         if (historyError) {
-          console.error('Erro ao buscar histórico:', historyError)
+          console.error("Erro ao buscar histórico:", historyError);
         } else {
-          setAppointmentHistory(historyData || [])
+          setAppointmentHistory(historyData || []);
         }
 
         // 3. Calcular serviços mais executados com cashback
         const { data: servicesData, error: servicesError } = await supabase
-          .from('appointments')
-          .select(`
+          .from("appointments")
+          .select(
+            `
             service_id,
             cashback_earned_cents,
             service:services(id, name)
-          `)
-          .eq('client_id', clientId)
-          .eq('status', 'completed')
-          .not('service_id', 'is', null)
+          `
+          )
+          .eq("client_id", clientId)
+          .eq("status", "completed")
+          .not("service_id", "is", null);
 
         if (servicesError) {
-          console.error('Erro ao buscar serviços:', servicesError)
+          console.error("Erro ao buscar serviços:", servicesError);
         } else if (servicesData) {
           // Agrupar por service_id e calcular totais
-          const serviceMap = new Map<string, { name: string; count: number; cashback_earned_cents: number }>()
-          
+          const serviceMap = new Map<
+            string,
+            { name: string; count: number; cashback_earned_cents: number }
+          >();
+
           servicesData.forEach((apt: any) => {
-            if (!apt.service_id || !apt.service) return
-            
+            if (!apt.service_id || !apt.service) return;
+
             const existing = serviceMap.get(apt.service_id) || {
               name: apt.service.name,
               count: 0,
               cashback_earned_cents: 0,
-            }
-            
-            existing.count++
-            existing.cashback_earned_cents += apt.cashback_earned_cents || 0
-            
-            serviceMap.set(apt.service_id, existing)
-          })
+            };
+
+            existing.count++;
+            existing.cashback_earned_cents += apt.cashback_earned_cents || 0;
+
+            serviceMap.set(apt.service_id, existing);
+          });
 
           // Converter para array e ordenar por count
           const topServicesList = Array.from(serviceMap.values())
             .map((svc, idx) => ({ id: `svc-${idx}`, ...svc }))
             .sort((a, b) => b.count - a.count)
-            .slice(0, 5)
+            .slice(0, 5);
 
-          setTopServices(topServicesList)
+          setTopServices(topServicesList);
         }
       } catch (err) {
-        console.error('Erro ao carregar dados do cliente:', err)
-        toast.error('Erro ao carregar histórico. Tente recarregar a página.')
+        console.error("Erro ao carregar dados do cliente:", err);
+        toast.error("Erro ao carregar histórico. Tente recarregar a página.");
       } finally {
-        setLoadingData(false)
+        setLoadingData(false);
       }
-    }
+    };
 
-    loadClientData()
-  }, [clientId, toast])
+    loadClientData();
+  }, [clientId, toast]);
 
   return (
     <div className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl rounded-3xl p-6">
@@ -711,38 +741,38 @@ function ClientInfoCard({ client, clientId: propClientId, onUpdate }: { client: 
             <button
               onClick={async () => {
                 if (!formData.name.trim()) {
-                  toast.error('Nome é obrigatório')
-                  return
+                  toast.error("Nome é obrigatório");
+                  return;
                 }
 
                 if (!formData.phone.trim()) {
-                  toast.error('Telefone é obrigatório')
-                  return
+                  toast.error("Telefone é obrigatório");
+                  return;
                 }
 
-                setIsUpdating(true)
+                setIsUpdating(true);
                 try {
-                  await onUpdate(formData)
-                  setIsEditing(false)
+                  await onUpdate(formData);
+                  setIsEditing(false);
                 } catch (err) {
                   // Erro já foi tratado no onUpdate
                 } finally {
-                  setIsUpdating(false)
+                  setIsUpdating(false);
                 }
               }}
               disabled={isUpdating}
               className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isUpdating ? 'Salvando...' : 'Salvar'}
+              {isUpdating ? "Salvando..." : "Salvar"}
             </button>
             <button
               onClick={() => {
                 setFormData({
-                  name: client.name || client.full_name || '',
-                  email: client.email || '',
-                  phone: client.phone || client.mobile || '',
-                })
-                setIsEditing(false)
+                  name: client.name || client.full_name || "",
+                  email: client.email || "",
+                  phone: client.phone || client.mobile || "",
+                });
+                setIsEditing(false);
               }}
               disabled={isUpdating}
               className="px-4 py-2 rounded-xl bg-white/70 border border-white/60 text-gray-800 text-sm font-semibold hover:bg-white transition disabled:opacity-50"
@@ -755,15 +785,21 @@ function ClientInfoCard({ client, clientId: propClientId, onUpdate }: { client: 
         <div className="space-y-4">
           <div>
             <p className="text-sm text-gray-500">Nome</p>
-            <p className="text-base font-semibold text-gray-900">{client.name || client.full_name || 'Não informado'}</p>
+            <p className="text-base font-semibold text-gray-900">
+              {client.name || client.full_name || "Não informado"}
+            </p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Email</p>
-            <p className="text-base font-semibold text-gray-900">{client.email || 'Não informado'}</p>
+            <p className="text-base font-semibold text-gray-900">
+              {client.email || "Não informado"}
+            </p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Telefone</p>
-            <p className="text-base font-semibold text-gray-900">{client.phone || client.mobile || 'Não informado'}</p>
+            <p className="text-base font-semibold text-gray-900">
+              {client.phone || client.mobile || "Não informado"}
+            </p>
           </div>
         </div>
       )}
@@ -778,13 +814,21 @@ function ClientInfoCard({ client, clientId: propClientId, onUpdate }: { client: 
             {anamnesis.allergies && anamnesis.allergies.length > 0 && (
               <div>
                 <p className="text-sm font-semibold text-gray-700">Alergias</p>
-                <p className="text-sm text-gray-600">{Array.isArray(anamnesis.allergies) ? anamnesis.allergies.join(', ') : anamnesis.allergies}</p>
+                <p className="text-sm text-gray-600">
+                  {Array.isArray(anamnesis.allergies)
+                    ? anamnesis.allergies.join(", ")
+                    : anamnesis.allergies}
+                </p>
               </div>
             )}
             {anamnesis.medications && anamnesis.medications.length > 0 && (
               <div>
                 <p className="text-sm font-semibold text-gray-700">Medicamentos</p>
-                <p className="text-sm text-gray-600">{Array.isArray(anamnesis.medications) ? anamnesis.medications.join(', ') : anamnesis.medications}</p>
+                <p className="text-sm text-gray-600">
+                  {Array.isArray(anamnesis.medications)
+                    ? anamnesis.medications.join(", ")
+                    : anamnesis.medications}
+                </p>
               </div>
             )}
             {anamnesis.notes && (
@@ -810,20 +854,17 @@ function ClientInfoCard({ client, clientId: propClientId, onUpdate }: { client: 
         ) : appointmentHistory.length > 0 ? (
           <div className="space-y-2">
             {appointmentHistory.map((apt: any) => (
-              <div
-                key={apt.id}
-                className="bg-white/40 rounded-xl p-3 border border-white/60"
-              >
+              <div key={apt.id} className="bg-white/40 rounded-xl p-3 border border-white/60">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-gray-900">
-                      {apt.service?.name || 'Serviço'}
+                      {apt.service?.name || "Serviço"}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       {format(new Date(apt.start_time), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
-                      Profissional: {apt.professional?.full_name || 'Não informado'}
+                      Profissional: {apt.professional?.full_name || "Não informado"}
                     </p>
                   </div>
                   <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
@@ -856,10 +897,7 @@ function ClientInfoCard({ client, clientId: propClientId, onUpdate }: { client: 
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Serviços Mais Executados</h3>
           <div className="space-y-2">
             {topServices.map((service, index) => (
-              <div
-                key={service.id}
-                className="bg-white/40 rounded-xl p-3 border border-white/60"
-              >
+              <div key={service.id} className="bg-white/40 rounded-xl p-3 border border-white/60">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-sm font-semibold">
@@ -867,7 +905,9 @@ function ClientInfoCard({ client, clientId: propClientId, onUpdate }: { client: 
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{service.name}</p>
-                      <p className="text-xs text-gray-500">{service.count} vez{service.count > 1 ? 'es' : ''}</p>
+                      <p className="text-xs text-gray-500">
+                        {service.count} vez{service.count > 1 ? "es" : ""}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -889,8 +929,7 @@ function ClientInfoCard({ client, clientId: propClientId, onUpdate }: { client: 
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default ClientPanel
-
+export default ClientPanel;

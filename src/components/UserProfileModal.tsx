@@ -1,117 +1,119 @@
-import { useState, useRef, useEffect } from 'react'
-import { createPortal } from 'react-dom'
-import { LogOut, Upload } from 'lucide-react'
-import { useScheduler } from '../context/SchedulerContext'
-import { supabase } from '../lib/supabase'
-import { useToast } from './ui/Toast'
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { LogOut, Upload } from "lucide-react";
+import { useScheduler } from "../context/SchedulerContext";
+import { supabase } from "../lib/supabase";
+import { useToast } from "./ui/Toast";
 
 type Props = {
-  isOpen: boolean
-  onClose: () => void
-  user: { name: string; email: string; role: string; avatarUrl?: string }
-  onSave: (name: string, avatarUrl?: string) => Promise<void> | void
-  onLogout: () => Promise<void> | void
-}
+  isOpen: boolean;
+  onClose: () => void;
+  user: { name: string; email: string; role: string; avatarUrl?: string };
+  onSave: (name: string, avatarUrl?: string) => Promise<void> | void;
+  onLogout: () => Promise<void> | void;
+};
 
 export default function UserProfileModal({ isOpen, onClose, user, onSave, onLogout }: Props) {
-  const { currentUser } = useScheduler()
-  const toast = useToast()
-  const [name, setName] = useState(user.name)
-  const [avatar, setAvatar] = useState(user.avatarUrl || '')
-  const [uploading, setUploading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { currentUser } = useScheduler();
+  const toast = useToast();
+  const [name, setName] = useState(user.name);
+  const [avatar, setAvatar] = useState(user.avatarUrl || "");
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Atualizar estado quando user mudar (quando modal abrir)
   useEffect(() => {
     if (isOpen) {
-      setName(user.name)
-      setAvatar(user.avatarUrl || '')
+      setName(user.name);
+      setAvatar(user.avatarUrl || "");
     }
-  }, [isOpen, user.name, user.avatarUrl])
+  }, [isOpen, user.name, user.avatarUrl]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const file = event.target.files?.[0];
+    if (!file) return;
 
     // Validar tipo de arquivo
-    if (!file.type.startsWith('image/')) {
-      toast.error('Por favor, selecione uma imagem válida')
-      return
+    if (!file.type.startsWith("image/")) {
+      toast.error("Por favor, selecione uma imagem válida");
+      return;
     }
 
     // Validar tamanho (máximo 2MB para base64, 5MB para storage)
-    const maxSize = 2 * 1024 * 1024 // 2MB
+    const maxSize = 2 * 1024 * 1024; // 2MB
     if (file.size > maxSize) {
-      toast.error('A imagem deve ter no máximo 2MB')
-      return
+      toast.error("A imagem deve ter no máximo 2MB");
+      return;
     }
 
     if (!currentUser?.id) {
-      toast.error('Usuário não encontrado')
-      return
+      toast.error("Usuário não encontrado");
+      return;
     }
 
-    setUploading(true)
+    setUploading(true);
     try {
-      let imageUrl = ''
+      let imageUrl = "";
 
       // Tentar fazer upload para Supabase Storage primeiro
       try {
-        const fileExt = file.name.split('.').pop()
-        const fileName = `avatar-${Date.now()}.${fileExt}`
-        const filePath = `${currentUser.id}/${fileName}`
+        const fileExt = file.name.split(".").pop();
+        const fileName = `avatar-${Date.now()}.${fileExt}`;
+        const filePath = `${currentUser.id}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('avatars')
+          .from("avatars")
           .upload(filePath, file, {
-            cacheControl: '3600',
+            cacheControl: "3600",
             upsert: true,
-          })
+          });
 
         if (!uploadError) {
           // Upload bem-sucedido, obter URL pública
-          const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath)
-          imageUrl = publicUrl
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("avatars").getPublicUrl(filePath);
+          imageUrl = publicUrl;
         } else {
           // Se o bucket não existir ou houver erro, usar base64 como fallback
-          throw uploadError
+          throw uploadError;
         }
       } catch (storageError: any) {
         // Se falhar (bucket não existe, etc), usar base64
-        console.warn('Storage não disponível, usando base64:', storageError)
-        
-        const reader = new FileReader()
+        console.warn("Storage não disponível, usando base64:", storageError);
+
+        const reader = new FileReader();
         imageUrl = await new Promise<string>((resolve, reject) => {
           reader.onload = () => {
-            const result = reader.result as string
-            resolve(result)
-          }
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
+            const result = reader.result as string;
+            resolve(result);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
       }
 
       // Salvar a URL (storage ou base64) no perfil
-      setAvatar(imageUrl)
-      toast.success('Imagem carregada com sucesso!')
+      setAvatar(imageUrl);
+      toast.success("Imagem carregada com sucesso!");
     } catch (error) {
-      console.error('Erro ao processar imagem:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao processar a imagem'
-      toast.error(errorMessage)
+      console.error("Erro ao processar imagem:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao processar a imagem";
+      toast.error(errorMessage);
     } finally {
-      setUploading(false)
+      setUploading(false);
       if (fileInputRef.current) {
-        fileInputRef.current.value = ''
+        fileInputRef.current.value = "";
       }
     }
-  }
+  };
 
   const handleUploadClick = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/95 px-4">
@@ -125,7 +127,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, onLogo
 
         <div className="flex items-center gap-4">
           <div className="relative">
-          <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-200 border border-white/70 shadow-inner flex items-center justify-center text-lg font-semibold text-gray-700">
+            <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-200 border border-white/70 shadow-inner flex items-center justify-center text-lg font-semibold text-gray-700">
               {avatar ? (
                 <img src={avatar} alt={name} className="h-full w-full object-cover" />
               ) : (
@@ -160,14 +162,14 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, onLogo
                   </>
                 ) : (
                   <>
-                <Upload className="h-4 w-4" />
+                    <Upload className="h-4 w-4" />
                     Fazer Upload
                   </>
                 )}
               </button>
               {avatar && (
                 <button
-                  onClick={() => setAvatar('')}
+                  onClick={() => setAvatar("")}
                   className="px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-semibold hover:bg-red-100 transition"
                 >
                   Remover
@@ -209,7 +211,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, onLogo
 
         <div className="flex flex-col sm:flex-row justify-between gap-3">
           <div className="text-xs text-gray-500">
-            Último login: {currentUser?.email ? currentUser.email : 'N/D'}
+            Último login: {currentUser?.email ? currentUser.email : "N/D"}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -222,15 +224,15 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, onLogo
               className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold shadow-lg shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={saving}
               onClick={async () => {
-                setSaving(true)
+                setSaving(true);
                 try {
-                await onSave(name, avatar)
-                  toast.success('Perfil atualizado com sucesso!')
+                  await onSave(name, avatar);
+                  toast.success("Perfil atualizado com sucesso!");
                   // Aguardar um pouco antes de fechar para garantir que o estado foi atualizado
-                  await new Promise(resolve => setTimeout(resolve, 300))
+                  await new Promise((resolve) => setTimeout(resolve, 300));
                 } catch (error) {
-                  toast.error(error instanceof Error ? error.message : 'Erro ao salvar perfil')
-                  setSaving(false)
+                  toast.error(error instanceof Error ? error.message : "Erro ao salvar perfil");
+                  setSaving(false);
                 }
               }}
             >
@@ -240,13 +242,13 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, onLogo
                   Salvando...
                 </span>
               ) : (
-                'Salvar Alterações'
+                "Salvar Alterações"
               )}
             </button>
             <button
               className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold shadow-lg shadow-red-500/30 flex items-center gap-2"
               onClick={async () => {
-                await onLogout()
+                await onLogout();
               }}
             >
               <LogOut className="h-4 w-4" />
@@ -257,16 +259,15 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, onLogo
       </div>
     </div>,
     document.body
-  )
+  );
 }
 
 function initials(name: string) {
-  const parts = name.trim().split(' ').filter(Boolean)
-  if (!parts.length) return 'U'
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (!parts.length) return "U";
   return parts
     .map((p) => p[0])
-    .join('')
+    .join("")
     .slice(0, 2)
-    .toUpperCase()
+    .toUpperCase();
 }
-

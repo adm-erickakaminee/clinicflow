@@ -1,30 +1,30 @@
-import { useState, useEffect } from 'react'
-import { Bell, LogOut } from 'lucide-react'
-import { useScheduler } from '../context/SchedulerContext'
-import UserProfileModal from '../components/UserProfileModal'
-import { PanelProvider, usePanelContext } from '../context/PanelContext'
-import { supabase } from '../lib/supabase'
-import { useToast } from '../components/ui/Toast'
-import { UnifiedCalendar } from '../components/Calendar/UnifiedCalendar'
-import { ProfessionalRequestQueueCard } from '../components/Professional/ProfessionalRequestQueueCard'
-import { ProfessionalAttendanceCard } from '../components/Professional/ProfessionalAttendanceCard'
-import { ProfessionalClientsView } from '../components/Professional/ProfessionalClientsView'
-import { ProfessionalAnalyticsView } from '../components/Professional/ProfessionalAnalyticsView'
-import { ProfessionalGoalsView } from '../components/Professional/ProfessionalGoalsView'
+import { useState, useEffect } from "react";
+import { Bell, LogOut } from "lucide-react";
+import { useScheduler } from "../context/SchedulerContext";
+import UserProfileModal from "../components/UserProfileModal";
+import { PanelProvider, usePanelContext } from "../context/PanelContext";
+import { supabase } from "../lib/supabase";
+import { useToast } from "../components/ui/Toast";
+import { UnifiedCalendar } from "../components/Calendar/UnifiedCalendar";
+import { ProfessionalRequestQueueCard } from "../components/Professional/ProfessionalRequestQueueCard";
+import { ProfessionalAttendanceCard } from "../components/Professional/ProfessionalAttendanceCard";
+import { ProfessionalClientsView } from "../components/Professional/ProfessionalClientsView";
+import { ProfessionalAnalyticsView } from "../components/Professional/ProfessionalAnalyticsView";
+import { ProfessionalGoalsView } from "../components/Professional/ProfessionalGoalsView";
 
 // Manter compatibilidade - usar PanelContext internamente
 export function useDashboardContext() {
-  const ctx = usePanelContext()
+  const ctx = usePanelContext();
   return {
     activeTab: ctx.activeTab,
     setActiveTab: ctx.setActiveTab,
     selectedProfessional: ctx.selectedFilter,
     setSelectedProfessional: ctx.setSelectedFilter,
-  }
+  };
 }
 
 export function ProfessionalPanel() {
-  const [activeTabSnapshot, setActiveTabSnapshot] = useState<string | null>(null)
+  const [activeTabSnapshot, setActiveTabSnapshot] = useState<string | null>(null);
 
   return (
     <PanelProvider filterType="none" defaultTab="Agenda e Solicitações" defaultFilter="all">
@@ -45,20 +45,20 @@ export function ProfessionalPanel() {
         </div>
       </div>
     </PanelProvider>
-  )
+  );
 }
 
 function Header() {
-  const { currentUser, signOut, updateUserProfile } = useScheduler()
-  const [profileModal, setProfileModal] = useState(false)
-  const userName = currentUser?.fullName || 'Usuário'
-  const userRole = currentUser?.role || ''
-  const avatarUrl = currentUser?.avatarUrl || ''
+  const { currentUser, signOut, updateUserProfile } = useScheduler();
+  const [profileModal, setProfileModal] = useState(false);
+  const userName = currentUser?.fullName || "Usuário";
+  const userRole = currentUser?.role || "";
+  const avatarUrl = currentUser?.avatarUrl || "";
   const initials = userName
-    .split(' ')
+    .split(" ")
     .map((p) => p[0])
-    .join('')
-    .slice(0, 2)
+    .join("")
+    .slice(0, 2);
 
   return (
     <>
@@ -76,7 +76,11 @@ function Header() {
             onClick={() => setProfileModal(true)}
           >
             <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-200 border border-white/60 shadow-inner flex items-center justify-center text-sm font-semibold text-gray-700">
-              {avatarUrl ? <img src={avatarUrl} alt={userName} className="h-full w-full object-cover" /> : initials}
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={userName} className="h-full w-full object-cover" />
+              ) : (
+                initials
+              )}
             </div>
             <div className="hidden sm:flex flex-col text-left">
               <span className="text-sm font-semibold text-gray-900">{userName}</span>
@@ -98,121 +102,121 @@ function Header() {
           isOpen={profileModal}
           onClose={() => setProfileModal(false)}
           user={{
-            name: currentUser?.fullName || '',
-            email: currentUser?.email || '',
-            role: currentUser?.role || '',
+            name: currentUser?.fullName || "",
+            email: currentUser?.email || "",
+            role: currentUser?.role || "",
             avatarUrl: avatarUrl,
           }}
           onSave={async (name, avatar) => {
             try {
-              await updateUserProfile({ fullName: name, avatarUrl: avatar })
-              await new Promise(resolve => setTimeout(resolve, 100))
-              setProfileModal(false)
+              await updateUserProfile({ fullName: name, avatarUrl: avatar });
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              setProfileModal(false);
             } catch (error) {
-              console.error('Erro ao salvar perfil:', error)
-              throw error
+              console.error("Erro ao salvar perfil:", error);
+              throw error;
             }
           }}
           onLogout={async () => {
-            await signOut()
+            await signOut();
           }}
         />
       )}
     </>
-  )
+  );
 }
 
 function TopMenu({ onTabChange }: { onTabChange?: (tab: string) => void }) {
-  const { activeTab, setActiveTab } = usePanelContext()
-  
+  const { activeTab, setActiveTab } = usePanelContext();
+
   // Abas para Profissional
   const tabs = [
-    'Agenda e Solicitações',
-    'Atendimento',
-    'Clientes',
-    'Relatórios/KPIs',
-    'Metas e Finanças',
-    'Configurações'
-  ]
+    "Agenda e Solicitações",
+    "Atendimento",
+    "Clientes",
+    "Relatórios/KPIs",
+    "Metas e Finanças",
+    "Configurações",
+  ];
 
   return (
     <div className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl rounded-2xl px-3 py-2 flex items-center gap-2 flex-wrap">
       {tabs.map((item) => {
-        const active = activeTab === item
+        const active = activeTab === item;
         return (
           <button
             key={item}
             onClick={() => {
-              setActiveTab(item)
-              onTabChange?.(item)
+              setActiveTab(item);
+              onTabChange?.(item);
             }}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition border ${
               active
-                ? 'bg-gray-900 text-white border-gray-900 shadow-lg shadow-black/10'
-                : 'bg-white/60 text-gray-800 border-white/60 hover:bg-white/80'
+                ? "bg-gray-900 text-white border-gray-900 shadow-lg shadow-black/10"
+                : "bg-white/60 text-gray-800 border-white/60 hover:bg-white/80"
             }`}
           >
             {item}
           </button>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 function DashboardBody({
   activeTabSnapshot: _activeTabSnapshot,
 }: {
-  activeTabSnapshot: string | null
+  activeTabSnapshot: string | null;
 }) {
   return (
     <div className="grid grid-cols-1">
       <MainContent />
     </div>
-  )
+  );
 }
 
 function MainContent() {
-  const { activeTab } = usePanelContext()
-  const { currentUser } = useScheduler()
-  const [soloMode, setSoloMode] = useState(false)
-  const [gabyConfig, setGabyConfig] = useState<any>(null)
-  const [selectedDate, setSelectedDate] = useState(new Date())
+  const { activeTab } = usePanelContext();
+  const { currentUser } = useScheduler();
+  const [soloMode, setSoloMode] = useState(false);
+  const [gabyConfig, setGabyConfig] = useState<any>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const professionalId = currentUser?.id || ''
-  const clinicId = currentUser?.clinicId || ''
+  const professionalId = currentUser?.id || "";
+  const clinicId = currentUser?.clinicId || "";
 
   // Carregar configurações da clínica (solo mode, gaby config)
   useEffect(() => {
     const loadSettings = async () => {
-      if (!clinicId) return
+      if (!clinicId) return;
       try {
         const { data } = await supabase
-          .from('organization_settings')
-          .select('solo_mode, gaby_config')
-          .eq('clinic_id', clinicId)
-          .maybeSingle()
+          .from("organization_settings")
+          .select("solo_mode, gaby_config")
+          .eq("clinic_id", clinicId)
+          .maybeSingle();
 
         if (data) {
-          setSoloMode(Boolean(data.solo_mode))
-          setGabyConfig(data.gaby_config || null)
+          setSoloMode(Boolean(data.solo_mode));
+          setGabyConfig(data.gaby_config || null);
         }
       } catch (err) {
-        console.error('Erro ao carregar configurações:', err)
+        console.error("Erro ao carregar configurações:", err);
       }
-    }
-    loadSettings()
-  }, [clinicId])
+    };
+    loadSettings();
+  }, [clinicId]);
 
   if (!professionalId || !clinicId) {
     return (
       <div className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl rounded-3xl p-6">
         <p className="text-sm text-gray-600">Carregando informações do profissional...</p>
       </div>
-    )
+    );
   }
 
-  if (activeTab === 'Agenda e Solicitações') {
+  if (activeTab === "Agenda e Solicitações") {
     return (
       <div className="space-y-6">
         {/* Solicitações */}
@@ -228,10 +232,10 @@ function MainContent() {
           />
         </div>
       </div>
-    )
+    );
   }
 
-  if (activeTab === 'Atendimento') {
+  if (activeTab === "Atendimento") {
     return (
       <ProfessionalAttendanceCard
         professionalId={professionalId}
@@ -239,111 +243,96 @@ function MainContent() {
         soloMode={soloMode}
         gabyConfig={gabyConfig}
       />
-    )
+    );
   }
 
-  if (activeTab === 'Clientes') {
-    return (
-      <ProfessionalClientsView
-        professionalId={professionalId}
-        clinicId={clinicId}
-      />
-    )
+  if (activeTab === "Clientes") {
+    return <ProfessionalClientsView professionalId={professionalId} clinicId={clinicId} />;
   }
 
-  if (activeTab === 'Relatórios/KPIs') {
-    return (
-      <ProfessionalAnalyticsView
-        professionalId={professionalId}
-        clinicId={clinicId}
-      />
-    )
+  if (activeTab === "Relatórios/KPIs") {
+    return <ProfessionalAnalyticsView professionalId={professionalId} clinicId={clinicId} />;
   }
 
-  if (activeTab === 'Metas e Finanças') {
-    return (
-      <ProfessionalGoalsView
-        profileId={professionalId}
-        clinicId={clinicId}
-      />
-    )
+  if (activeTab === "Metas e Finanças") {
+    return <ProfessionalGoalsView profileId={professionalId} clinicId={clinicId} />;
   }
 
-  if (activeTab === 'Configurações') {
-    return <ProfessionalSettings />
+  if (activeTab === "Configurações") {
+    return <ProfessionalSettings />;
   }
 
-  return null
+  return null;
 }
 
 function ProfessionalSettings() {
-  const { currentUser } = useScheduler()
-  const toast = useToast()
-  const [cashbackEnabled, setCashbackEnabled] = useState(false)
-  const [cashbackPercent, setCashbackPercent] = useState<number>(0)
-  const [cashbackFixed, setCashbackFixed] = useState<number>(0)
-  const [cashbackMode, setCashbackMode] = useState<'percent' | 'fixed'>('percent')
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const { currentUser } = useScheduler();
+  const toast = useToast();
+  const [cashbackEnabled, setCashbackEnabled] = useState(false);
+  const [cashbackPercent, setCashbackPercent] = useState<number>(0);
+  const [cashbackFixed, setCashbackFixed] = useState<number>(0);
+  const [cashbackMode, setCashbackMode] = useState<"percent" | "fixed">("percent");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
-      if (!currentUser?.id) return
-      setLoading(true)
+      if (!currentUser?.id) return;
+      setLoading(true);
       try {
         // Buscar configurações de cashback do profissional
         const { data } = await supabase
-          .from('profiles')
-          .select('cashback_enabled, cashback_percent, cashback_fixed_cents, cashback_mode')
-          .eq('id', currentUser.id)
-          .maybeSingle()
+          .from("profiles")
+          .select("cashback_enabled, cashback_percent, cashback_fixed_cents, cashback_mode")
+          .eq("id", currentUser.id)
+          .maybeSingle();
 
         if (data) {
-          setCashbackEnabled(data.cashback_enabled || false)
-          setCashbackPercent(data.cashback_percent || 0)
-          setCashbackFixed((data.cashback_fixed_cents || 0) / 100)
-          setCashbackMode(data.cashback_mode || 'percent')
+          setCashbackEnabled(data.cashback_enabled || false);
+          setCashbackPercent(data.cashback_percent || 0);
+          setCashbackFixed((data.cashback_fixed_cents || 0) / 100);
+          setCashbackMode(data.cashback_mode || "percent");
         }
       } catch (err) {
-        console.error('Erro ao carregar configurações:', err)
-        toast.error('Erro ao carregar configurações')
+        console.error("Erro ao carregar configurações:", err);
+        toast.error("Erro ao carregar configurações");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    loadSettings()
-  }, [currentUser?.id, toast])
+    };
+    loadSettings();
+  }, [currentUser?.id, toast]);
 
   const handleSave = async () => {
-    if (!currentUser?.id) return
-    setSaving(true)
+    if (!currentUser?.id) return;
+    setSaving(true);
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({
           cashback_enabled: cashbackEnabled,
-          cashback_percent: cashbackMode === 'percent' ? cashbackPercent : null,
-          cashback_fixed_cents: cashbackMode === 'fixed' ? Math.round(cashbackFixed * 100) : null,
+          cashback_percent: cashbackMode === "percent" ? cashbackPercent : null,
+          cashback_fixed_cents: cashbackMode === "fixed" ? Math.round(cashbackFixed * 100) : null,
           cashback_mode: cashbackMode,
         })
-        .eq('id', currentUser.id)
+        .eq("id", currentUser.id);
 
-      if (error) throw error
-      toast.success('Configurações salvas com sucesso!')
+      if (error) throw error;
+      toast.success("Configurações salvas com sucesso!");
     } catch (err: any) {
-      console.error('Erro ao salvar configurações:', err)
-      toast.error(err.message || 'Erro ao salvar configurações')
+      console.error("Erro ao salvar configurações:", err);
+      toast.error(err.message || "Erro ao salvar configurações");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl rounded-3xl p-6">
         <p className="text-sm text-gray-600">Carregando configurações...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -380,22 +369,22 @@ function ProfessionalSettings() {
               <p className="text-sm font-semibold text-gray-900 mb-3">Forma de Cálculo</p>
               <div className="flex gap-3">
                 <button
-                  onClick={() => setCashbackMode('percent')}
+                  onClick={() => setCashbackMode("percent")}
                   className={`flex-1 px-4 py-3 rounded-xl border transition ${
-                    cashbackMode === 'percent'
-                      ? 'bg-gray-900 text-white border-gray-900'
-                      : 'bg-white/60 text-gray-800 border-white/60 hover:bg-white/80'
+                    cashbackMode === "percent"
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white/60 text-gray-800 border-white/60 hover:bg-white/80"
                   }`}
                 >
                   <p className="text-sm font-semibold">Percentual</p>
                   <p className="text-xs mt-1 opacity-80">% do valor do serviço</p>
                 </button>
                 <button
-                  onClick={() => setCashbackMode('fixed')}
+                  onClick={() => setCashbackMode("fixed")}
                   className={`flex-1 px-4 py-3 rounded-xl border transition ${
-                    cashbackMode === 'fixed'
-                      ? 'bg-gray-900 text-white border-gray-900'
-                      : 'bg-white/60 text-gray-800 border-white/60 hover:bg-white/80'
+                    cashbackMode === "fixed"
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white/60 text-gray-800 border-white/60 hover:bg-white/80"
                   }`}
                 >
                   <p className="text-sm font-semibold">Valor Fixo</p>
@@ -405,7 +394,7 @@ function ProfessionalSettings() {
             </div>
 
             {/* Valor do Cashback */}
-            {cashbackMode === 'percent' ? (
+            {cashbackMode === "percent" ? (
               <div className="p-4 rounded-xl bg-white/70 border border-white/60">
                 <label className="text-sm font-semibold text-gray-900 mb-2 block">
                   Percentual de Cashback (%)
@@ -421,7 +410,8 @@ function ProfessionalSettings() {
                   placeholder="Ex: 5"
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  Exemplo: Se o serviço custar R$ 100 e você configurar 5%, o cliente receberá R$ 5,00 de cashback
+                  Exemplo: Se o serviço custar R$ 100 e você configurar 5%, o cliente receberá R$
+                  5,00 de cashback
                 </p>
               </div>
             ) : (
@@ -446,10 +436,13 @@ function ProfessionalSettings() {
 
             {/* Informação sobre regra de uso */}
             <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
-              <p className="text-sm font-semibold text-amber-900 mb-2">ℹ️ Regra de Uso do Cashback</p>
+              <p className="text-sm font-semibold text-amber-900 mb-2">
+                ℹ️ Regra de Uso do Cashback
+              </p>
               <p className="text-xs text-amber-800">
-                Os clientes podem usar até 33% do valor do serviço em cashback. Por exemplo: para usar R$ 100,00 de cashback, 
-                o cliente precisa gastar pelo menos R$ 300,00 em serviços.
+                Os clientes podem usar até 33% do valor do serviço em cashback. Por exemplo: para
+                usar R$ 100,00 de cashback, o cliente precisa gastar pelo menos R$ 300,00 em
+                serviços.
               </p>
             </div>
           </>
@@ -461,11 +454,11 @@ function ProfessionalSettings() {
           disabled={saving}
           className="w-full px-4 py-3 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving ? 'Salvando...' : 'Salvar Configurações'}
+          {saving ? "Salvando..." : "Salvar Configurações"}
         </button>
       </div>
     </div>
-  )
+  );
 }
 
-export default ProfessionalPanel
+export default ProfessionalPanel;

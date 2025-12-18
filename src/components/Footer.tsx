@@ -1,8 +1,8 @@
-import { TermsOfService } from './TermsOfService'
-import { useState } from 'react'
+import { TermsOfService } from "./TermsOfService";
+import { useState } from "react";
 
 export function Footer() {
-  const [termsOpen, setTermsOpen] = useState(false)
+  const [termsOpen, setTermsOpen] = useState(false);
 
   return (
     <>
@@ -27,6 +27,5 @@ export function Footer() {
       </footer>
       <TermsOfService open={termsOpen} onOpenChange={setTermsOpen} />
     </>
-  )
+  );
 }
-

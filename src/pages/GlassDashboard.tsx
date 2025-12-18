@@ -1,41 +1,45 @@
-import { Bell, Settings, Phone, Mail } from 'lucide-react'
+import { Bell, Settings, Phone, Mail } from "lucide-react";
 
 type Member = {
-  name: string
-  role: string
-  progress: number
-  avatar: string
-}
+  name: string;
+  role: string;
+  progress: number;
+  avatar: string;
+};
 
 export function GlassDashboard() {
   const members: Member[] = [
     {
-      name: 'Ana Souza',
-      role: 'Dermato',
+      name: "Ana Souza",
+      role: "Dermato",
       progress: 82,
-      avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=100&q=60',
+      avatar:
+        "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=100&q=60",
     },
     {
-      name: 'Marcos Silva',
-      role: 'Esteticista',
+      name: "Marcos Silva",
+      role: "Esteticista",
       progress: 64,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=60',
+      avatar:
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=60",
     },
     {
-      name: 'Julia Prado',
-      role: 'Fisioterapeuta',
+      name: "Julia Prado",
+      role: "Fisioterapeuta",
       progress: 45,
-      avatar: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=100&q=60',
+      avatar:
+        "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=100&q=60",
     },
     {
-      name: 'Renata Lima',
-      role: 'Enfermeira',
+      name: "Renata Lima",
+      role: "Enfermeira",
       progress: 71,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=60',
+      avatar:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=60",
     },
-  ]
+  ];
 
-  const metricProgress = 68
+  const metricProgress = 68;
 
   return (
     <div className="relative min-h-screen bg-[#f3f4f6] text-gray-900 font-sans overflow-hidden">
@@ -69,11 +73,11 @@ export function GlassDashboard() {
             <div className="space-y-2">
               <p className="text-sm font-semibold text-gray-800">Menu</p>
               {[
-                { label: 'Agendamentos', desc: 'Agenda e encaixes' },
-                { label: 'Análises', desc: 'Indicadores e desempenho' },
-                { label: 'Clientes', desc: 'Dados e histórico' },
-                { label: 'Financeiro', desc: 'Cobranças e repasses' },
-                { label: 'Configurações', desc: 'Preferências' },
+                { label: "Agendamentos", desc: "Agenda e encaixes" },
+                { label: "Análises", desc: "Indicadores e desempenho" },
+                { label: "Clientes", desc: "Dados e histórico" },
+                { label: "Financeiro", desc: "Cobranças e repasses" },
+                { label: "Configurações", desc: "Preferências" },
               ].map((item) => (
                 <button
                   key={item.label}
@@ -168,7 +172,7 @@ export function GlassDashboard() {
                 <span className="text-xs text-gray-500">Mês Atual</span>
               </div>
               <div className="grid grid-cols-7 gap-2 text-center text-sm text-gray-700">
-                {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((d) => (
+                {["S", "T", "Q", "Q", "S", "S", "D"].map((d) => (
                   <div key={d} className="text-xs text-gray-500">
                     {d}
                   </div>
@@ -237,6 +241,5 @@ export function GlassDashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

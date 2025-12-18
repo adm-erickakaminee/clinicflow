@@ -1,19 +1,21 @@
-import { Trophy } from 'lucide-react'
+import { Trophy } from "lucide-react";
 
 type Professional = {
-  id: string
-  name: string
-  specialty?: string
-  avatar?: string
-}
+  id: string;
+  name: string;
+  specialty?: string;
+  avatar?: string;
+};
 
 type Props = {
-  professional: Professional
-  appointmentCount: number
-}
+  professional: Professional;
+  appointmentCount: number;
+};
 
 export function ProfessionalHeroCard({ professional, appointmentCount }: Props) {
-  const avatarUrl = professional.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(professional.name)}&background=random&size=400`
+  const avatarUrl =
+    professional.avatar ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(professional.name)}&background=random&size=400`;
 
   return (
     /* Container Principal - Relativo para segurar os absolutos */
@@ -24,8 +26,8 @@ export function ProfessionalHeroCard({ professional, appointmentCount }: Props) 
         alt={professional.name}
         className="absolute inset-0 w-full h-full object-cover object-center z-0 transition-transform duration-700 group-hover:scale-105"
         onError={(e) => {
-          const target = e.target as HTMLImageElement
-          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(professional.name)}&background=6366f1&color=fff&size=400`
+          const target = e.target as HTMLImageElement;
+          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(professional.name)}&background=6366f1&color=fff&size=400`;
         }}
       />
 
@@ -67,6 +69,5 @@ export function ProfessionalHeroCard({ professional, appointmentCount }: Props) 
         </div>
       </div>
     </div>
-  )
+  );
 }
-

@@ -1,69 +1,71 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
-import { useScheduler } from '../context/SchedulerContext'
-import { useToast } from '../components/ui/Toast'
-import { Target, Eye, Edit2 } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
+import { useScheduler } from "../context/SchedulerContext";
+import { useToast } from "../components/ui/Toast";
+import { Target, Eye, Edit2 } from "lucide-react";
 
 interface ProfessionalGoal {
-  id: string
-  profile_id: string
-  clinic_id: string
-  monthly_cost_cents: number
-  monthly_income_goal_cents: number
-  target_hourly_rate_cents: number
+  id: string;
+  profile_id: string;
+  clinic_id: string;
+  monthly_cost_cents: number;
+  monthly_income_goal_cents: number;
+  target_hourly_rate_cents: number;
   profile?: {
-    full_name: string | null
-    role: string
-  }
+    full_name: string | null;
+    role: string;
+  };
 }
 
 export function ProfessionalGoalsView() {
-  const { currentUser } = useScheduler()
-  const toast = useToast()
-  const [loading, setLoading] = useState(true)
-  const [goals, setGoals] = useState<ProfessionalGoal[]>([])
+  const { currentUser } = useScheduler();
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
+  const [goals, setGoals] = useState<ProfessionalGoal[]>([]);
 
-  const clinicId = currentUser?.clinicId
+  const clinicId = currentUser?.clinicId;
 
   useEffect(() => {
     if (!clinicId) {
-      setLoading(false)
-      return
+      setLoading(false);
+      return;
     }
 
-    loadGoals()
-  }, [clinicId])
+    loadGoals();
+  }, [clinicId]);
 
   const loadGoals = async () => {
-    if (!clinicId) return
+    if (!clinicId) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('professional_goals')
-        .select(`
+        .from("professional_goals")
+        .select(
+          `
           *,
           profile:profiles!professional_goals_profile_id_fkey(full_name, role)
-        `)
-        .eq('clinic_id', clinicId)
-        .order('created_at', { ascending: false })
+        `
+        )
+        .eq("clinic_id", clinicId)
+        .order("created_at", { ascending: false });
 
-      if (error) throw error
-      setGoals((data as ProfessionalGoal[]) || [])
+      if (error) throw error;
+      setGoals((data as ProfessionalGoal[]) || []);
     } catch (err) {
-      console.error('Erro ao carregar metas:', err)
-      toast.error('Falha ao carregar metas individuais')
+      console.error("Erro ao carregar metas:", err);
+      toast.error("Falha ao carregar metas individuais");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(cents / 100)
-  }
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(cents / 100);
+  };
 
   if (loading) {
     return (
@@ -73,7 +75,7 @@ export function ProfessionalGoalsView() {
           <p className="mt-2 text-sm text-gray-600">Carregando metas...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -122,10 +124,10 @@ export function ProfessionalGoalsView() {
                     <td className="px-4 py-3">
                       <div>
                         <p className="text-sm font-semibold text-gray-900">
-                          {goal.profile?.full_name || 'N/A'}
+                          {goal.profile?.full_name || "N/A"}
                         </p>
                         <p className="text-xs text-gray-600 capitalize">
-                          {goal.profile?.role || 'N/A'}
+                          {goal.profile?.role || "N/A"}
                         </p>
                       </div>
                     </td>
@@ -172,9 +174,7 @@ export function ProfessionalGoalsView() {
           <div className="rounded-2xl bg-white/60 border border-white/40 shadow-xl p-4">
             <p className="text-xs text-gray-600 mb-1">Meta Total de Receita</p>
             <p className="text-2xl font-bold text-blue-600">
-              {formatCurrency(
-                goals.reduce((sum, g) => sum + g.monthly_income_goal_cents, 0)
-              )}
+              {formatCurrency(goals.reduce((sum, g) => sum + g.monthly_income_goal_cents, 0))}
             </p>
           </div>
           <div className="rounded-2xl bg-white/60 border border-white/40 shadow-xl p-4">
@@ -186,6 +186,5 @@ export function ProfessionalGoalsView() {
         </div>
       )}
     </div>
-  )
+  );
 }
-

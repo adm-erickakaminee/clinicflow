@@ -1,140 +1,164 @@
-import { useEffect, useMemo, useState } from 'react'
-import { FileText, Upload, X, AlertTriangle } from 'lucide-react'
-import { createPortal } from 'react-dom'
-import type { Anamnesis, MedicalDocument, MedicalForm, FormType } from '../context/SchedulerContext'
+import { useEffect, useMemo, useState } from "react";
+import { FileText, Upload, X, AlertTriangle } from "lucide-react";
+import { createPortal } from "react-dom";
+import type {
+  Anamnesis,
+  MedicalDocument,
+  MedicalForm,
+  FormType,
+} from "../context/SchedulerContext";
 
 type Props = {
   client: {
-    id: string
-    name: string
-    anamnesis?: Anamnesis
-    documents?: MedicalDocument[]
-    healthTags?: string[]
-    forms?: MedicalForm[]
-  }
-  canEdit: boolean
-  onSave: (data: Anamnesis) => void
-  onAddDocument: (doc: MedicalDocument) => void
-  onAddEvolution?: () => void
-  onSaveHealthTags: (tags: string[]) => void
-  onSaveForm: (form: MedicalForm) => void
-}
+    id: string;
+    name: string;
+    anamnesis?: Anamnesis;
+    documents?: MedicalDocument[];
+    healthTags?: string[];
+    forms?: MedicalForm[];
+  };
+  canEdit: boolean;
+  onSave: (data: Anamnesis) => void;
+  onAddDocument: (doc: MedicalDocument) => void;
+  onAddEvolution?: () => void;
+  onSaveHealthTags: (tags: string[]) => void;
+  onSaveForm: (form: MedicalForm) => void;
+};
 
-const defaultConditions = { diabetes: false, hipertensao: false, cardiaco: false, gestante: false, fumante: false }
+const defaultConditions = {
+  diabetes: false,
+  hipertensao: false,
+  cardiaco: false,
+  gestante: false,
+  fumante: false,
+};
 
-export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSaveHealthTags, onSaveForm }: Props) {
+export function MedicalRecordTab({
+  client,
+  canEdit,
+  onSave,
+  onAddDocument,
+  onSaveHealthTags,
+  onSaveForm,
+}: Props) {
   const [anamnesis, setAnamnesis] = useState<Anamnesis>(() => ({
     allergies: client.anamnesis?.allergies || [],
     medications: client.anamnesis?.medications || [],
-    surgeries: client.anamnesis?.surgeries || '',
-    notes: client.anamnesis?.notes || '',
-    complaint: client.anamnesis?.complaint || '',
-    medicationsText: client.anamnesis?.medicationsText || '',
+    surgeries: client.anamnesis?.surgeries || "",
+    notes: client.anamnesis?.notes || "",
+    complaint: client.anamnesis?.complaint || "",
+    medicationsText: client.anamnesis?.medicationsText || "",
     conditions: { ...defaultConditions, ...(client.anamnesis?.conditions || {}) },
     updatedAt: client.anamnesis?.updatedAt,
     updatedBy: client.anamnesis?.updatedBy,
-  }))
-  const [newTag, setNewTag] = useState('')
-  const [dirty, setDirty] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [showPrint, setShowPrint] = useState(false)
-  const [uploadName, setUploadName] = useState('')
-  const [healthTags, setHealthTags] = useState<string[]>(client.healthTags || [])
-  const [selectedModel, setSelectedModel] = useState<FormType>('general')
-  const [formDraft, setFormDraft] = useState<Record<string, any>>({})
-  const [savingForm, setSavingForm] = useState(false)
+  }));
+  const [newTag, setNewTag] = useState("");
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showPrint, setShowPrint] = useState(false);
+  const [uploadName, setUploadName] = useState("");
+  const [healthTags, setHealthTags] = useState<string[]>(client.healthTags || []);
+  const [selectedModel, setSelectedModel] = useState<FormType>("general");
+  const [formDraft, setFormDraft] = useState<Record<string, any>>({});
+  const [savingForm, setSavingForm] = useState(false);
 
   useEffect(() => {
     setAnamnesis({
       allergies: client.anamnesis?.allergies || [],
       medications: client.anamnesis?.medications || [],
-      surgeries: client.anamnesis?.surgeries || '',
-      notes: client.anamnesis?.notes || '',
-      complaint: client.anamnesis?.complaint || '',
-      medicationsText: client.anamnesis?.medicationsText || '',
+      surgeries: client.anamnesis?.surgeries || "",
+      notes: client.anamnesis?.notes || "",
+      complaint: client.anamnesis?.complaint || "",
+      medicationsText: client.anamnesis?.medicationsText || "",
       conditions: { ...defaultConditions, ...(client.anamnesis?.conditions || {}) },
       updatedAt: client.anamnesis?.updatedAt,
       updatedBy: client.anamnesis?.updatedBy,
-    })
-    setDirty(false)
-    setHealthTags(client.healthTags || [])
-  }, [client])
+    });
+    setDirty(false);
+    setHealthTags(client.healthTags || []);
+  }, [client]);
 
-  const documents = client.documents ?? []
+  const documents = client.documents ?? [];
 
   const handleAddTag = () => {
-    if (!newTag.trim()) return
-    setAnamnesis((prev) => ({ ...prev, allergies: [...(prev.allergies || []), newTag.trim()] }))
-    setNewTag('')
-    setDirty(true)
-  }
+    if (!newTag.trim()) return;
+    setAnamnesis((prev) => ({ ...prev, allergies: [...(prev.allergies || []), newTag.trim()] }));
+    setNewTag("");
+    setDirty(true);
+  };
 
   const handleSave = async () => {
-    if (!dirty) return
-    setSaving(true)
-    await Promise.resolve(onSave(anamnesis))
-    setSaving(false)
-    setDirty(false)
-  }
+    if (!dirty) return;
+    setSaving(true);
+    await Promise.resolve(onSave(anamnesis));
+    setSaving(false);
+    setDirty(false);
+  };
 
   const handleAddDoc = () => {
-    if (!uploadName.trim()) return
+    if (!uploadName.trim()) return;
     onAddDocument({
-      id: '',
+      id: "",
       name: uploadName.trim(),
       date: new Date().toISOString(),
-      url: '#',
-    })
-    setUploadName('')
-  }
+      url: "#",
+    });
+    setUploadName("");
+  };
 
   const handleSaveTags = () => {
-    onSaveHealthTags(healthTags)
-  }
+    onSaveHealthTags(healthTags);
+  };
 
-  const handleSaveForm = async (status: 'draft' | 'active') => {
-    setSavingForm(true)
+  const handleSaveForm = async (status: "draft" | "active") => {
+    setSavingForm(true);
     await Promise.resolve(
       onSaveForm({
         id: String(Date.now()),
         type: selectedModel,
         date: new Date().toISOString(),
         content: formDraft,
-        signedFileUrl: status === 'active' ? '#pdf' : null,
-        status: status === 'active' ? 'active' : 'draft',
+        signedFileUrl: status === "active" ? "#pdf" : null,
+        status: status === "active" ? "active" : "draft",
         professionalId: undefined,
       })
-    )
-    setSavingForm(false)
-  }
+    );
+    setSavingForm(false);
+  };
 
   const lastSigned = useMemo(() => {
-    const actives = (client.forms || []).filter((f) => f.status === 'active' && f.signedFileUrl)
-    if (!actives.length) return null
-    return actives.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
-  }, [client.forms])
+    const actives = (client.forms || []).filter((f) => f.status === "active" && f.signedFileUrl);
+    if (!actives.length) return null;
+    return actives.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+  }, [client.forms]);
 
   const needsRenew = useMemo(() => {
-    if (!lastSigned) return true
-    const diff = Date.now() - new Date(lastSigned.date).getTime()
-    const days = diff / (1000 * 60 * 60 * 24)
-    return days > 180
-  }, [lastSigned])
+    if (!lastSigned) return true;
+    const diff = Date.now() - new Date(lastSigned.date).getTime();
+    const days = diff / (1000 * 60 * 60 * 24);
+    return days > 180;
+  }, [lastSigned]);
 
-  const timeline = useMemo(() => [...(client.forms || [])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [client.forms])
+  const timeline = useMemo(
+    () =>
+      [...(client.forms || [])].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      ),
+    [client.forms]
+  );
 
   const conditionsList = useMemo(
     () => [
-      { key: 'diabetes', label: 'Diabetes' },
-      { key: 'hipertensao', label: 'Hipertensão' },
-      { key: 'cardiaco', label: 'Cardíaco' },
-      { key: 'gestante', label: 'Gestante' },
-      { key: 'fumante', label: 'Fumante' },
+      { key: "diabetes", label: "Diabetes" },
+      { key: "hipertensao", label: "Hipertensão" },
+      { key: "cardiaco", label: "Cardíaco" },
+      { key: "gestante", label: "Gestante" },
+      { key: "fumante", label: "Fumante" },
     ],
     []
-  )
+  );
 
-  const healthTagOptions = ['Diabetes', 'Hipertensão', 'Marca-passo', 'Lactante']
+  const healthTagOptions = ["Diabetes", "Hipertensão", "Marca-passo", "Lactante"];
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -145,7 +169,8 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
             <AlertTriangle className="h-4 w-4" />
             <p className="text-sm">
               A ficha deste cliente está desatualizada
-              {lastSigned ? ` (última: ${new Date(lastSigned.date).toLocaleDateString()})` : ''}. Por favor, atualize.
+              {lastSigned ? ` (última: ${new Date(lastSigned.date).toLocaleDateString()})` : ""}.
+              Por favor, atualize.
             </p>
           </div>
         )}
@@ -182,8 +207,8 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
               <div className="flex items-center gap-2">
                 <select
                   onChange={(e) => {
-                    const val = e.target.value
-                    if (val && !healthTags.includes(val)) setHealthTags((prev) => [...prev, val])
+                    const val = e.target.value;
+                    if (val && !healthTags.includes(val)) setHealthTags((prev) => [...prev, val]);
                   }}
                   defaultValue=""
                   className="rounded-xl bg-white/70 border border-white/60 px-3 py-1.5 text-xs text-gray-900"
@@ -207,10 +232,10 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-gray-900">Anamnese Digital</p>
             <div className="text-[11px] text-gray-500">
-              Última atualização:{' '}
+              Última atualização:{" "}
               {anamnesis.updatedAt
-                ? `${new Date(anamnesis.updatedAt).toLocaleString()} • ${anamnesis.updatedBy ?? ''}`
-                : '—'}
+                ? `${new Date(anamnesis.updatedAt).toLocaleString()} • ${anamnesis.updatedBy ?? ""}`
+                : "—"}
             </div>
           </div>
 
@@ -220,8 +245,8 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
               disabled={!canEdit}
               value={anamnesis.complaint}
               onChange={(e) => {
-                setAnamnesis((p) => ({ ...p, complaint: e.target.value }))
-                setDirty(true)
+                setAnamnesis((p) => ({ ...p, complaint: e.target.value }));
+                setDirty(true);
               }}
               className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
               rows={3}
@@ -241,8 +266,8 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
                       setAnamnesis((p) => ({
                         ...p,
                         conditions: { ...p.conditions, [c.key]: e.target.checked },
-                      }))
-                      setDirty(true)
+                      }));
+                      setDirty(true);
                     }}
                     className="rounded border-gray-300"
                   />
@@ -256,7 +281,10 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
             <p className="text-xs font-semibold text-gray-700">Alergias (tags)</p>
             <div className="flex flex-wrap gap-2">
               {(anamnesis.allergies || []).map((tag, idx) => (
-                <span key={idx} className="px-2 py-1 rounded-lg border border-amber-200 bg-amber-100 text-amber-800 text-xs font-semibold">
+                <span
+                  key={idx}
+                  className="px-2 py-1 rounded-lg border border-amber-200 bg-amber-100 text-amber-800 text-xs font-semibold"
+                >
                   {tag}
                 </span>
               ))}
@@ -267,9 +295,9 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      handleAddTag()
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddTag();
                     }
                   }}
                   placeholder="Digite e Enter"
@@ -291,8 +319,8 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
               disabled={!canEdit}
               value={anamnesis.medicationsText}
               onChange={(e) => {
-                setAnamnesis((p) => ({ ...p, medicationsText: e.target.value }))
-                setDirty(true)
+                setAnamnesis((p) => ({ ...p, medicationsText: e.target.value }));
+                setDirty(true);
               }}
               className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
               rows={3}
@@ -305,10 +333,10 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
                 onClick={handleSave}
                 disabled={!dirty || saving}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-black/10 ${
-                  dirty ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  dirty ? "bg-gray-900 text-white" : "bg-gray-200 text-gray-500 cursor-not-allowed"
                 }`}
               >
-                {saving ? 'Salvando...' : 'Salvar alterações'}
+                {saving ? "Salvando..." : "Salvar alterações"}
               </button>
             </div>
           )}
@@ -354,20 +382,32 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
           </div>
           <div className="space-y-2 max-h-48 overflow-y-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {documents.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm shadow-sm">
+              <div
+                key={doc.id}
+                className="flex items-center justify-between rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm shadow-sm"
+              >
                 <div className="flex items-center gap-2 text-gray-800">
                   <FileText className="h-4 w-4" />
                   <div>
                     <p className="font-semibold">{doc.name}</p>
-                    <p className="text-[11px] text-gray-500">{new Date(doc.date).toLocaleString()}</p>
+                    <p className="text-[11px] text-gray-500">
+                      {new Date(doc.date).toLocaleString()}
+                    </p>
                   </div>
                 </div>
-                <a className="text-xs font-semibold text-gray-900 underline" href={doc.url || '#'} target="_blank" rel="noreferrer">
+                <a
+                  className="text-xs font-semibold text-gray-900 underline"
+                  href={doc.url || "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   Abrir
                 </a>
               </div>
             ))}
-            {documents.length === 0 && <p className="text-sm text-gray-600">Nenhum documento enviado.</p>}
+            {documents.length === 0 && (
+              <p className="text-sm text-gray-600">Nenhum documento enviado.</p>
+            )}
           </div>
         </div>
 
@@ -388,46 +428,111 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
             </select>
           </div>
           <div className="space-y-2">
-            {selectedModel === 'general' && (
+            {selectedModel === "general" && (
               <div className="space-y-2 text-sm text-gray-800">
-                <CheckboxRow label="Má circulação / varizes" field="circulacao" formDraft={formDraft} setFormDraft={setFormDraft} />
-                <CheckboxRow label="Retenção de líquido" field="retencao" formDraft={formDraft} setFormDraft={setFormDraft} />
-                <TextareaRow label="Observações corporais" field="obsCorpo" formDraft={formDraft} setFormDraft={setFormDraft} />
+                <CheckboxRow
+                  label="Má circulação / varizes"
+                  field="circulacao"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
+                <CheckboxRow
+                  label="Retenção de líquido"
+                  field="retencao"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
+                <TextareaRow
+                  label="Observações corporais"
+                  field="obsCorpo"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
               </div>
             )}
-            {selectedModel === 'invasive' && (
+            {selectedModel === "invasive" && (
               <div className="space-y-2 text-sm text-gray-800">
-                <CheckboxRow label="Botox anterior" field="botox" formDraft={formDraft} setFormDraft={setFormDraft} />
-                <CheckboxRow label="Preenchimentos prévios" field="preenchimento" formDraft={formDraft} setFormDraft={setFormDraft} />
-                <CheckboxRow label="Uso de ácidos" field="acidos" formDraft={formDraft} setFormDraft={setFormDraft} />
-                <CheckboxRow label="Roacutan atual" field="roacutan" formDraft={formDraft} setFormDraft={setFormDraft} />
-                <TextareaRow label="Objetivo do paciente" field="objetivo" formDraft={formDraft} setFormDraft={setFormDraft} />
+                <CheckboxRow
+                  label="Botox anterior"
+                  field="botox"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
+                <CheckboxRow
+                  label="Preenchimentos prévios"
+                  field="preenchimento"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
+                <CheckboxRow
+                  label="Uso de ácidos"
+                  field="acidos"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
+                <CheckboxRow
+                  label="Roacutan atual"
+                  field="roacutan"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
+                <TextareaRow
+                  label="Objetivo do paciente"
+                  field="objetivo"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
               </div>
             )}
-            {selectedModel === 'capillary' && (
+            {selectedModel === "capillary" && (
               <div className="space-y-2 text-sm text-gray-800">
-                <CheckboxRow label="Queda de cabelo" field="queda" formDraft={formDraft} setFormDraft={setFormDraft} />
-                <CheckboxRow label="Oleosidade" field="oleosidade" formDraft={formDraft} setFormDraft={setFormDraft} />
-                <CheckboxRow label="Químicas usadas" field="quimicas" formDraft={formDraft} setFormDraft={setFormDraft} />
-                <CheckboxRow label="Questões de tireoide" field="tireoide" formDraft={formDraft} setFormDraft={setFormDraft} />
-                <TextareaRow label="Notas capilares" field="notasCapilar" formDraft={formDraft} setFormDraft={setFormDraft} />
+                <CheckboxRow
+                  label="Queda de cabelo"
+                  field="queda"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
+                <CheckboxRow
+                  label="Oleosidade"
+                  field="oleosidade"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
+                <CheckboxRow
+                  label="Químicas usadas"
+                  field="quimicas"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
+                <CheckboxRow
+                  label="Questões de tireoide"
+                  field="tireoide"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
+                <TextareaRow
+                  label="Notas capilares"
+                  field="notasCapilar"
+                  formDraft={formDraft}
+                  setFormDraft={setFormDraft}
+                />
               </div>
             )}
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => handleSaveForm('draft')}
+              onClick={() => handleSaveForm("draft")}
               disabled={savingForm}
               className="px-4 py-2 rounded-xl bg-white/80 border border-white/60 text-sm font-semibold text-gray-900 shadow-sm"
             >
-              {savingForm ? 'Salvando...' : 'Salvar rascunho'}
+              {savingForm ? "Salvando..." : "Salvar rascunho"}
             </button>
             <button
-              onClick={() => handleSaveForm('active')}
+              onClick={() => handleSaveForm("active")}
               disabled={savingForm}
               className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-semibold shadow-lg shadow-emerald-500/20"
             >
-              {savingForm ? 'Gerando...' : 'Gerar PDF para assinatura'}
+              {savingForm ? "Gerando..." : "Gerar PDF para assinatura"}
             </button>
           </div>
         </div>
@@ -438,7 +543,10 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
           </div>
           <div className="space-y-2 max-h-48 overflow-y-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {timeline.map((f) => (
-              <div key={f.id} className="rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm shadow-sm flex items-center justify-between">
+              <div
+                key={f.id}
+                className="rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm shadow-sm flex items-center justify-between"
+              >
                 <div>
                   <p className="font-semibold text-gray-900">
                     {f.type} • {f.status}
@@ -446,7 +554,12 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
                   <p className="text-[11px] text-gray-500">{new Date(f.date).toLocaleString()}</p>
                 </div>
                 {f.signedFileUrl ? (
-                  <a href={f.signedFileUrl} className="text-xs font-semibold text-gray-900 underline" target="_blank" rel="noreferrer">
+                  <a
+                    href={f.signedFileUrl}
+                    className="text-xs font-semibold text-gray-900 underline"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     PDF
                   </a>
                 ) : (
@@ -454,7 +567,9 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
                 )}
               </div>
             ))}
-            {timeline.length === 0 && <p className="text-sm text-gray-600">Sem fichas anteriores.</p>}
+            {timeline.length === 0 && (
+              <p className="text-sm text-gray-600">Sem fichas anteriores.</p>
+            )}
           </div>
         </div>
       </div>
@@ -463,7 +578,10 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
         createPortal(
           <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur flex items-center justify-center px-4">
             <div className="relative bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-6 print:p-0">
-              <button className="absolute right-3 top-3 text-gray-500" onClick={() => setShowPrint(false)}>
+              <button
+                className="absolute right-3 top-3 text-gray-500"
+                onClick={() => setShowPrint(false)}
+              >
                 <X className="h-5 w-5" />
               </button>
               <div className="print:bg-white print:text-black">
@@ -475,11 +593,21 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
                   <p className="text-sm text-gray-600">Data: {new Date().toLocaleDateString()}</p>
                 </div>
                 <div className="space-y-2 text-sm text-gray-800">
-                  <p><strong>Paciente:</strong> {client.name}</p>
-                  <p><strong>Queixa:</strong> {anamnesis.complaint || '—'}</p>
-                  <p><strong>Alergias:</strong> {(anamnesis.allergies || []).join(', ') || '—'}</p>
-                  <p><strong>Medicamentos:</strong> {anamnesis.medicationsText || '—'}</p>
-                  <p><strong>Observações:</strong> {anamnesis.notes || '—'}</p>
+                  <p>
+                    <strong>Paciente:</strong> {client.name}
+                  </p>
+                  <p>
+                    <strong>Queixa:</strong> {anamnesis.complaint || "—"}
+                  </p>
+                  <p>
+                    <strong>Alergias:</strong> {(anamnesis.allergies || []).join(", ") || "—"}
+                  </p>
+                  <p>
+                    <strong>Medicamentos:</strong> {anamnesis.medicationsText || "—"}
+                  </p>
+                  <p>
+                    <strong>Observações:</strong> {anamnesis.notes || "—"}
+                  </p>
                 </div>
                 <div className="mt-6 h-24 border-t border-dashed border-gray-300 flex items-end">
                   <p className="text-sm text-gray-600">Assinatura do paciente</p>
@@ -498,7 +626,7 @@ export function MedicalRecordTab({ client, canEdit, onSave, onAddDocument, onSav
           document.body
         )}
     </div>
-  )
+  );
 }
 
 function CheckboxRow({
@@ -507,12 +635,12 @@ function CheckboxRow({
   formDraft,
   setFormDraft,
 }: {
-  label: string
-  field: string
-  formDraft: Record<string, any>
-  setFormDraft: React.Dispatch<React.SetStateAction<Record<string, any>>>
+  label: string;
+  field: string;
+  formDraft: Record<string, any>;
+  setFormDraft: React.Dispatch<React.SetStateAction<Record<string, any>>>;
 }) {
-  const checked = !!formDraft[field]
+  const checked = !!formDraft[field];
   return (
     <label className="flex items-center gap-2">
       <input
@@ -523,7 +651,7 @@ function CheckboxRow({
       />
       {label}
     </label>
-  )
+  );
 }
 
 function TextareaRow({
@@ -532,21 +660,20 @@ function TextareaRow({
   formDraft,
   setFormDraft,
 }: {
-  label: string
-  field: string
-  formDraft: Record<string, any>
-  setFormDraft: React.Dispatch<React.SetStateAction<Record<string, any>>>
+  label: string;
+  field: string;
+  formDraft: Record<string, any>;
+  setFormDraft: React.Dispatch<React.SetStateAction<Record<string, any>>>;
 }) {
   return (
     <div className="space-y-1">
       <p className="text-xs font-semibold text-gray-700">{label}</p>
       <textarea
-        value={formDraft[field] || ''}
+        value={formDraft[field] || ""}
         onChange={(e) => setFormDraft((p) => ({ ...p, [field]: e.target.value }))}
         className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15"
         rows={3}
       />
     </div>
-  )
+  );
 }
-

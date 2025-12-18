@@ -1,34 +1,39 @@
-import { useState } from 'react'
-import { Clock, MessageSquare, CreditCard, CheckCircle2 } from 'lucide-react'
+import { useState } from "react";
+import { Clock, MessageSquare, CreditCard, CheckCircle2 } from "lucide-react";
 
-type Slot = { time: string; professional: string }
-type Pending = { name: string; contact: string; notes?: string }
+type Slot = { time: string; professional: string };
+type Pending = { name: string; contact: string; notes?: string };
 
 export function ReceptionistAnalytics() {
-  const [activeTab, setActiveTab] = useState('Análises')
-  const agendaStatus = { confirmados: 12, pendentes: 4, cancelados: 2 }
-  const total = agendaStatus.confirmados + agendaStatus.pendentes + agendaStatus.cancelados
-  const confirmPct = Math.round((agendaStatus.confirmados / total) * 100)
-  const pendingPct = Math.round((agendaStatus.pendentes / total) * 100)
+  const [activeTab, setActiveTab] = useState("Análises");
+  const agendaStatus = { confirmados: 12, pendentes: 4, cancelados: 2 };
+  const total = agendaStatus.confirmados + agendaStatus.pendentes + agendaStatus.cancelados;
+  const confirmPct = Math.round((agendaStatus.confirmados / total) * 100);
+  const pendingPct = Math.round((agendaStatus.pendentes / total) * 100);
 
   const slotsLivres: Slot[] = [
-    { time: '14:10', professional: 'Dra. Ana' },
-    { time: '15:30', professional: 'Dr. Marcos' },
-    { time: '17:00', professional: 'Dra. Julia' },
-  ]
+    { time: "14:10", professional: "Dra. Ana" },
+    { time: "15:30", professional: "Dr. Marcos" },
+    { time: "17:00", professional: "Dra. Julia" },
+  ];
 
   const listaEspera: Pending[] = [
-    { name: 'Patrícia Souza', contact: '(11) 97777-2222', notes: 'Preferência tarde' },
-    { name: 'Carlos Lima', contact: '(11) 94444-8899' },
-  ]
+    { name: "Patrícia Souza", contact: "(11) 97777-2222", notes: "Preferência tarde" },
+    { name: "Carlos Lima", contact: "(11) 94444-8899" },
+  ];
 
   const confirmacoes: Pending[] = [
-    { name: 'Fernanda Alves', contact: '(11) 95555-1010', notes: 'Consulta 09:30' },
-    { name: 'João Vieira', contact: '(11) 93333-4545', notes: 'Retorno 10:15' },
-  ]
+    { name: "Fernanda Alves", contact: "(11) 95555-1010", notes: "Consulta 09:30" },
+    { name: "João Vieira", contact: "(11) 93333-4545", notes: "Retorno 10:15" },
+  ];
 
-  const caixaHoje = { total: 'R$ 1.820,00', pix: 'R$ 1.100,00', cartao: 'R$ 520,00', dinheiro: 'R$ 200,00' }
-  const topMenu = ['Agendamentos', 'WhatsApp', 'Clientes', 'Análises', 'Outros']
+  const caixaHoje = {
+    total: "R$ 1.820,00",
+    pix: "R$ 1.100,00",
+    cartao: "R$ 520,00",
+    dinheiro: "R$ 200,00",
+  };
+  const topMenu = ["Agendamentos", "WhatsApp", "Clientes", "Análises", "Outros"];
 
   return (
     <div className="relative min-h-screen bg-[#f3f4f6] text-gray-900 font-sans overflow-hidden">
@@ -43,7 +48,9 @@ export function ReceptionistAnalytics() {
       <div className="relative max-w-7xl mx-auto px-6 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Dashboard Operacional — Recepção</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Dashboard Operacional — Recepção
+            </h1>
             <p className="text-sm text-gray-500">Foco no agora e no amanhã</p>
           </div>
         </div>
@@ -51,20 +58,20 @@ export function ReceptionistAnalytics() {
         {/* Menu superior */}
         <div className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl rounded-2xl px-3 py-2 flex items-center gap-2 flex-wrap">
           {topMenu.map((item) => {
-            const active = activeTab === item
+            const active = activeTab === item;
             return (
               <button
                 key={item}
                 onClick={() => setActiveTab(item)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition border ${
                   active
-                    ? 'bg-gray-900 text-white border-gray-900 shadow-lg shadow-black/10'
-                    : 'bg-white/60 text-gray-800 border-white/60 hover:bg-white/80'
+                    ? "bg-gray-900 text-white border-gray-900 shadow-lg shadow-black/10"
+                    : "bg-white/60 text-gray-800 border-white/60 hover:bg-white/80"
                 }`}
               >
                 {item}
               </button>
-            )
+            );
           })}
         </div>
 
@@ -74,10 +81,10 @@ export function ReceptionistAnalytics() {
             <div className="space-y-2">
               <p className="text-sm font-semibold text-gray-800">Ações rápidas</p>
               {[
-                { label: 'Agendamentos', desc: 'Agenda e encaixes' },
-                { label: 'Confirmar por Whats', desc: 'Respostas pendentes' },
-                { label: 'Lista de Espera', desc: 'Chamar vagas' },
-                { label: 'Caixa do Dia', desc: 'Entradas de hoje' },
+                { label: "Agendamentos", desc: "Agenda e encaixes" },
+                { label: "Confirmar por Whats", desc: "Respostas pendentes" },
+                { label: "Lista de Espera", desc: "Chamar vagas" },
+                { label: "Caixa do Dia", desc: "Entradas de hoje" },
               ].map((item) => (
                 <button
                   key={item.label}
@@ -232,6 +239,5 @@ export function ReceptionistAnalytics() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

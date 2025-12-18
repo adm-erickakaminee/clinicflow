@@ -1,4 +1,2 @@
 // Reexport para alinhar nomenclatura solicitada
-export * from './appointment.schema'
-
-
+export * from "./appointment.schema";

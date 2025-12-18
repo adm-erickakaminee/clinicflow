@@ -6,18 +6,21 @@
 -- ============================================================================
 
 -- PASSO 1: Remover função antiga se existir (para recriar corretamente)
+DROP FUNCTION IF EXISTS public.create_organization_during_signup(text, text, text, jsonb, text, text, uuid);
 DROP FUNCTION IF EXISTS public.create_organization_during_signup(text, text, text, jsonb, text, text);
 DROP FUNCTION IF EXISTS public.create_organization_during_signup(text, text, text, jsonb);
 DROP FUNCTION IF EXISTS public.create_organization_during_signup;
 
 -- PASSO 2: Recriar função com SECURITY DEFINER (CRÍTICO)
+-- ✅ ATUALIZADO: Agora aceita p_user_id opcional para resolver problema de sessão não estabelecida
 CREATE OR REPLACE FUNCTION public.create_organization_during_signup(
   p_name text,
   p_email text,
   p_phone text,
   p_address jsonb,
   p_cnpj text DEFAULT NULL,
-  p_status text DEFAULT 'pending_setup'
+  p_status text DEFAULT 'pending_setup',
+  p_user_id uuid DEFAULT NULL -- ✅ NOVO: user_id opcional (resolve problema de sessão não estabelecida)
 )
 RETURNS uuid
 LANGUAGE plpgsql
@@ -27,11 +30,18 @@ AS $$
 DECLARE
   v_org_id uuid;
   v_address_text text;
+  v_user_id uuid;
 BEGIN
-  -- Verificar se usuário está autenticado
-  IF auth.uid() IS NULL THEN
-    RAISE EXCEPTION 'Usuário não autenticado';
+  -- ✅ Verificar autenticação: usar p_user_id se fornecido, senão usar auth.uid()
+  -- Isso resolve o problema de sessão não estabelecida após signUp
+  v_user_id := COALESCE(p_user_id, auth.uid());
+  
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Usuário não autenticado. Forneça p_user_id ou garanta que auth.uid() está disponível.';
   END IF;
+  
+  -- ✅ Log para debug (remover em produção se necessário)
+  RAISE NOTICE 'Criando organização para usuário: %', v_user_id;
   
   -- Converter jsonb para text (a coluna address é do tipo text que armazena JSON como string)
   IF p_address IS NULL THEN

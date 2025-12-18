@@ -1,9 +1,9 @@
-import type { FC } from 'react'
+import type { FC } from "react";
 
 interface PatientRecordProps {
-  alerts: string[]
-  history: string[]
-  photos?: { url: string; thumb?: string }[]
+  alerts: string[];
+  history: string[];
+  photos?: { url: string; thumb?: string }[];
 }
 
 export const PatientRecord: FC<PatientRecordProps> = ({ alerts, history, photos = [] }) => {
@@ -64,7 +64,5 @@ export const PatientRecord: FC<PatientRecordProps> = ({ alerts, history, photos 
         )}
       </section>
     </div>
-  )
-}
-
-
+  );
+};

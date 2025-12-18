@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { TermsOfService } from '../components/TermsOfService'
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { TermsOfService } from "../components/TermsOfService";
 import {
   Calendar,
   Users,
@@ -13,23 +13,23 @@ import {
   Star,
   Mail,
   Clock,
-} from 'lucide-react'
+} from "lucide-react";
 
 export function LandingPage() {
-  const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [termsOpen, setTermsOpen] = useState(false)
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const handleGetStarted = () => {
-    navigate('/signup')
-  }
+    navigate("/signup");
+  };
 
   const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (email) {
-      navigate('/signup', { state: { email } })
+      navigate("/signup", { state: { email } });
     }
-  }
+  };
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-[#ffb3a7] via-[#ffc78f] to-[#ffe7a3]">
@@ -37,22 +37,30 @@ export function LandingPage() {
       <header className="relative z-10 px-4 sm:px-6 py-4 sm:py-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <img 
-              src="/FAVCON.png" 
-              alt="ClinicFlow" 
+            <img
+              src="/FAVCON.png"
+              alt="ClinicFlow"
               className="h-8 w-8 sm:h-12 sm:w-12 object-contain"
             />
-            <span className="text-lg sm:text-2xl font-bold text-gray-900 whitespace-nowrap">ClinicFlow</span>
+            <span className="text-lg sm:text-2xl font-bold text-gray-900 whitespace-nowrap">
+              ClinicFlow
+            </span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-            <a href="#features" className="hidden sm:inline-block text-gray-700 hover:text-gray-900 font-medium text-sm">
+            <a
+              href="#features"
+              className="hidden sm:inline-block text-gray-700 hover:text-gray-900 font-medium text-sm"
+            >
               Recursos
             </a>
-            <a href="#pricing" className="hidden sm:inline-block text-gray-700 hover:text-gray-900 font-medium text-sm">
+            <a
+              href="#pricing"
+              className="hidden sm:inline-block text-gray-700 hover:text-gray-900 font-medium text-sm"
+            >
               Preços
             </a>
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => navigate("/login")}
               className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold text-gray-700 hover:text-gray-900 transition whitespace-nowrap"
             >
               Entrar
@@ -74,7 +82,9 @@ export function LandingPage() {
           <div className="text-center max-w-4xl mx-auto space-y-6 sm:space-y-8">
             <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/80 backdrop-blur-sm border border-white/60 shadow-lg">
               <Star className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 fill-yellow-500" />
-              <span className="text-xs sm:text-sm font-semibold text-gray-900">7 dias grátis • Cancele quando quiser</span>
+              <span className="text-xs sm:text-sm font-semibold text-gray-900">
+                7 dias grátis • Cancele quando quiser
+              </span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 leading-tight px-2">
@@ -85,8 +95,8 @@ export function LandingPage() {
             </h1>
 
             <p className="text-base sm:text-xl md:text-2xl text-gray-700 max-w-2xl mx-auto leading-relaxed px-2">
-              Sistema completo de gestão para clínicas e consultórios. Agendamentos, financeiro, pacientes e muito mais
-              em uma única plataforma.
+              Sistema completo de gestão para clínicas e consultórios. Agendamentos, financeiro,
+              pacientes e muito mais em uma única plataforma.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-4 px-4">
@@ -99,7 +109,7 @@ export function LandingPage() {
               </button>
               <button
                 onClick={() => {
-                  document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
+                  document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
                 }}
                 className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-2xl bg-white/80 backdrop-blur-sm border border-white/60 text-gray-900 text-base sm:text-lg font-semibold hover:bg-white transition shadow-lg"
               >
@@ -126,7 +136,10 @@ export function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="relative px-4 sm:px-6 py-12 sm:py-20 bg-white/40 backdrop-blur-sm">
+      <section
+        id="features"
+        className="relative px-4 sm:px-6 py-12 sm:py-20 bg-white/40 backdrop-blur-sm"
+      >
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -158,9 +171,12 @@ export function LandingPage() {
       <section id="pricing" className="relative px-4 sm:px-6 py-12 sm:py-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">Preços Simples e Transparentes</h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              Preços Simples e Transparentes
+            </h2>
             <p className="text-base sm:text-xl text-gray-700 max-w-2xl mx-auto px-2">
-              Um plano único, sem pegadinhas. Comece grátis e pague apenas quando estiver satisfeito.
+              Um plano único, sem pegadinhas. Comece grátis e pague apenas quando estiver
+              satisfeito.
             </p>
           </div>
 
@@ -195,8 +211,8 @@ export function LandingPage() {
                     <h4 className="text-xl font-bold text-gray-900">7 Dias Grátis</h4>
                   </div>
                   <p className="text-gray-700">
-                    Teste todos os recursos sem compromisso. A cobrança só acontece após 7 dias, e você pode cancelar
-                    a qualquer momento.
+                    Teste todos os recursos sem compromisso. A cobrança só acontece após 7 dias, e
+                    você pode cancelar a qualquer momento.
                   </p>
                 </div>
 
@@ -248,11 +264,7 @@ export function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <img 
-                  src="/FAVCON.png" 
-                  alt="ClinicFlow" 
-                  className="h-10 w-10 object-contain"
-                />
+                <img src="/FAVCON.png" alt="ClinicFlow" className="h-10 w-10 object-contain" />
                 <span className="text-xl font-bold">ClinicFlow</span>
               </div>
               <p className="text-gray-400 text-sm">
@@ -324,7 +336,10 @@ export function LandingPage() {
           </div>
 
           <div className="pt-8 border-t border-gray-800 text-center text-sm text-gray-400 space-y-2">
-            <p>&copy; 2025 CLINIC FLOW - Erick Henrique Akamine Leite (CNPJ: 32.937.677/0001-47). Todos os direitos reservados.</p>
+            <p>
+              &copy; 2025 CLINIC FLOW - Erick Henrique Akamine Leite (CNPJ: 32.937.677/0001-47).
+              Todos os direitos reservados.
+            </p>
             <p>
               <button
                 onClick={() => setTermsOpen(true)}
@@ -338,57 +353,57 @@ export function LandingPage() {
       </footer>
       <TermsOfService open={termsOpen} onOpenChange={setTermsOpen} />
     </div>
-  )
+  );
 }
 
 const features = [
   {
     icon: <Calendar className="h-7 w-7" />,
-    title: 'Agendamento Inteligente',
+    title: "Agendamento Inteligente",
     description:
-      'Sistema de agendamento completo com lembretes automáticos, confirmações e gestão de disponibilidade em tempo real.',
+      "Sistema de agendamento completo com lembretes automáticos, confirmações e gestão de disponibilidade em tempo real.",
   },
   {
     icon: <Users className="h-7 w-7" />,
-    title: 'Gestão de Pacientes',
+    title: "Gestão de Pacientes",
     description:
-      'Prontuário eletrônico completo, histórico de atendimentos, evoluções e muito mais em um só lugar.',
+      "Prontuário eletrônico completo, histórico de atendimentos, evoluções e muito mais em um só lugar.",
   },
   {
     icon: <DollarSign className="h-7 w-7" />,
-    title: 'Financeiro Integrado',
+    title: "Financeiro Integrado",
     description:
-      'Controle total sobre receitas, comissões, taxas e relatórios financeiros detalhados para sua clínica.',
+      "Controle total sobre receitas, comissões, taxas e relatórios financeiros detalhados para sua clínica.",
   },
   {
     icon: <BarChart3 className="h-7 w-7" />,
-    title: 'Relatórios e Analytics',
+    title: "Relatórios e Analytics",
     description:
-      'Dashboards completos com métricas de performance, KPIs e insights para tomar decisões baseadas em dados.',
+      "Dashboards completos com métricas de performance, KPIs e insights para tomar decisões baseadas em dados.",
   },
   {
     icon: <Shield className="h-7 w-7" />,
-    title: 'Segurança e Conformidade',
+    title: "Segurança e Conformidade",
     description:
-      'Dados protegidos com criptografia de ponta a ponta e conformidade total com LGPD e normas de saúde.',
+      "Dados protegidos com criptografia de ponta a ponta e conformidade total com LGPD e normas de saúde.",
   },
   {
     icon: <Zap className="h-7 w-7" />,
-    title: 'Integrações',
+    title: "Integrações",
     description:
-      'Conecte com sistemas de pagamento, prontuários eletrônicos e outras ferramentas que sua clínica já usa.',
+      "Conecte com sistemas de pagamento, prontuários eletrônicos e outras ferramentas que sua clínica já usa.",
   },
-]
+];
 
 const pricingFeatures = [
-  'Até 2 usuários incluídos (Admin + Recepcionista)',
-  'Agendamento ilimitado',
-  'Gestão completa de pacientes',
-  'Sistema financeiro integrado',
-  'Relatórios e analytics',
-  'Suporte por email e chat',
-  'Atualizações automáticas',
-  'Backup diário dos dados',
-  'Usuários adicionais: R$ 29,90/mês cada',
-  'Taxa de agendamento',
-]
+  "Até 2 usuários incluídos (Admin + Recepcionista)",
+  "Agendamento ilimitado",
+  "Gestão completa de pacientes",
+  "Sistema financeiro integrado",
+  "Relatórios e analytics",
+  "Suporte por email e chat",
+  "Atualizações automáticas",
+  "Backup diário dos dados",
+  "Usuários adicionais: R$ 29,90/mês cada",
+  "Taxa de agendamento",
+];

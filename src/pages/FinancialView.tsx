@@ -1,61 +1,62 @@
-import { useState, useEffect } from 'react'
-import { format } from 'date-fns'
-import { supabase } from '../lib/supabase'
-import { useScheduler } from '../context/SchedulerContext'
-import { useToast } from '../components/ui/Toast'
-import { DollarSign, Filter, Download } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { supabase } from "../lib/supabase";
+import { useScheduler } from "../context/SchedulerContext";
+import { useToast } from "../components/ui/Toast";
+import { DollarSign, Filter, Download } from "lucide-react";
 
 interface Transaction {
-  id: string
-  amount_cents: number
-  clinic_share_cents: number
-  platform_fee_cents: number
-  professional_share_cents: number
-  payment_method: string | null
-  status: string
-  is_fee_ledger_pending: boolean
-  is_admin_audited: boolean
-  created_at: string
-  appointment_id: string | null
-  professional_id: string | null
+  id: string;
+  amount_cents: number;
+  clinic_share_cents: number;
+  platform_fee_cents: number;
+  professional_share_cents: number;
+  payment_method: string | null;
+  status: string;
+  is_fee_ledger_pending: boolean;
+  is_admin_audited: boolean;
+  created_at: string;
+  appointment_id: string | null;
+  professional_id: string | null;
   professional?: {
-    full_name: string | null
-  }
+    full_name: string | null;
+  };
   appointment?: {
-    client_id: string | null
+    client_id: string | null;
     client?: {
-      full_name: string | null
-    }
-  }
+      full_name: string | null;
+    };
+  };
 }
 
 export function FinancialView() {
-  const { currentUser } = useScheduler()
-  const toast = useToast()
-  const [loading, setLoading] = useState(true)
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [filterAudited, setFilterAudited] = useState<string>('all')
+  const { currentUser } = useScheduler();
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterAudited, setFilterAudited] = useState<string>("all");
 
-  const clinicId = currentUser?.clinicId
+  const clinicId = currentUser?.clinicId;
 
   useEffect(() => {
     if (!clinicId) {
-      setLoading(false)
-      return
+      setLoading(false);
+      return;
     }
 
-    loadTransactions()
-  }, [clinicId, filterStatus, filterAudited])
+    loadTransactions();
+  }, [clinicId, filterStatus, filterAudited]);
 
   const loadTransactions = async () => {
-    if (!clinicId) return
+    if (!clinicId) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
       let query = supabase
-        .from('financial_transactions')
-        .select(`
+        .from("financial_transactions")
+        .select(
+          `
           id,
           amount_cents,
           clinic_share_cents,
@@ -73,49 +74,50 @@ export function FinancialView() {
             client_id,
             client:clients!appointments_client_id_fkey(full_name)
           )
-        `)
-        .eq('clinic_id', clinicId)
-        .order('created_at', { ascending: false })
-        .limit(100)
+        `
+        )
+        .eq("clinic_id", clinicId)
+        .order("created_at", { ascending: false })
+        .limit(100);
 
-      if (filterStatus !== 'all') {
-        query = query.eq('status', filterStatus)
+      if (filterStatus !== "all") {
+        query = query.eq("status", filterStatus);
       }
 
-      if (filterAudited === 'pending') {
-        query = query.eq('is_admin_audited', false)
-      } else if (filterAudited === 'audited') {
-        query = query.eq('is_admin_audited', true)
+      if (filterAudited === "pending") {
+        query = query.eq("is_admin_audited", false);
+      } else if (filterAudited === "audited") {
+        query = query.eq("is_admin_audited", true);
       }
 
-      const { data, error } = await query
+      const { data, error } = await query;
 
-      if (error) throw error
-      setTransactions((data as unknown as Transaction[]) || [])
+      if (error) throw error;
+      setTransactions((data as unknown as Transaction[]) || []);
     } catch (err) {
-      console.error('Erro ao carregar transações:', err)
-      toast.error('Falha ao carregar transações financeiras')
+      console.error("Erro ao carregar transações:", err);
+      toast.error("Falha ao carregar transações financeiras");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(cents / 100)
-  }
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(cents / 100);
+  };
 
   const totals = transactions.reduce(
     (acc, tx) => {
-      acc.total += tx.amount_cents
-      acc.clinicShare += tx.clinic_share_cents
-      acc.platformFee += tx.platform_fee_cents
-      return acc
+      acc.total += tx.amount_cents;
+      acc.clinicShare += tx.clinic_share_cents;
+      acc.platformFee += tx.platform_fee_cents;
+      return acc;
     },
     { total: 0, clinicShare: 0, platformFee: 0 }
-  )
+  );
 
   return (
     <div className="space-y-6">
@@ -206,16 +208,14 @@ export function FinancialView() {
               {transactions.map((tx) => (
                 <tr key={tx.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm text-gray-900">
-                    {format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm')}
+                    {format(new Date(tx.created_at), "dd/MM/yyyy HH:mm")}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     <div>
                       <p className="font-semibold text-gray-900">
-                        {tx.appointment?.client?.full_name || 'N/A'}
+                        {tx.appointment?.client?.full_name || "N/A"}
                       </p>
-                      <p className="text-gray-600 text-xs">
-                        {tx.professional?.full_name || 'N/A'}
-                      </p>
+                      <p className="text-gray-600 text-xs">{tx.professional?.full_name || "N/A"}</p>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm font-semibold text-gray-900">
@@ -230,11 +230,11 @@ export function FinancialView() {
                   <td className="px-4 py-3">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        tx.status === 'completed'
-                          ? 'bg-green-100 text-green-800'
-                          : tx.status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
+                        tx.status === "completed"
+                          ? "bg-green-100 text-green-800"
+                          : tx.status === "pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-gray-100 text-gray-800"
                       }`}
                     >
                       {tx.status}
@@ -271,6 +271,5 @@ export function FinancialView() {
         </div>
       )}
     </div>
-  )
+  );
 }
-

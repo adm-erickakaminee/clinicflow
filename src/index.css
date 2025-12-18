@@ -48,7 +48,11 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+      "Inter",
+      system-ui,
+      -apple-system,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -104,7 +108,11 @@ body {
   overflow-x: hidden; /* ✅ Prevenir scroll horizontal no mobile */
   background-color: #f8fafc;
   color: #0f172a;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* ✅ Prevenir zoom automático no mobile */
@@ -155,7 +163,11 @@ textarea {
   padding: 24px;
   background: linear-gradient(145deg, #011126, #0c1f32 50%, rgba(166, 47, 3, 0.55));
   color: #f8fafc;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 .auth-grid {
@@ -178,7 +190,9 @@ textarea {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 10px 30px rgba(1, 17, 38, 0.12), 0 20px 60px rgba(1, 17, 38, 0.08);
+  box-shadow:
+    0 10px 30px rgba(1, 17, 38, 0.12),
+    0 20px 60px rgba(1, 17, 38, 0.08);
   padding: 32px;
 }
 
@@ -236,7 +250,9 @@ textarea {
   padding: 14px 16px;
   font-size: 14px;
   outline: none;
-  transition: border-color 150ms, box-shadow 150ms;
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
 }
 
 .auth-input:focus {
@@ -258,7 +274,10 @@ textarea {
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  transition: transform 120ms, box-shadow 120ms, opacity 120ms;
+  transition:
+    transform 120ms,
+    box-shadow 120ms,
+    opacity 120ms;
 }
 
 .auth-btn.primary {
@@ -301,7 +320,7 @@ textarea {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.6);
-  }
+}
 
 .gradient-gaby {
   background: linear-gradient(135deg, #011126, #a62f03);
@@ -309,7 +328,7 @@ textarea {
 
 .gradient-success {
   background: linear-gradient(135deg, #1fa37d, #88b0bf);
-  }
+}
 
 .gradient-warning {
   background: linear-gradient(135deg, #f2b544, #d96b0b);

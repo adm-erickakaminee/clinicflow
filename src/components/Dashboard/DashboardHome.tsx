@@ -1,22 +1,22 @@
-import { useMemo } from 'react'
-import { PatientFlowWidget } from '../PatientFlow/PatientFlowWidget'
+import { useMemo } from "react";
+import { PatientFlowWidget } from "../PatientFlow/PatientFlowWidget";
 
 interface Stat {
-  label: string
-  value: string
-  trend?: string
-  variant?: 'primary' | 'success' | 'warning'
+  label: string;
+  value: string;
+  trend?: string;
+  variant?: "primary" | "success" | "warning";
 }
 
 export function DashboardHome() {
   const stats: Stat[] = useMemo(
     () => [
-      { label: 'Atendimentos hoje', value: '18', trend: '+12%', variant: 'primary' },
-      { label: 'Satisfação', value: '4.9', trend: 'NPS', variant: 'success' },
-      { label: 'No-shows', value: '2', trend: '-30%', variant: 'warning' },
+      { label: "Atendimentos hoje", value: "18", trend: "+12%", variant: "primary" },
+      { label: "Satisfação", value: "4.9", trend: "NPS", variant: "success" },
+      { label: "No-shows", value: "2", trend: "-30%", variant: "warning" },
     ],
     []
-  )
+  );
 
   return (
     <div className="min-h-screen bg-[rgba(248,250,252,0.7)] px-4 py-6 text-[#0f172a]">
@@ -51,11 +51,11 @@ export function DashboardHome() {
                     {s.trend && (
                       <span
                         className={
-                          s.variant === 'success'
-                            ? 'text-emerald-600 text-xs'
-                            : s.variant === 'warning'
-                              ? 'text-amber-600 text-xs'
-                              : 'text-sky-600 text-xs'
+                          s.variant === "success"
+                            ? "text-emerald-600 text-xs"
+                            : s.variant === "warning"
+                              ? "text-amber-600 text-xs"
+                              : "text-sky-600 text-xs"
                         }
                       >
                         {s.trend}
@@ -129,7 +129,7 @@ export function DashboardHome() {
           <div className="md:col-span-4 rounded-3xl glass-surface soft-shadow p-6 flex flex-col gap-4">
             <h4 className="text-lg font-semibold text-[#011126]">Equipe</h4>
             <div className="space-y-3 text-sm text-slate-700">
-              {['Dra. Ana', 'Dr. Lucas', 'Dra. Camila'].map((name) => (
+              {["Dra. Ana", "Dr. Lucas", "Dra. Camila"].map((name) => (
                 <div
                   key={name}
                   className="flex items-center justify-between rounded-2xl bg-white/70 border border-white/60 px-4 py-3 hover:-translate-y-[2px] transition"
@@ -150,7 +150,5 @@ export function DashboardHome() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-
-

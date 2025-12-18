@@ -1,18 +1,18 @@
-import { useMemo, useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Database } from 'lucide-react'
-import { createPortal } from 'react-dom'
-import { useScheduler, Service, SchedulerProfessional } from '../context/SchedulerContext'
-import type { WorkSchedule } from '../context/SchedulerContext'
-import { PricingCalculatorModal } from './PricingCalculatorModal'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs'
-import { supabase } from '../lib/supabase'
-import { OrganizationDetailsCard } from '../components/admin/OrganizationDetailsCard'
+import { useMemo, useState, useEffect } from "react";
+import { Plus, Edit2, Trash2, Database } from "lucide-react";
+import { createPortal } from "react-dom";
+import { useScheduler, Service, SchedulerProfessional } from "../context/SchedulerContext";
+import type { WorkSchedule } from "../context/SchedulerContext";
+import { PricingCalculatorModal } from "./PricingCalculatorModal";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
+import { supabase } from "../lib/supabase";
+import { OrganizationDetailsCard } from "../components/admin/OrganizationDetailsCard";
 
-type TabKey = 'professionals' | 'services'
+type TabKey = "professionals" | "services";
 
 export function RegistrationsView() {
-  console.log('🔍 RegistrationsView - Componente renderizando')
-  
+  console.log("🔍 RegistrationsView - Componente renderizando");
+
   const {
     services,
     professionals,
@@ -23,35 +23,35 @@ export function RegistrationsView() {
     addProfessional,
     updateProfessional,
     removeProfessional,
-  } = useScheduler()
+  } = useScheduler();
 
-  const [tab, setTab] = useState<TabKey>('professionals')
-  const [modalService, setModalService] = useState<Service | null>(null)
-  const [modalProf, setModalProf] = useState<SchedulerProfessional | null>(null)
-  const [showServiceModal, setShowServiceModal] = useState(false)
-  const [showProfModal, setShowProfModal] = useState(false)
+  const [tab, setTab] = useState<TabKey>("professionals");
+  const [modalService, setModalService] = useState<Service | null>(null);
+  const [modalProf, setModalProf] = useState<SchedulerProfessional | null>(null);
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [showProfModal, setShowProfModal] = useState(false);
   // Estados antigos de clínica removidos - agora gerenciados pelo OrganizationDetailsCard
 
   // Estados para provisionamento de clínicas removidos - não são mais necessários nesta view
 
   const colorOptions = [
-    '#6366f1', // indigo
-    '#22c55e', // green
-    '#f59e0b', // amber
-    '#ef4444', // red
-    '#14b8a6', // teal
-    '#a855f7', // purple
-    '#ec4899', // pink
-    '#06b6d4', // cyan
-    '#f97316', // orange
-    '#84cc16', // lime
-  ]
+    "#6366f1", // indigo
+    "#22c55e", // green
+    "#f59e0b", // amber
+    "#ef4444", // red
+    "#14b8a6", // teal
+    "#a855f7", // purple
+    "#ec4899", // pink
+    "#06b6d4", // cyan
+    "#f97316", // orange
+    "#84cc16", // lime
+  ];
 
   // Filtrar profissionais (remover "Visão Geral")
   const filteredProfessionals = useMemo(
-    () => professionals.filter((p) => p.id !== 'all'),
+    () => professionals.filter((p) => p.id !== "all"),
     [professionals]
-  )
+  );
 
   // Funções de gerenciamento de clínicas removidas - não são mais necessárias nesta view
   // useEffect(() => {
@@ -304,8 +304,8 @@ export function RegistrationsView() {
   }
   */
 
-  const isReceptionist = currentUser?.role === 'receptionist'
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'clinic_owner'
+  const isReceptionist = currentUser?.role === "receptionist";
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "clinic_owner";
 
   return (
     <div className="rounded-3xl bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl p-6">
@@ -341,16 +341,16 @@ export function RegistrationsView() {
             <button
               onClick={() => {
                 setModalProf({
-                  id: '',
-                  name: '',
-                  specialty: '',
-                  avatar: '',
+                  id: "",
+                  name: "",
+                  specialty: "",
+                  avatar: "",
                   color: colorOptions[0],
-                  commissionModel: 'commissioned',
+                  commissionModel: "commissioned",
                   commissionRate: 0,
                   rentalBaseCents: 0,
-                } as SchedulerProfessional)
-                setShowProfModal(true)
+                } as SchedulerProfessional);
+                setShowProfModal(true);
               }}
               className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold shadow-lg shadow-black/10 flex items-center gap-2 hover:bg-gray-800 transition"
             >
@@ -377,18 +377,18 @@ export function RegistrationsView() {
                   {((p as any).commissionModel || (p as any).commissionRate !== undefined) && (
                     <p className="text-xs text-gray-500 mt-1">
                       {(() => {
-                        const model = (p as any).commissionModel || 'commissioned'
-                        const rate = (p as any).commissionRate || 0
-                        const rental = (p as any).rentalBaseCents || 0
-                        
-                        if (model === 'commissioned') {
-                          return `Paga: ${rate}% por serviço`
-                        } else if (model === 'rental') {
-                          return `Paga: R$ ${(rental / 100).toFixed(2)}/mês`
-                        } else if (model === 'hybrid') {
-                          return `Paga: R$ ${(rental / 100).toFixed(2)}/mês + ${rate}%`
+                        const model = (p as any).commissionModel || "commissioned";
+                        const rate = (p as any).commissionRate || 0;
+                        const rental = (p as any).rentalBaseCents || 0;
+
+                        if (model === "commissioned") {
+                          return `Paga: ${rate}% por serviço`;
+                        } else if (model === "rental") {
+                          return `Paga: R$ ${(rental / 100).toFixed(2)}/mês`;
+                        } else if (model === "hybrid") {
+                          return `Paga: R$ ${(rental / 100).toFixed(2)}/mês + ${rate}%`;
                         }
-                        return `Paga: ${rate}% por serviço` // Fallback
+                        return `Paga: ${rate}% por serviço`; // Fallback
                       })()}
                     </p>
                   )}
@@ -413,8 +413,8 @@ export function RegistrationsView() {
                   />
                   <button
                     onClick={() => {
-                      setModalProf(p)
-                      setShowProfModal(true)
+                      setModalProf(p);
+                      setShowProfModal(true);
                     }}
                     className="p-2 rounded-xl bg-white/80 border border-white/60 text-gray-800 hover:bg-white transition"
                     title="Editar"
@@ -446,14 +446,14 @@ export function RegistrationsView() {
             <button
               onClick={() => {
                 setModalService({
-                  id: '',
-                  name: '',
+                  id: "",
+                  name: "",
                   price: 0,
                   duration: 30,
-                  category: '',
-                  professionalId: 'all',
-                })
-                setShowServiceModal(true)
+                  category: "",
+                  professionalId: "all",
+                });
+                setShowServiceModal(true);
               }}
               className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold shadow-lg shadow-black/10 flex items-center gap-2 hover:bg-gray-800 transition"
             >
@@ -474,10 +474,11 @@ export function RegistrationsView() {
               </thead>
               <tbody className="divide-y divide-white/60">
                 {services.map((s) => {
-                  const serviceProfIds = (s as any).professionalIds || []
-                  const serviceProfs = serviceProfIds.length > 0
-                    ? filteredProfessionals.filter((p) => serviceProfIds.includes(p.id))
-                    : filteredProfessionals
+                  const serviceProfIds = (s as any).professionalIds || [];
+                  const serviceProfs =
+                    serviceProfIds.length > 0
+                      ? filteredProfessionals.filter((p) => serviceProfIds.includes(p.id))
+                      : filteredProfessionals;
 
                   return (
                     <tr key={s.id} className="text-gray-900 hover:bg-white/40 transition">
@@ -494,14 +495,22 @@ export function RegistrationsView() {
                                 title={p.name}
                               >
                                 {p.avatar ? (
-                                  <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
+                                  <img
+                                    src={p.avatar}
+                                    alt={p.name}
+                                    className="h-full w-full object-cover"
+                                  />
                                 ) : (
-                                  <span className="text-[10px] font-semibold text-gray-700">{p.name.charAt(0)}</span>
+                                  <span className="text-[10px] font-semibold text-gray-700">
+                                    {p.name.charAt(0)}
+                                  </span>
                                 )}
                               </div>
                             ))}
                             {serviceProfs.length > 3 && (
-                              <span className="text-xs text-gray-500">+{serviceProfs.length - 3}</span>
+                              <span className="text-xs text-gray-500">
+                                +{serviceProfs.length - 3}
+                              </span>
                             )}
                           </div>
                         )}
@@ -512,8 +521,8 @@ export function RegistrationsView() {
                         <div className="flex gap-2 justify-end">
                           <button
                             onClick={() => {
-                              setModalService(s)
-                              setShowServiceModal(true)
+                              setModalService(s);
+                              setShowServiceModal(true);
                             }}
                             className="p-2 rounded-xl bg-white/80 border border-white/60 text-gray-800 hover:bg-white transition"
                             title="Editar"
@@ -530,7 +539,7 @@ export function RegistrationsView() {
                         </div>
                       </td>
                     </tr>
-                  )
+                  );
                 })}
                 {services.length === 0 && (
                   <tr>
@@ -563,15 +572,18 @@ export function RegistrationsView() {
             onSave={async (p) => {
               try {
                 if (p.id) {
-                  await updateProfessional(p)
+                  await updateProfessional(p);
                 } else {
-                  await addProfessional(p)
+                  await addProfessional(p);
                 }
-                setShowProfModal(false)
+                setShowProfModal(false);
               } catch (error: any) {
-                console.error('❌ Erro ao salvar profissional no RegistrationsView:', error)
-                const errorMessage = error?.message || error?.error?.message || 'Erro ao salvar profissional. Tente novamente.'
-                alert(`Erro ao salvar profissional: ${errorMessage}`)
+                console.error("❌ Erro ao salvar profissional no RegistrationsView:", error);
+                const errorMessage =
+                  error?.message ||
+                  error?.error?.message ||
+                  "Erro ao salvar profissional. Tente novamente.";
+                alert(`Erro ao salvar profissional: ${errorMessage}`);
               }
             }}
           />,
@@ -589,21 +601,21 @@ export function RegistrationsView() {
             onSave={async (s) => {
               try {
                 if (s.id) {
-                  await updateService(s)
+                  await updateService(s);
                 } else {
-                  await addService(s)
+                  await addService(s);
                 }
-                setShowServiceModal(false)
+                setShowServiceModal(false);
               } catch (error) {
-                console.error('Erro ao salvar serviço:', error)
-                alert('Erro ao salvar serviço. Tente novamente.')
+                console.error("Erro ao salvar serviço:", error);
+                alert("Erro ao salvar serviço. Tente novamente.");
               }
             }}
           />,
           document.body
         )}
     </div>
-  )
+  );
 }
 
 // Componente: Lista de Clínicas (para super_admin) - Não utilizado atualmente, removido completamente
@@ -617,138 +629,146 @@ function ProfessionalModal({
   onSave,
   onClose,
 }: {
-  professional: SchedulerProfessional
-  colors: string[]
-  onSave: (p: SchedulerProfessional) => Promise<void>
-  onClose: () => void
+  professional: SchedulerProfessional;
+  colors: string[];
+  onSave: (p: SchedulerProfessional) => Promise<void>;
+  onClose: () => void;
 }) {
-  const { currentUser } = useScheduler()
-  const [draft, setDraft] = useState<SchedulerProfessional>(professional)
-  const [commissionModel, setCommissionModel] = useState<'commissioned' | 'rental' | 'hybrid'>(
-    (professional as any).commissionModel || (professional as any).commission_model || 'commissioned'
-  )
-  const [commissionRate, setCommissionRate] = useState<number>((professional as any).commissionRate || (professional as any).commission_rate || 0)
+  const { currentUser } = useScheduler();
+  const [draft, setDraft] = useState<SchedulerProfessional>(professional);
+  const [commissionModel, setCommissionModel] = useState<"commissioned" | "rental" | "hybrid">(
+    (professional as any).commissionModel ||
+      (professional as any).commission_model ||
+      "commissioned"
+  );
+  const [commissionRate, setCommissionRate] = useState<number>(
+    (professional as any).commissionRate || (professional as any).commission_rate || 0
+  );
   const [rentalBaseCents, setRentalBaseCents] = useState<number>(
     (professional as any).rentalBaseCents || (professional as any).rental_base_cents || 0
-  )
+  );
   // ✅ REMOVIDO: Variáveis de payout (remuneração do profissional) - não são mais necessárias
   // Apenas usamos commissionModel, commissionRate e rentalBaseCents (o que o profissional PAGA para a clínica)
-  const [selectedClinicId, setSelectedClinicId] = useState<string>((professional as any).clinicId || '')
-  const [clinics, setClinics] = useState<Array<{ id: string; name: string }>>([])
-  const [loadingClinics, setLoadingClinics] = useState(false)
-  
+  const [selectedClinicId, setSelectedClinicId] = useState<string>(
+    (professional as any).clinicId || ""
+  );
+  const [clinics, setClinics] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingClinics, setLoadingClinics] = useState(false);
+
   // Estado para email e senha (criação de perfil/login)
-  const [email, setEmail] = useState<string>('')
-  const [password, setPassword] = useState<string>('')
-  const [createLogin, setCreateLogin] = useState<boolean>(false)
-  
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [createLogin, setCreateLogin] = useState<boolean>(false);
+
   // Estado para KYC (Know Your Customer)
-  const [cpf, setCpf] = useState<string>((professional as any).cpf || '')
-  const [showKYC, setShowKYC] = useState(false)
+  const [cpf, setCpf] = useState<string>((professional as any).cpf || "");
+  const [showKYC, setShowKYC] = useState(false);
   const [bankAccountData, setBankAccountData] = useState<{
-    bank_code?: string
-    agency?: string
-    account?: string
-    account_digit?: string
-    account_type?: 'CHECKING' | 'SAVINGS'
-    holder_name?: string
-    holder_document?: string
-  }>((professional as any).bank_account_data || {
-    bank_code: '',
-    agency: '',
-    account: '',
-    account_digit: '',
-    account_type: 'CHECKING',
-    holder_name: '',
-    holder_document: '',
-  })
-  
+    bank_code?: string;
+    agency?: string;
+    account?: string;
+    account_digit?: string;
+    account_type?: "CHECKING" | "SAVINGS";
+    holder_name?: string;
+    holder_document?: string;
+  }>(
+    (professional as any).bank_account_data || {
+      bank_code: "",
+      agency: "",
+      account: "",
+      account_digit: "",
+      account_type: "CHECKING",
+      holder_name: "",
+      holder_document: "",
+    }
+  );
+
   // Estado para jornada de trabalho
   const [workSchedule, setWorkSchedule] = useState<WorkSchedule | null>(
     professional.workSchedule || null
-  )
+  );
 
   // Buscar clínicas se for super_admin
   useEffect(() => {
-    if (currentUser?.role === 'super_admin' && !currentUser.clinicId) {
-      setLoadingClinics(true)
-      
+    if (currentUser?.role === "super_admin" && !currentUser.clinicId) {
+      setLoadingClinics(true);
+
       // Tentar buscar de 'organizations' primeiro (tabela principal)
       supabase
-        .from('organizations')
-        .select('id, name')
-        .order('name')
+        .from("organizations")
+        .select("id, name")
+        .order("name")
         .then(({ data, error }) => {
           if (!error && data && data.length > 0) {
-            console.log('✅ Clínicas encontradas em organizations:', data.length)
-            setClinics(data as Array<{ id: string; name: string }>)
-            setLoadingClinics(false)
+            console.log("✅ Clínicas encontradas em organizations:", data.length);
+            setClinics(data as Array<{ id: string; name: string }>);
+            setLoadingClinics(false);
           } else {
             // Se não encontrar em organizations, tentar em clinics
-            console.warn('⚠️ Não encontrado em organizations, tentando clinics:', error?.message)
+            console.warn("⚠️ Não encontrado em organizations, tentando clinics:", error?.message);
             supabase
-              .from('clinics')
-              .select('id, name')
-              .order('name')
+              .from("clinics")
+              .select("id, name")
+              .order("name")
               .then(({ data: clinicsData, error: clinicsError }) => {
                 if (!clinicsError && clinicsData) {
-                  console.log('✅ Clínicas encontradas em clinics:', clinicsData.length)
-                  setClinics(clinicsData as Array<{ id: string; name: string }>)
+                  console.log("✅ Clínicas encontradas em clinics:", clinicsData.length);
+                  setClinics(clinicsData as Array<{ id: string; name: string }>);
                 } else {
-                  console.error('❌ Erro ao buscar clínicas:', clinicsError)
-                  console.error('Tentou: organizations e clinics')
+                  console.error("❌ Erro ao buscar clínicas:", clinicsError);
+                  console.error("Tentou: organizations e clinics");
                 }
-                setLoadingClinics(false)
-              })
+                setLoadingClinics(false);
+              });
           }
-        })
+        });
     }
-  }, [currentUser])
-  
+  }, [currentUser]);
+
   const weekDays = [
-    { value: 0, label: 'Dom' },
-    { value: 1, label: 'Seg' },
-    { value: 2, label: 'Ter' },
-    { value: 3, label: 'Qua' },
-    { value: 4, label: 'Qui' },
-    { value: 5, label: 'Sex' },
-    { value: 6, label: 'Sáb' },
-  ]
-  
+    { value: 0, label: "Dom" },
+    { value: 1, label: "Seg" },
+    { value: 2, label: "Ter" },
+    { value: 3, label: "Qua" },
+    { value: 4, label: "Qui" },
+    { value: 5, label: "Sex" },
+    { value: 6, label: "Sáb" },
+  ];
+
   const toggleDay = (day: number) => {
     if (!workSchedule) {
       setWorkSchedule({
         days: [day],
-        start: '09:00',
-        end: '18:00',
-      })
-      return
+        start: "09:00",
+        end: "18:00",
+      });
+      return;
     }
-    
+
     const newDays = workSchedule.days.includes(day)
       ? workSchedule.days.filter((d) => d !== day)
-      : [...workSchedule.days, day].sort()
-    
+      : [...workSchedule.days, day].sort();
+
     setWorkSchedule({
       ...workSchedule,
       days: newDays,
-    })
-  }
-  
+    });
+  };
+
   const updateWorkSchedule = (field: keyof WorkSchedule, value: any) => {
-    if (!workSchedule) return
+    if (!workSchedule) return;
     setWorkSchedule({
       ...workSchedule,
       [field]: value,
-    })
-  }
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur flex items-center justify-center px-4">
       <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 shadow-2xl rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <p className="text-lg font-semibold text-gray-900">
-            {draft.id ? 'Editar Profissional' : 'Novo Profissional'}
+            {draft.id ? "Editar Profissional" : "Novo Profissional"}
           </p>
           <button className="text-sm text-gray-500 hover:text-gray-700" onClick={onClose}>
             ✕
@@ -773,46 +793,50 @@ function ProfessionalModal({
               placeholder="Ex: Dermatologista, Esteticista, etc."
             />
           </div>
-          
+
           {/* Campo para super_admin selecionar clínica - DESABILITADO quando clinicId já está herdado */}
-          {currentUser?.role === 'super_admin' && !currentUser.clinicId && !professional.clinicId && (
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-700">Clínica *</label>
-              {loadingClinics ? (
-                <div className="text-xs text-gray-500">Carregando clínicas...</div>
-              ) : clinics.length === 0 ? (
-                <div className="space-y-2">
-                  <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
-                    ⚠️ Nenhuma clínica encontrada. É necessário criar uma clínica primeiro.
+          {currentUser?.role === "super_admin" &&
+            !currentUser.clinicId &&
+            !professional.clinicId && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">Clínica *</label>
+                {loadingClinics ? (
+                  <div className="text-xs text-gray-500">Carregando clínicas...</div>
+                ) : clinics.length === 0 ? (
+                  <div className="space-y-2">
+                    <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+                      ⚠️ Nenhuma clínica encontrada. É necessário criar uma clínica primeiro.
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      <p className="mb-2">Opções:</p>
+                      <ol className="list-decimal list-inside space-y-1 ml-2">
+                        <li>Vá para a aba "Gerenciamento de Clínicas" e crie uma clínica</li>
+                        <li>Ou crie uma clínica no painel de administração do Supabase</li>
+                      </ol>
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-600">
-                    <p className="mb-2">Opções:</p>
-                    <ol className="list-decimal list-inside space-y-1 ml-2">
-                      <li>Vá para a aba "Gerenciamento de Clínicas" e crie uma clínica</li>
-                      <li>Ou crie uma clínica no painel de administração do Supabase</li>
-                    </ol>
-                  </div>
-                </div>
-              ) : (
-                <select
-                  value={selectedClinicId}
-                  onChange={(e) => setSelectedClinicId(e.target.value)}
-                  className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
-                  required
-                >
-                  <option value="">Selecione uma clínica</option>
-                  {clinics.map((clinic) => (
-                    <option key={clinic.id} value={clinic.id}>
-                      {clinic.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {clinics.length > 0 && (
-                <p className="text-xs text-gray-500">Selecione a clínica onde o profissional atuará</p>
-              )}
-            </div>
-          )}
+                ) : (
+                  <select
+                    value={selectedClinicId}
+                    onChange={(e) => setSelectedClinicId(e.target.value)}
+                    className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
+                    required
+                  >
+                    <option value="">Selecione uma clínica</option>
+                    {clinics.map((clinic) => (
+                      <option key={clinic.id} value={clinic.id}>
+                        {clinic.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {clinics.length > 0 && (
+                  <p className="text-xs text-gray-500">
+                    Selecione a clínica onde o profissional atuará
+                  </p>
+                )}
+              </div>
+            )}
           <div className="space-y-1">
             <label className="text-xs font-semibold text-gray-700">Cor na Agenda</label>
             <div className="flex items-center gap-2 flex-wrap">
@@ -822,7 +846,7 @@ function ProfessionalModal({
                   type="button"
                   onClick={() => setDraft((p) => ({ ...p, color: c }))}
                   className={`h-10 w-10 rounded-full border-2 transition ${
-                    draft.color === c ? 'ring-2 ring-gray-900 scale-110' : 'border-white/60'
+                    draft.color === c ? "ring-2 ring-gray-900 scale-110" : "border-white/60"
                   }`}
                   style={{ background: c }}
                   title={c}
@@ -833,23 +857,29 @@ function ProfessionalModal({
           {/* Modelo de Comissionamento - Profissional PAGA para a Clínica */}
           <div className="space-y-3 pt-3 border-t border-white/60">
             <div>
-              <label className="text-xs font-semibold text-gray-700">Modelo de Comissionamento</label>
-              <p className="text-xs text-gray-500 mt-1">Configure como o profissional pagará à clínica</p>
+              <label className="text-xs font-semibold text-gray-700">
+                Modelo de Comissionamento
+              </label>
+              <p className="text-xs text-gray-500 mt-1">
+                Configure como o profissional pagará à clínica
+              </p>
             </div>
-            
+
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer hover:bg-white/50 p-2 rounded-lg transition">
                 <input
                   type="radio"
                   name="commissionModel"
                   value="commissioned"
-                  checked={commissionModel === 'commissioned'}
-                  onChange={(e) => setCommissionModel(e.target.value as 'commissioned')}
+                  checked={commissionModel === "commissioned"}
+                  onChange={(e) => setCommissionModel(e.target.value as "commissioned")}
                   className="rounded border-white/60 text-gray-900 focus:ring-gray-900/15"
                 />
                 <div className="flex-1">
                   <span className="text-sm font-medium text-gray-900">Por Porcentagem</span>
-                  <p className="text-xs text-gray-500">O profissional paga X% do valor de cada serviço realizado para a clínica</p>
+                  <p className="text-xs text-gray-500">
+                    O profissional paga X% do valor de cada serviço realizado para a clínica
+                  </p>
                 </div>
               </label>
 
@@ -858,13 +888,16 @@ function ProfessionalModal({
                   type="radio"
                   name="commissionModel"
                   value="rental"
-                  checked={commissionModel === 'rental'}
-                  onChange={(e) => setCommissionModel(e.target.value as 'rental')}
+                  checked={commissionModel === "rental"}
+                  onChange={(e) => setCommissionModel(e.target.value as "rental")}
                   className="rounded border-white/60 text-gray-900 focus:ring-gray-900/15"
                 />
                 <div className="flex-1">
                   <span className="text-sm font-medium text-gray-900">Fixo Mensal</span>
-                  <p className="text-xs text-gray-500">O profissional paga um valor fixo por mês para a clínica (independente dos serviços)</p>
+                  <p className="text-xs text-gray-500">
+                    O profissional paga um valor fixo por mês para a clínica (independente dos
+                    serviços)
+                  </p>
                 </div>
               </label>
 
@@ -873,22 +906,27 @@ function ProfessionalModal({
                   type="radio"
                   name="commissionModel"
                   value="hybrid"
-                  checked={commissionModel === 'hybrid'}
-                  onChange={(e) => setCommissionModel(e.target.value as 'hybrid')}
+                  checked={commissionModel === "hybrid"}
+                  onChange={(e) => setCommissionModel(e.target.value as "hybrid")}
                   className="rounded border-white/60 text-gray-900 focus:ring-gray-900/15"
                 />
                 <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-900">Híbrido (Fixo Mensal + Porcentagem)</span>
-                  <p className="text-xs text-gray-500">O profissional paga um valor fixo mensal + X% sobre cada serviço realizado para a clínica</p>
+                  <span className="text-sm font-medium text-gray-900">
+                    Híbrido (Fixo Mensal + Porcentagem)
+                  </span>
+                  <p className="text-xs text-gray-500">
+                    O profissional paga um valor fixo mensal + X% sobre cada serviço realizado para
+                    a clínica
+                  </p>
                 </div>
               </label>
             </div>
 
             {/* Campo: Percentual que o Profissional PAGA (para 'commissioned' e 'hybrid') */}
-            {(commissionModel === 'commissioned' || commissionModel === 'hybrid') && (
+            {(commissionModel === "commissioned" || commissionModel === "hybrid") && (
               <div className="space-y-1 pl-6 pt-2 border-t border-white/40">
                 <label className="text-xs font-semibold text-gray-700">
-                  {commissionModel === 'hybrid' ? '% sobre Serviços' : '% sobre Serviços'}
+                  {commissionModel === "hybrid" ? "% sobre Serviços" : "% sobre Serviços"}
                 </label>
                 <input
                   type="number"
@@ -901,33 +939,35 @@ function ProfessionalModal({
                   placeholder="0"
                 />
                 <p className="text-xs text-gray-500">
-                  {commissionModel === 'hybrid' 
-                    ? 'Percentual que o profissional paga à clínica sobre cada serviço realizado (além do valor fixo mensal)'
-                    : 'Percentual que o profissional paga à clínica sobre cada serviço realizado (0-100%)'}
+                  {commissionModel === "hybrid"
+                    ? "Percentual que o profissional paga à clínica sobre cada serviço realizado (além do valor fixo mensal)"
+                    : "Percentual que o profissional paga à clínica sobre cada serviço realizado (0-100%)"}
                 </p>
               </div>
             )}
 
             {/* Campo: Valor Fixo Mensal que o Profissional PAGA (para 'rental' e 'hybrid') */}
-            {(commissionModel === 'rental' || commissionModel === 'hybrid') && (
+            {(commissionModel === "rental" || commissionModel === "hybrid") && (
               <div className="space-y-1 pl-6 pt-2 border-t border-white/40">
-                <label className="text-xs font-semibold text-gray-700">Valor Fixo Mensal (R$)</label>
+                <label className="text-xs font-semibold text-gray-700">
+                  Valor Fixo Mensal (R$)
+                </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={(rentalBaseCents / 100).toFixed(2)}
                   onChange={(e) => {
-                    const valueInReais = parseFloat(e.target.value) || 0
-                    setRentalBaseCents(Math.round(valueInReais * 100))
+                    const valueInReais = parseFloat(e.target.value) || 0;
+                    setRentalBaseCents(Math.round(valueInReais * 100));
                   }}
                   className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
                   placeholder="0.00"
                 />
                 <p className="text-xs text-gray-500">
-                  {commissionModel === 'hybrid'
-                    ? 'Valor fixo mensal que o profissional paga à clínica (além da porcentagem sobre serviços)'
-                    : 'Valor fixo mensal que o profissional paga à clínica (não há porcentagem sobre serviços)'}
+                  {commissionModel === "hybrid"
+                    ? "Valor fixo mensal que o profissional paga à clínica (além da porcentagem sobre serviços)"
+                    : "Valor fixo mensal que o profissional paga à clínica (não há porcentagem sobre serviços)"}
                 </p>
               </div>
             )}
@@ -935,10 +975,12 @@ function ProfessionalModal({
             {/* Info sobre Taxa da Plataforma */}
             <div className="pl-6 pt-2">
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                <p className="text-xs font-semibold text-blue-900 mb-1">ℹ️ Sobre a Taxa da Plataforma</p>
+                <p className="text-xs font-semibold text-blue-900 mb-1">
+                  ℹ️ Sobre a Taxa da Plataforma
+                </p>
                 <p className="text-xs text-blue-700">
-                  A clínica também paga uma taxa para a plataforma sobre cada transação. 
-                  Essa taxa é configurada separadamente nas configurações gerais da clínica.
+                  A clínica também paga uma taxa para a plataforma sobre cada transação. Essa taxa é
+                  configurada separadamente nas configurações gerais da clínica.
                 </p>
               </div>
             </div>
@@ -952,23 +994,26 @@ function ProfessionalModal({
                   type="checkbox"
                   checked={createLogin}
                   onChange={(e) => {
-                    setCreateLogin(e.target.checked)
+                    setCreateLogin(e.target.checked);
                     if (!e.target.checked) {
-                      setEmail('')
-                      setPassword('')
+                      setEmail("");
+                      setPassword("");
                     }
                   }}
                   className="rounded border-white/60 text-gray-900 focus:ring-gray-900/15"
                   id="create-login-checkbox"
                 />
-                <label htmlFor="create-login-checkbox" className="text-xs font-semibold text-gray-700 cursor-pointer">
+                <label
+                  htmlFor="create-login-checkbox"
+                  className="text-xs font-semibold text-gray-700 cursor-pointer"
+                >
                   Criar conta de login para este profissional
                 </label>
               </div>
               <p className="text-xs text-gray-500 ml-6">
                 Se marcado, o profissional poderá fazer login no sistema usando email e senha
               </p>
-              
+
               {createLogin && (
                 <div className="space-y-3 ml-6 pl-4 border-l-2 border-gray-200">
                   <div className="space-y-1">
@@ -983,7 +1028,9 @@ function ProfessionalModal({
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-gray-700">Senha * (mínimo 6 caracteres)</label>
+                    <label className="text-xs font-semibold text-gray-700">
+                      Senha * (mínimo 6 caracteres)
+                    </label>
                     <input
                       type="password"
                       value={password}
@@ -1015,7 +1062,7 @@ function ProfessionalModal({
                   CPF e dados bancários para criar subconta Asaas
                 </p>
               </div>
-              <span className="text-gray-400">{showKYC ? '▼' : '▶'}</span>
+              <span className="text-gray-400">{showKYC ? "▼" : "▶"}</span>
             </button>
 
             {showKYC && (
@@ -1027,12 +1074,12 @@ function ProfessionalModal({
                     value={cpf}
                     onChange={(e) => {
                       // Formatar CPF (XXX.XXX.XXX-XX)
-                      let value = e.target.value.replace(/\D/g, '')
+                      let value = e.target.value.replace(/\D/g, "");
                       if (value.length <= 11) {
-                        value = value.replace(/^(\d{3})(\d)/, '$1.$2')
-                        value = value.replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
-                        value = value.replace(/\.(\d{3})(\d)/, '.$1-$2')
-                        setCpf(value)
+                        value = value.replace(/^(\d{3})(\d)/, "$1.$2");
+                        value = value.replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3");
+                        value = value.replace(/\.(\d{3})(\d)/, ".$1-$2");
+                        setCpf(value);
                       }
                     }}
                     className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
@@ -1043,22 +1090,30 @@ function ProfessionalModal({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-gray-200">
                   <div>
-                    <label className="text-xs font-semibold text-gray-700 mb-1 block">Código do Banco</label>
+                    <label className="text-xs font-semibold text-gray-700 mb-1 block">
+                      Código do Banco
+                    </label>
                     <input
                       type="text"
-                      value={bankAccountData.bank_code || ''}
-                      onChange={(e) => setBankAccountData({ ...bankAccountData, bank_code: e.target.value })}
+                      value={bankAccountData.bank_code || ""}
+                      onChange={(e) =>
+                        setBankAccountData({ ...bankAccountData, bank_code: e.target.value })
+                      }
                       className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
                       placeholder="001"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-gray-700 mb-1 block">Agência</label>
+                    <label className="text-xs font-semibold text-gray-700 mb-1 block">
+                      Agência
+                    </label>
                     <input
                       type="text"
-                      value={bankAccountData.agency || ''}
-                      onChange={(e) => setBankAccountData({ ...bankAccountData, agency: e.target.value })}
+                      value={bankAccountData.agency || ""}
+                      onChange={(e) =>
+                        setBankAccountData({ ...bankAccountData, agency: e.target.value })
+                      }
                       className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
                       placeholder="0000"
                     />
@@ -1068,8 +1123,10 @@ function ProfessionalModal({
                     <label className="text-xs font-semibold text-gray-700 mb-1 block">Conta</label>
                     <input
                       type="text"
-                      value={bankAccountData.account || ''}
-                      onChange={(e) => setBankAccountData({ ...bankAccountData, account: e.target.value })}
+                      value={bankAccountData.account || ""}
+                      onChange={(e) =>
+                        setBankAccountData({ ...bankAccountData, account: e.target.value })
+                      }
                       className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
                       placeholder="00000"
                     />
@@ -1079,8 +1136,10 @@ function ProfessionalModal({
                     <label className="text-xs font-semibold text-gray-700 mb-1 block">Dígito</label>
                     <input
                       type="text"
-                      value={bankAccountData.account_digit || ''}
-                      onChange={(e) => setBankAccountData({ ...bankAccountData, account_digit: e.target.value })}
+                      value={bankAccountData.account_digit || ""}
+                      onChange={(e) =>
+                        setBankAccountData({ ...bankAccountData, account_digit: e.target.value })
+                      }
                       className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
                       placeholder="0"
                       maxLength={1}
@@ -1088,10 +1147,17 @@ function ProfessionalModal({
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-gray-700 mb-1 block">Tipo de Conta</label>
+                    <label className="text-xs font-semibold text-gray-700 mb-1 block">
+                      Tipo de Conta
+                    </label>
                     <select
-                      value={bankAccountData.account_type || 'CHECKING'}
-                      onChange={(e) => setBankAccountData({ ...bankAccountData, account_type: e.target.value as 'CHECKING' | 'SAVINGS' })}
+                      value={bankAccountData.account_type || "CHECKING"}
+                      onChange={(e) =>
+                        setBankAccountData({
+                          ...bankAccountData,
+                          account_type: e.target.value as "CHECKING" | "SAVINGS",
+                        })
+                      }
                       className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
                     >
                       <option value="CHECKING">Conta Corrente</option>
@@ -1100,28 +1166,34 @@ function ProfessionalModal({
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-gray-700 mb-1 block">Nome do Titular</label>
+                    <label className="text-xs font-semibold text-gray-700 mb-1 block">
+                      Nome do Titular
+                    </label>
                     <input
                       type="text"
-                      value={bankAccountData.holder_name || ''}
-                      onChange={(e) => setBankAccountData({ ...bankAccountData, holder_name: e.target.value })}
+                      value={bankAccountData.holder_name || ""}
+                      onChange={(e) =>
+                        setBankAccountData({ ...bankAccountData, holder_name: e.target.value })
+                      }
                       className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
                       placeholder="Nome completo"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="text-xs font-semibold text-gray-700 mb-1 block">CPF do Titular</label>
+                    <label className="text-xs font-semibold text-gray-700 mb-1 block">
+                      CPF do Titular
+                    </label>
                     <input
                       type="text"
-                      value={bankAccountData.holder_document || ''}
+                      value={bankAccountData.holder_document || ""}
                       onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, '')
+                        let value = e.target.value.replace(/\D/g, "");
                         if (value.length <= 11) {
-                          value = value.replace(/^(\d{3})(\d)/, '$1.$2')
-                          value = value.replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
-                          value = value.replace(/\.(\d{3})(\d)/, '.$1-$2')
-                          setBankAccountData({ ...bankAccountData, holder_document: value })
+                          value = value.replace(/^(\d{3})(\d)/, "$1.$2");
+                          value = value.replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3");
+                          value = value.replace(/\.(\d{3})(\d)/, ".$1-$2");
+                          setBankAccountData({ ...bankAccountData, holder_document: value });
                         }
                       }}
                       className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
@@ -1142,21 +1214,21 @@ function ProfessionalModal({
                 type="button"
                 onClick={() => {
                   if (workSchedule) {
-                    setWorkSchedule(null)
+                    setWorkSchedule(null);
                   } else {
                     setWorkSchedule({
                       days: [],
-                      start: '09:00',
-                      end: '18:00',
-                    })
+                      start: "09:00",
+                      end: "18:00",
+                    });
                   }
                 }}
                 className="text-xs text-gray-600 hover:text-gray-900"
               >
-                {workSchedule ? 'Remover jornada' : 'Adicionar jornada'}
+                {workSchedule ? "Remover jornada" : "Adicionar jornada"}
               </button>
             </div>
-            
+
             {workSchedule && (
               <div className="space-y-3 rounded-xl bg-white/50 border border-white/60 p-3">
                 {/* Seleção de dias */}
@@ -1170,8 +1242,8 @@ function ProfessionalModal({
                         onClick={() => toggleDay(day.value)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                           workSchedule.days.includes(day.value)
-                            ? 'bg-gray-900 text-white'
-                            : 'bg-white/70 text-gray-700 border border-white/60 hover:bg-white/90'
+                            ? "bg-gray-900 text-white"
+                            : "bg-white/70 text-gray-700 border border-white/60 hover:bg-white/90"
                         }`}
                       >
                         {day.label}
@@ -1179,7 +1251,7 @@ function ProfessionalModal({
                     ))}
                   </div>
                 </div>
-                
+
                 {/* Horários */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -1187,7 +1259,7 @@ function ProfessionalModal({
                     <input
                       type="time"
                       value={workSchedule.start}
-                      onChange={(e) => updateWorkSchedule('start', e.target.value)}
+                      onChange={(e) => updateWorkSchedule("start", e.target.value)}
                       className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
                     />
                   </div>
@@ -1196,12 +1268,12 @@ function ProfessionalModal({
                     <input
                       type="time"
                       value={workSchedule.end}
-                      onChange={(e) => updateWorkSchedule('end', e.target.value)}
+                      onChange={(e) => updateWorkSchedule("end", e.target.value)}
                       className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
                     />
                   </div>
                 </div>
-                
+
                 {/* Intervalo de almoço (opcional) */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -1209,26 +1281,28 @@ function ProfessionalModal({
                       type="checkbox"
                       checked={!!workSchedule?.breakStart && !!workSchedule?.breakEnd}
                       onChange={(e) => {
-                        if (!workSchedule) return
+                        if (!workSchedule) return;
                         if (e.target.checked) {
                           setWorkSchedule({
                             ...workSchedule,
-                            breakStart: '12:00',
-                            breakEnd: '13:00',
-                          })
+                            breakStart: "12:00",
+                            breakEnd: "13:00",
+                          });
                         } else {
                           setWorkSchedule({
                             ...workSchedule,
                             breakStart: undefined,
                             breakEnd: undefined,
-                          })
+                          });
                         }
                       }}
                       className="rounded border-white/60 text-gray-900 focus:ring-gray-900/15"
                     />
-                    <label className="text-xs font-semibold text-gray-700">Intervalo de Almoço</label>
+                    <label className="text-xs font-semibold text-gray-700">
+                      Intervalo de Almoço
+                    </label>
                   </div>
-                  
+
                   {workSchedule.breakStart && workSchedule.breakEnd && (
                     <div className="grid grid-cols-2 gap-3 pl-6">
                       <div className="space-y-1">
@@ -1236,7 +1310,7 @@ function ProfessionalModal({
                         <input
                           type="time"
                           value={workSchedule.breakStart}
-                          onChange={(e) => updateWorkSchedule('breakStart', e.target.value)}
+                          onChange={(e) => updateWorkSchedule("breakStart", e.target.value)}
                           className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
                         />
                       </div>
@@ -1245,7 +1319,7 @@ function ProfessionalModal({
                         <input
                           type="time"
                           value={workSchedule.breakEnd}
-                          onChange={(e) => updateWorkSchedule('breakEnd', e.target.value)}
+                          onChange={(e) => updateWorkSchedule("breakEnd", e.target.value)}
                           className="w-full rounded-xl bg-white/70 border border-white/60 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-900/15 focus:outline-none"
                         />
                       </div>
@@ -1267,49 +1341,56 @@ function ProfessionalModal({
             className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold shadow-lg shadow-black/10 hover:bg-gray-800 transition"
             onClick={async () => {
               // Validar se super_admin selecionou uma clínica
-              if (currentUser?.role === 'super_admin' && !currentUser.clinicId) {
+              if (currentUser?.role === "super_admin" && !currentUser.clinicId) {
                 if (!selectedClinicId) {
-                  alert('Por favor, selecione uma clínica para o profissional.')
-                  return
+                  alert("Por favor, selecione uma clínica para o profissional.");
+                  return;
                 }
                 if (clinics.length === 0) {
-                  alert('Nenhuma clínica disponível. Por favor, crie uma clínica primeiro na aba "Gerenciamento de Clínicas".')
-                  return
+                  alert(
+                    'Nenhuma clínica disponível. Por favor, crie uma clínica primeiro na aba "Gerenciamento de Clínicas".'
+                  );
+                  return;
                 }
               }
-              
+
               // Validar email e senha se createLogin estiver marcado
-              if (createLogin && (!draft.id)) {
+              if (createLogin && !draft.id) {
                 if (!email || !password) {
-                  alert('Por favor, preencha email e senha para criar a conta de login.')
-                  return
+                  alert("Por favor, preencha email e senha para criar a conta de login.");
+                  return;
                 }
                 if (password.length < 6) {
-                  alert('A senha deve ter pelo menos 6 caracteres.')
-                  return
+                  alert("A senha deve ter pelo menos 6 caracteres.");
+                  return;
                 }
                 // Validar formato de email básico
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(email)) {
-                  alert('Por favor, informe um email válido.')
-                  return
+                  alert("Por favor, informe um email válido.");
+                  return;
                 }
               }
-              
+
               // Validar que clinicId existe antes de construir o objeto
-              const finalClinicId = (draft as any).clinicId || selectedClinicId || currentUser?.clinicId
+              const finalClinicId =
+                (draft as any).clinicId || selectedClinicId || currentUser?.clinicId;
               if (!finalClinicId) {
-                alert('É necessário associar o profissional a uma clínica.')
-                return
+                alert("É necessário associar o profissional a uma clínica.");
+                return;
               }
-              
+
               // Priorizar clinicId herdado do profissional (do painel), depois o selecionado, depois currentUser
               const professionalData: any = {
                 ...draft,
                 commissionModel,
-                commissionRate: commissionModel === 'rental' ? 0 : commissionRate, // Se rental, não usa percentual
-                rentalBaseCents: (commissionModel === 'rental' || commissionModel === 'hybrid') ? rentalBaseCents : 0,
-                rentalDueDay: (commissionModel === 'rental' || commissionModel === 'hybrid') ? 5 : undefined, // Dia de vencimento padrão
+                commissionRate: commissionModel === "rental" ? 0 : commissionRate, // Se rental, não usa percentual
+                rentalBaseCents:
+                  commissionModel === "rental" || commissionModel === "hybrid"
+                    ? rentalBaseCents
+                    : 0,
+                rentalDueDay:
+                  commissionModel === "rental" || commissionModel === "hybrid" ? 5 : undefined, // Dia de vencimento padrão
                 workSchedule: workSchedule || undefined,
                 // ✅ Campos KYC (Know Your Customer)
                 cpf: cpf || null,
@@ -1318,23 +1399,26 @@ function ProfessionalModal({
                 clinicId: finalClinicId,
                 // ✅ Adicionar email e senha se createLogin estiver marcado (apenas para novos profissionais)
                 ...(createLogin && !draft.id && email && password ? { email, password } : {}),
-              }
-              
-              console.log('📤 Enviando profissional:', { 
-                ...professionalData, 
-                password: professionalData.password ? '***' : undefined,
+              };
+
+              console.log("📤 Enviando profissional:", {
+                ...professionalData,
+                password: professionalData.password ? "***" : undefined,
                 createLogin,
                 hasEmail: !!email,
-                hasPassword: !!password
-              })
-              
+                hasPassword: !!password,
+              });
+
               try {
-                await onSave(professionalData)
+                await onSave(professionalData);
               } catch (error: any) {
-                console.error('❌ Erro ao salvar profissional no modal:', error)
-                const errorMessage = error?.message || error?.error?.message || 'Erro desconhecido ao salvar profissional.'
-                alert(`Erro ao salvar profissional: ${errorMessage}`)
-                throw error // Re-throw para não fechar o modal se houver erro
+                console.error("❌ Erro ao salvar profissional no modal:", error);
+                const errorMessage =
+                  error?.message ||
+                  error?.error?.message ||
+                  "Erro desconhecido ao salvar profissional.";
+                alert(`Erro ao salvar profissional: ${errorMessage}`);
+                throw error; // Re-throw para não fechar o modal se houver erro
               }
             }}
           >
@@ -1343,7 +1427,7 @@ function ProfessionalModal({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function ServiceModal({
@@ -1352,26 +1436,26 @@ function ServiceModal({
   onClose,
   professionals,
 }: {
-  service: Service
-  onSave: (s: Service) => Promise<void>
-  onClose: () => void
-  professionals: SchedulerProfessional[]
+  service: Service;
+  onSave: (s: Service) => Promise<void>;
+  onClose: () => void;
+  professionals: SchedulerProfessional[];
 }) {
-  const [draft, setDraft] = useState<Service>(service)
-  const [showCalc, setShowCalc] = useState(false)
+  const [draft, setDraft] = useState<Service>(service);
+  const [showCalc, setShowCalc] = useState(false);
   const [selectedProfIds, setSelectedProfIds] = useState<string[]>(
     (service as any).professionalIds || []
-  )
+  );
 
   const handleToggleProfessional = (profId: string) => {
     setSelectedProfIds((prev) => {
       if (prev.includes(profId)) {
-        return prev.filter((id) => id !== profId)
+        return prev.filter((id) => id !== profId);
       } else {
-        return [...prev, profId]
+        return [...prev, profId];
       }
-    })
-  }
+    });
+  };
 
   const handleSave = async () => {
     const serviceData = {
@@ -1379,16 +1463,18 @@ function ServiceModal({
       professionalIds: selectedProfIds.length > 0 ? selectedProfIds : null,
       // ✅ Herdar clinic_id do service (vem do painel)
       clinicId: (service as any).clinicId,
-    } as any
-    await onSave(serviceData)
-  }
+    } as any;
+    await onSave(serviceData);
+  };
 
   return (
     <>
       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur flex items-center justify-center px-4">
         <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 shadow-2xl rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between">
-            <p className="text-lg font-semibold text-gray-900">{draft.id ? 'Editar Serviço' : 'Novo Serviço'}</p>
+            <p className="text-lg font-semibold text-gray-900">
+              {draft.id ? "Editar Serviço" : "Novo Serviço"}
+            </p>
             <button className="text-sm text-gray-500 hover:text-gray-700" onClick={onClose}>
               ✕
             </button>
@@ -1460,9 +1546,15 @@ function ServiceModal({
                       <div className="flex items-center gap-2 flex-1">
                         <div className="h-6 w-6 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
                           {p.avatar ? (
-                            <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
+                            <img
+                              src={p.avatar}
+                              alt={p.name}
+                              className="h-full w-full object-cover"
+                            />
                           ) : (
-                            <span className="text-[10px] font-semibold text-gray-700">{p.name.charAt(0)}</span>
+                            <span className="text-[10px] font-semibold text-gray-700">
+                              {p.name.charAt(0)}
+                            </span>
                           )}
                         </div>
                         <span className="text-sm text-gray-900">{p.name}</span>
@@ -1474,7 +1566,7 @@ function ServiceModal({
               </div>
               <p className="text-xs text-gray-500">
                 {selectedProfIds.length === 0
-                  ? 'Se nenhum for selecionado, o serviço será disponível para todos os profissionais da clínica.'
+                  ? "Se nenhum for selecionado, o serviço será disponível para todos os profissionais da clínica."
                   : `${selectedProfIds.length} profissional(is) selecionado(s).`}
               </p>
             </div>
@@ -1500,12 +1592,12 @@ function ServiceModal({
         onClose={() => setShowCalc(false)}
         durationMinutes={draft.duration}
         onApply={(price) => {
-          setDraft((p) => ({ ...p, price: Number(price.toFixed(2)) }))
-          setShowCalc(false)
+          setDraft((p) => ({ ...p, price: Number(price.toFixed(2)) }));
+          setShowCalc(false);
         }}
       />
     </>
-  )
+  );
 }
 
 // Painel de Detalhes da Clínica (com abas para Profissionais e Serviços) - Não utilizado atualmente, removido completamente
